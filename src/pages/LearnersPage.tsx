@@ -113,7 +113,7 @@ export default function LearnersPage() {
       ).trim();
 
       const secondaryStatus = (programId === 'dba' ? statusFromStudentList : (s['upGrad Learner Status'] ?? s['GGU Learner Status'] ?? statusFromStudentList)).trim();
-      const learnerType = (programId === 'dba' || programId === 'mba' ? (s['Batch'] ?? '').trim() : (s['Learner Type'] ?? '').trim()) || undefined;
+      const learnerType = (programId === 'dba' || programId === 'mba' || programId === 'm-psych' ? (s['Batch'] ?? '').trim() : (s['Learner Type'] ?? '').trim()) || undefined;
       const region = (s['Region'] ?? '').trim() || undefined;
       const immersion = (s['Immersion'] ?? '').trim() || undefined;
 
