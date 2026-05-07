@@ -899,7 +899,7 @@ export default function LearnersPage() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10" onClick={(e) => e.stopPropagation()}>
               {/* --- Global Footprint & Regions --- */}
-              <div className={`bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden group ${programId === 'dba' || programId === 'mba' ? 'lg:col-span-2' : ''}`}>
+              <div className={`bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden group ${programId === 'dba' || programId === 'mba' || programId === 'm-psych' ? 'lg:col-span-2' : ''}`}>
                 <div className="absolute -top-10 -right-10 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                   <i className="fas fa-map-marked-alt text-[140px] dark:text-white" />
                 </div>
@@ -961,7 +961,7 @@ export default function LearnersPage() {
               </div>
 
               {/* --- Immersion Profile (Refined) - Hidden for DBA and MBA --- */}
-              {programId !== 'dba' && programId !== 'mba' && (
+              {programId !== 'dba' && programId !== 'mba' && programId !== 'm-psych' && (
                 <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden group">
                   <div className="absolute -top-10 -right-10 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <i className="fas fa-layer-group text-[140px] dark:text-white" />

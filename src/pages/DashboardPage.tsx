@@ -304,7 +304,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Program Overview - hide for MBA and DBA DL */}
-      {programId !== 'mba' && programId !== 'dba-dl' && (
+      {programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Live Sessions Card */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-100 p-4">
