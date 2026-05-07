@@ -62,22 +62,22 @@ export default function Layout() {
             <SidebarLink to={`/${programId}/learners`} label="Learners" iconClass="fas fa-users" collapsed={collapsed} />
           </nav>
 
-          {programId !== 'mba' && (
+          {programId !== 'mba' && programId !== 'm-psych' && (
             <>
               {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18 }}>Coursework Phase</div>}
               {collapsed && <div className="sidebar-divider-collapsed" />}
             </>
           )}
           <nav className="sidebar-nav">
-            {programId !== 'mba' && programId !== 'dba' && programId !== 'dba-dl' && (
+            {programId !== 'mba' && programId !== 'dba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
               <SidebarLink to={`/${programId}/live-sessions`} label="Live Sessions" iconClass="fas fa-video" collapsed={collapsed} />
             )}
-            {programId !== 'mba' && (
+            {programId !== 'mba' && programId !== 'm-psych' && (
               <SidebarLink to={`/${programId}/academic-performance`} label="Academic Performance" iconClass="fas fa-chart-line" collapsed={collapsed} />
             )}
           </nav>
 
-          {programId !== 'mba' && (
+          {programId !== 'mba' && programId !== 'm-psych' && (
             <>
               {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18 }}>Dissertation Phase</div>}
               {collapsed && <div className="sidebar-divider-collapsed" />}
@@ -87,7 +87,7 @@ export default function Layout() {
             </>
           )}
 
-          {programId !== 'dba' && programId !== 'mba' && programId !== 'dba-dl' && (
+          {programId !== 'dba' && programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
             <>
               {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18 }}>Immersion</div>}
               {collapsed && <div className="sidebar-divider-collapsed" />}

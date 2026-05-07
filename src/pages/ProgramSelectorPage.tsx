@@ -66,6 +66,15 @@ const universities: University[] = [
                 gradient: 'from-violet-500 to-purple-700',
                 available: true,
             },
+            {
+                id: 'm-psych',
+                name: 'Master in Psychology',
+                fullName: 'Master in Psychology',
+                description: 'Advanced study in psychological science and human behavior.',
+                icon: 'fas fa-brain',
+                gradient: 'from-fuchsia-600 to-pink-600',
+                available: true,
+            },
         ]
     },
     {

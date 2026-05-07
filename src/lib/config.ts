@@ -100,6 +100,11 @@ export const PROGRAMS: Record<string, ProgramConfig> = {
     name: 'MBA',
     totalCourses: 10,
   },
+  'm-psych': {
+    sheetId: '1tcy8L3nAjgo7EUs3sspwtnVldkQ4OGs6yu4gsoSizyg',
+    name: 'M Psych',
+    totalCourses: 0,
+  },
 };
 
 export type ProgramId = keyof typeof PROGRAMS;
