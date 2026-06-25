@@ -18,9 +18,18 @@ function parseGvizResponse(text: string): unknown {
 }
 
 function gvizTableToRecords(table: any): SheetRecord[] {
-  const cols: string[] = (table?.cols ?? []).map((c: any, idx: number) => {
-    const label = String(c?.label ?? '').trim();
-    return label || `col_${idx}`;
+  const seen = new Map<string, number>();
+  const colDefs: Array<{ label: string; type: string }> = (table?.cols ?? []).map((c: any, idx: number) => {
+    let label = String(c?.label ?? '').trim();
+    if (!label) label = `col_${idx}`;
+
+    const count = seen.get(label) || 0;
+    seen.set(label, count + 1);
+
+    return {
+      label: count > 0 ? `${label}_${count}` : label,
+      type: String(c?.type ?? ''),
+    };
   });
 
   const rows: any[] = table?.rows ?? [];
@@ -28,10 +37,17 @@ function gvizTableToRecords(table: any): SheetRecord[] {
     const cells: any[] = r?.c ?? [];
     const record: SheetRecord = {};
 
-    for (let i = 0; i < cols.length; i += 1) {
+    for (let i = 0; i < colDefs.length; i += 1) {
+      const { label, type } = colDefs[i];
       const cell = cells[i];
-      const v = cell?.v ?? '';
-      record[cols[i]] = coerceCellValue(v).trim();
+      // For date/datetime columns the raw value (v) is a JS Date constructor
+      // string like "Date(2026,3,1)" which cannot be parsed downstream.
+      // Use the human-readable formatted value (f) instead, e.g. "Apr-2026".
+      if (type === 'date' || type === 'datetime') {
+        record[label] = String(cell?.f ?? cell?.v ?? '').trim();
+      } else {
+        record[label] = coerceCellValue(cell?.v ?? '').trim();
+      }
     }
 
     return record;
@@ -60,9 +76,18 @@ function valuesToRecords(values: unknown): SheetRecord[] {
   if (rows.length === 0) return [];
 
   const headerRow = Array.isArray(rows[0]) ? (rows[0] as unknown[]) : [];
+  const seen = new Map<string, number>();
   const headers = headerRow.map((h, idx) => {
-    const label = String(h ?? '').trim();
-    return label || `col_${idx}`;
+    let label = String(h ?? '').trim();
+    if (!label) label = `col_${idx}`;
+    
+    const count = seen.get(label) || 0;
+    seen.set(label, count + 1);
+    
+    if (count > 0) {
+      return `${label}_${count}`;
+    }
+    return label;
   });
 
   const out: SheetRecord[] = [];

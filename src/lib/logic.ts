@@ -19,6 +19,20 @@ const ACTIVE_SECONDARY_STATUSES_SET = new Set([
   normalizeSecondaryStatus('Active (Prospective Deferral)'),
 ]);
 
+export function v(row: any, ...possibleKeys: string[]): string {
+  if (!row) return '';
+  const rowKeys = Object.keys(row);
+  for (const search of possibleKeys) {
+    const normalizedSearch = search.toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const k of rowKeys) {
+      if (k.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedSearch) {
+        return (row[k] ?? '').toString().trim();
+      }
+    }
+  }
+  return '';
+}
+
 export function isLearnerActive(status: string | undefined): boolean {
   if (!status) return false;
   const s = normalizeSecondaryStatus(status);
@@ -129,52 +143,40 @@ export function mergeLearners(options: {
         gradeIndex.get(key) ??
         grades.find((g) => normalizeEmail(getGradesEmail(g)) === normalizeEmail(email));
 
-      const statusFromStudentList = (
-        s['Actual Status'] ??
-        s['Actual status'] ??
-        s['ActualStatus'] ??
-        s['Actual_Status'] ??
-        s['Status Details'] ??
-        s['Secondary Status'] ??
-        s['Secondary status'] ??
-        s['Status'] ??
-        ''
-      ).trim();
-
-      const statusFromGrades = (
-        gradeRow?.['upGrad Learner Status'] ??
-        gradeRow?.['GGU Learner Status'] ??
-        gradeRow?.['Status Details'] ??
-        gradeRow?.['Actual Status'] ??
-        gradeRow?.['Secondary Status'] ??
-        gradeRow?.['Status'] ??
-        ''
-      ).trim();
+      const statusFromStudentList = v(s, 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
+      const statusFromGrades = v(gradeRow, 'upGrad Learner Status', 'GGU Learner Status', 'Status Details', 'Actual Status', 'Secondary Status', 'Status');
 
       const combinedStatus = statusFromStudentList || statusFromGrades;
 
+      const learnerType = v(s, 'Learner Type', 'Type');
+
       const merged: LearnerMerged = {
-        firstName: s['First Name'] ?? gradeRow?.['First Name'] ?? '',
-        lastName: s['Last Name'] ?? gradeRow?.['Last Name'] ?? '',
+        firstName: (s['First Name'] ?? gradeRow?.['First Name'] ?? '').toString().trim(),
+        lastName: (s['Last Name'] ?? gradeRow?.['Last Name'] ?? '').toString().trim(),
         email,
-        userId: s['User ID'] ?? undefined,
-        batch: s['Batch'] ?? undefined,
-        cohort: s['Cohort #'] ?? undefined,
-        cohortId: s['Cohort ID'] ?? undefined,
+        userId: v(s, 'User ID') || undefined,
+        batch: v(s, 'Batch') || undefined,
+        learnerType: learnerType || undefined,
+        cohort: v(s, 'Cohort #', 'Cohort') || undefined,
+        cohortId: v(s, 'Cohort ID') || undefined,
         status: combinedStatus || undefined,
         secondaryStatus: combinedStatus || undefined,
-        packageKey: (s['Package Key'] ?? '').trim() || undefined,
-        term: (s['Term'] ?? '').trim() || undefined,
-        aging: parseNumber(s['Aging']) ?? undefined,
-        launchMonth: (s['Launch Month'] ?? '').trim() || undefined,
-        concentration: (s['Concentration'] ?? '').trim() || undefined,
-        statusDetails: (s['Status Details'] ?? '').trim() || undefined,
-        slot: s['Slot'] ?? undefined,
+        packageKey: v(s, 'Package Key') || undefined,
+        term: v(s, 'Term') || undefined,
+        aging: parseNumber(v(s, 'Aging')) ?? undefined,
+        launchMonth: v(s, 'Launch Month') || undefined,
+        concentration: v(s, 'Concentration') || undefined,
+        statusDetails: v(s, 'Status Details') || undefined,
+        slot: v(s, 'Slot') || undefined,
         overallCgpa: gradeRow?.['Overall CGPA'] ?? undefined,
         coursesCompleted: gradeRow?.['Courses Completed'] ?? gradeRow?.['Completed Courses'] ?? String(countCompletedCourses(mergeCourseGrades(programId, gradeRow))),
         coursesIncomplete: gradeRow?.['Courses Incomplete'] ?? gradeRow?.['Incomplete Courses'] ?? undefined,
         coursework: mergeCourseGrades(programId, gradeRow),
         courseGpa: mergeCourseGpa(programId, gradeRow),
+        country: v(s, 'Country Of Residence', 'Country of  Residence', 'Country of Residence', 'Country') || undefined,
+        region: v(s, 'Region') || gradeRow?.['Region'] || undefined,
+        immersion: v(s, 'Immersion') || gradeRow?.['Immersion'] || undefined,
+        spoc: v(s, 'SPOC') || gradeRow?.['SPOC'] || undefined,
       };
 
       return { key, merged };
@@ -210,6 +212,7 @@ export function mergeLearners(options: {
       email,
       userId: ((g['User ID'] ?? g['upGrad ID'] ?? '') as string).trim() || undefined,
       batch: undefined,
+      learnerType: (g['Learner Type']?.toString() || '').trim() || undefined,
       cohort: ((g['Cohort #'] ?? g['uG Cohort ID'] ?? '') as string).trim() || undefined,
       cohortId: cohortId || undefined,
       status: gradeStatus || undefined,
@@ -220,6 +223,9 @@ export function mergeLearners(options: {
       coursesIncomplete: ((g['Courses Incomplete'] ?? g['Incomplete Courses'] ?? '') as string).trim() || undefined,
       coursework: mergeCourseGrades(programId, g),
       courseGpa: mergeCourseGpa(programId, g),
+      region: v(g, 'Region') || undefined,
+      immersion: v(g, 'Immersion') || undefined,
+      spoc: v(g, 'SPOC') || undefined,
     });
   }
 

@@ -115,4 +115,5 @@ export const SHEET_TABS = {
   liveSessions: 'Live Sessions',
   immersion: 'Immersion',
   dissertation: 'Dissertation',
+  budget: 'Budget',
 } as const;

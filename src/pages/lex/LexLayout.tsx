@@ -1,110 +1,44 @@
-import React, { useState } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
-import { PROGRAMS } from '../lib/config';
-import { useProgramStats } from '../hooks/useProgramStats';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState, useEffect } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { LexFilterProvider, useLexFilter } from '../../hooks/useLexFilter';
+import { UNIVERSITIES, getAssignedUniversityId, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
+import { useAuth } from '../../hooks/useAuth';
 
-import { UNIVERSITIES, getAssignedUniversityId, hasUniversityAccess, hasProgramAccess, type University, type Program } from '../lib/universities';
-
-
-/* ─── Stat formatters ─── */
-function formatCohorts(count: number): string {
-  // Show (count - 1)+ so e.g. 12 → "11+"
-  return `${Math.max(1, count - 1)}+`;
-}
-
-function formatLearners(count: number): string {
-  // Floor to nearest 10 and add "+" so e.g. 16 → "10+", 881 → "880+"
-  return `${Math.floor(count / 10) * 10}+`;
-}
-
-/* ─── Stat skeleton ─── */
-function StatSkeleton() {
+export default function LexLayout() {
   return (
-    <div className="h-4 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+    <LexFilterProvider>
+      <LexLayoutContent />
+    </LexFilterProvider>
   );
 }
 
-/* ─── Program card with live stats ─── */
-function ProgramCard({ p, onNavigate }: { p: Program; onNavigate: (id: string, available: boolean) => void }) {
-  // Only fetch stats for available programs that exist in PROGRAMS config
-  const sheetId = p.available && PROGRAMS[p.id] ? PROGRAMS[p.id].sheetId : '';
-  const { learnerCount, cohortCount, loading } = useProgramStats(sheetId);
-
-  const showStats = p.available && !!PROGRAMS[p.id];
-
-  return (
-    <div
-      className={`group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 transition-all duration-500 shadow-sm hover:shadow-xl ${p.available ? 'cursor-pointer hover:border-indigo-500/30 dark:hover:border-white/20 hover:bg-white dark:hover:bg-slate-900/80 hover:-translate-y-2 active:scale-[0.98]' : 'opacity-60 cursor-default'}`}
-      onClick={() => onNavigate(p.id, p.available)}
-    >
-      <div className="flex items-start justify-between mb-6">
-        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.gradient} flex items-center justify-center text-white text-xl shadow-xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-          <i className={p.icon} />
-        </div>
-        {!p.available ? (
-          <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-gray-400 rounded-lg border border-slate-200 dark:border-white/5">
-            Coming Soon
-          </span>
-        ) : (
-          <div className="flex items-center gap-2 text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            Active
-          </div>
-        )}
-      </div>
-
-      <div className="mb-6">
-        <h4 className="text-lg font-black text-slate-800 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{p.name}</h4>
-        <p className="text-sm text-slate-500 dark:text-gray-500 font-medium leading-relaxed">{p.description}</p>
-      </div>
-
-      {showStats && (
-        <div className="flex items-center gap-6 pt-6 border-t border-slate-100 dark:border-white/5">
-          {/* Cohorts */}
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1">Cohorts</div>
-            <div className="text-sm font-black text-slate-700 dark:text-gray-300">
-              {loading ? <StatSkeleton /> : (cohortCount !== null ? formatCohorts(cohortCount) : '—')}
-            </div>
-          </div>
-          {/* Learners */}
-          <div>
-            <div className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-widest mb-1">Learners</div>
-            <div className="text-sm font-black text-slate-700 dark:text-gray-300">
-              {loading ? <StatSkeleton /> : (learnerCount !== null ? formatLearners(learnerCount) : '—')}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {p.available && (
-        <div className="mt-6 flex items-center justify-between text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-          <span>Initialize Dashboard</span>
-          <i className="fas fa-arrow-right" />
-        </div>
-      )}
-
-      {/* Light Mode Hover Gradient */}
-      <div className={`absolute inset-0 rounded-[2rem] bg-gradient-to-br from-indigo-50 to-white opacity-0 group-hover:opacity-10 dark:group-hover:opacity-0 transition-opacity duration-500 pointer-events-none`} />
-    </div>
-  );
-}
-
-export default function ProgramSelectorPage() {
+function LexLayoutContent() {
   const navigate = useNavigate();
+  const { selectedUniversityId, setSelectedUniversityId } = useLexFilter();
   const { signOut, profile, permissions } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (permissions) {
+      const allowedUnis = UNIVERSITIES.filter(uni => {
+        const hasUni = hasUniversityAccess(permissions, uni.id);
+        const allowedPrograms = uni.programs.filter(p => hasProgramAccess(permissions, p.id, uni.id));
+        return hasUni || allowedPrograms.length > 0;
+      });
+
+      const hasGlobal = permissions.includes('page_admin') || permissions.includes('page_home');
+
+      if (!hasGlobal || allowedUnis.length === 1) {
+        if (allowedUnis.length > 0 && selectedUniversityId !== allowedUnis[0].id) {
+          setSelectedUniversityId(allowedUnis[0].id);
+        }
+      }
+    }
+  }, [permissions, selectedUniversityId, setSelectedUniversityId]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
-  };
-
-  const handleProgramClick = (programId: string, available: boolean) => {
-    if (available) {
-      navigate(`/${programId}/dashboard`);
-    }
   };
 
   const navItems = [
@@ -113,21 +47,36 @@ export default function ProgramSelectorPage() {
     { name: 'Budget', path: '/lex/budget', icon: 'fas fa-wallet', permission: 'page_budget' },
   ].filter(item => permissions?.includes(item.permission));
 
+  // Helper to check if a university is available (has at least one available program)
+  const isUniAvailable = (uniId: string) => {
+    const uni = UNIVERSITIES.find(u => u.id === uniId);
+    return uni?.programs.some(p => p.available) ?? false;
+  };
+
+  const [isUniOpen, setIsUniOpen] = useState(false);
+  const selectedUni = UNIVERSITIES.find(u => u.id === selectedUniversityId);
+
   return (
     <div className="min-h-screen flex bg-slate-50 transition-colors duration-300 relative overflow-hidden">
       <style>{`
-                .sidebar-nav-item {
-                    transition: all 0.2s ease-in-out;
-                }
-                .sidebar-nav-item:hover {
-                    color: white !important;
-                    background-color: rgba(255, 255, 255, 0.05) !important;
-                }
-                .sidebar-signout-btn:hover {
-                    background-color: rgba(239, 68, 68, 0.2) !important;
-                    color: white !important;
-                }
-            `}</style>
+        .sidebar-nav-item {
+          transition: all 0.2s ease-in-out;
+        }
+        .sidebar-nav-item:hover {
+          color: white !important;
+          background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .sidebar-signout-btn:hover {
+          background-color: rgba(239, 68, 68, 0.2) !important;
+          color: white !important;
+        }
+      `}</style>
+
+      {/* Decorative Background for Light Mode */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]" />
+      </div>
 
       {/* Sidebar */}
       <aside
@@ -144,10 +93,10 @@ export default function ProgramSelectorPage() {
         }}>
           <div
             onClick={() => navigate('/lex/home')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: collapsed ? 0 : 12,
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: collapsed ? 0 : 12, 
               cursor: 'pointer',
               justifyContent: collapsed ? 'center' : 'flex-start',
               width: '100%',
@@ -295,65 +244,105 @@ export default function ProgramSelectorPage() {
         <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
           <div className="flex flex-col">
             <span className="text-[9px] font-black text-indigo-700 uppercase tracking-[0.25em] mb-1">Operational Intel</span>
-            <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">Program Selector</h2>
+            <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">Overall Dashboard</h2>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {/* Global University Filter - Modern Custom Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsUniOpen(!isUniOpen)}
+                className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-300 ${isUniOpen ? 'bg-white border-indigo-200 shadow-lg ring-4 ring-indigo-500/5' : 'bg-slate-50 border-slate-200 hover:border-indigo-200 hover:bg-white'}`}
+              >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${selectedUni ? 'bg-indigo-700 text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                  <i className={`fas ${selectedUni ? 'fa-university' : 'fa-globe-americas'} text-[10px]`} />
+                </div>
+                <div className="flex flex-col items-start min-w-[120px]">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">University</span>
+                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-wider truncate max-w-[140px]">
+                    {selectedUni ? selectedUni.name : 'All Universities'}
+                  </span>
+                </div>
+                <i className={`fas fa-chevron-down text-[9px] text-slate-300 transition-transform duration-300 ${isUniOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+              </button>
+
+              {isUniOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsUniOpen(false)} />
+                  <div className="absolute right-0 mt-3 w-72 bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-200/50 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-3 border-b border-slate-50 bg-slate-50/30">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] px-3">Select Context</span>
+                    </div>
+                    <div className="p-2 max-h-[320px] overflow-y-auto custom-scrollbar">
+                      {(() => {
+                        const allowedUnis = UNIVERSITIES.filter(uni => {
+                          const hasUni = hasUniversityAccess(permissions, uni.id);
+                          const allowedPrograms = uni.programs.filter(p => hasProgramAccess(permissions, p.id, uni.id));
+                          return hasUni || allowedPrograms.length > 0;
+                        });
+                        const hasGlobal = permissions?.includes('page_admin') || permissions?.includes('page_home');
+                        
+                        return (
+                          <>
+                            {hasGlobal && allowedUnis.length > 1 && (
+                              <>
+                                <button
+                                  onClick={() => { setSelectedUniversityId(null); setIsUniOpen(false); }}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${!selectedUniversityId ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+                                >
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${!selectedUniversityId ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <i className="fas fa-globe-americas text-[10px]" />
+                                  </div>
+                                  <div className="flex flex-col items-start">
+                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">All Universities</span>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Enterprise View</span>
+                                  </div>
+                                  {!selectedUniversityId && <i className="fas fa-check-circle text-indigo-600 ml-auto text-xs" />}
+                                </button>
+
+                                <div className="my-2 border-t border-slate-50 mx-3" />
+                              </>
+                            )}
+
+                            {allowedUnis.map(uni => {
+                              const available = isUniAvailable(uni.id);
+                              const isSelected = selectedUniversityId === uni.id;
+                              return (
+                                <button
+                                  key={uni.id}
+                                  disabled={!available}
+                                  onClick={() => { setSelectedUniversityId(uni.id); setIsUniOpen(false); }}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left mb-1 ${isSelected ? 'bg-indigo-50' : available ? 'hover:bg-slate-50' : 'opacity-40 cursor-not-allowed'}`}
+                                >
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    <i className="fas fa-university text-[10px]" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate">{uni.name}</span>
+                                      {!available && <span className="text-[7px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Under Const.</span>}
+                                    </div>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{uni.programs.length} Programs Registered</span>
+                                  </div>
+                                  {isSelected && <i className="fas fa-check-circle text-indigo-600 ml-auto text-xs" />}
+                                </button>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Page Content */}
         <div className="flex-1 p-8">
-          <div className="max-w-6xl mx-auto py-2">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">
-                  Program <span className="text-indigo-700">Selector</span>
-                </h1>
-                <p className="text-slate-600 text-base font-medium opacity-80">Select a program to configure contexts and view operational intelligence dashboards.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-16">
-              {(() => {
-                const filteredUnis = UNIVERSITIES.map((uni) => {
-                  const hasUni = hasUniversityAccess(permissions, uni.id);
-                  const allowedPrograms = uni.programs.filter((p) =>
-                    hasProgramAccess(permissions, p.id, uni.id)
-                  );
-                  if (hasUni || allowedPrograms.length > 0) {
-                    return {
-                      ...uni,
-                      programs: hasUni ? uni.programs : allowedPrograms,
-                    };
-                  }
-                  return null;
-                }).filter(Boolean) as University[];
-
-                return filteredUnis.map((uni) => (
-                  <div key={uni.id} className="uni-section">
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="h-8 w-1.5 rounded-full" style={{ backgroundColor: uni.accentColor }} />
-                      <div className="flex flex-col">
-                        <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{uni.fullName}</h3>
-                        <span className="text-xs font-bold text-slate-400 dark:text-gray-500 uppercase tracking-[0.25em]">{uni.location}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {uni.programs.map((p) => (
-                        <ProgramCard key={p.id} p={p} onNavigate={handleProgramClick} />
-                      ))}
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </div>
+          <Outlet />
         </div>
-
-        <footer className="py-12 border-t border-slate-200 dark:border-white/5 text-center">
-          <p className="text-[11px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-[0.4em]">
-            © 2026 EduOps360 · ADVANCED STUDENT LIFECYCLE MANAGEMENT
-          </p>
-        </footer>
       </main>
     </div>
   );

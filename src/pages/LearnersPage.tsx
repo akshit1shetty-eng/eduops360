@@ -85,62 +85,27 @@ export default function LearnersPage() {
   }, [merged]);
 
   const rows: LearnerRow[] = useMemo(() => {
-    const out: LearnerRow[] = [];
-    const seen = new Set<string>();
-
-    for (const s of students ?? []) {
-      const email = (s['Email ID'] ?? s['Email'] ?? s['GGU Student Email ID'] ?? s['GGU Email'] ?? '').trim();
-      const emailKey = email.trim().toLowerCase();
-      if (!emailKey) continue;
-
-      const cohortId = (s['Cohort ID'] ?? '').trim();
-      const cohort = (s['Cohort #'] ?? '').trim();
-      const cohortKey = cohortId || cohort;
-      const key = `${emailKey}__${cohortKey}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const statusFromStudentList = (
-        s['Actual Status'] ??
-        s['Actual status'] ??
-        s['ActualStatus'] ??
-        s['Actual_Status'] ??
-        s['Status Details'] ??
-        s['Secondary Status'] ??
-        s['Secondary status'] ??
-        s['Status'] ??
-        ''
-      ).trim();
-
-      const secondaryStatus = (programId === 'dba' ? statusFromStudentList : (s['upGrad Learner Status'] ?? s['GGU Learner Status'] ?? statusFromStudentList)).trim();
-      const learnerType = (programId === 'dba' || programId === 'mba' || programId === 'm-psych' ? (s['Batch'] ?? '').trim() : (s['Learner Type'] ?? '').trim()) || undefined;
-      const region = (s['Region'] ?? '').trim() || undefined;
-      const immersion = (s['Immersion'] ?? '').trim() || undefined;
-
-      out.push({
-        firstName: (s['First Name'] ?? '').trim(),
-        lastName: (s['Last Name'] ?? '').trim(),
-        email,
-        userId: (s['User ID'] ?? '').trim() || undefined,
-        batch: (s['Batch'] ?? '').trim() || undefined,
-        learnerType,
-        region,
-        cohort: cohort || undefined,
-        cohortId: cohortId || undefined,
-        slot: (s['Slot'] ?? '').trim() || undefined,
-        secondaryStatus,
-        immersion,
-        spoc: (s['SPOC'] ?? s['Support POC'] ?? '').trim() || undefined,
-        country: (s['Country Of Residence'] ?? s['Country of  Residence'] ?? s['Country of Residence'] ?? s['Country'] ?? '').trim() || undefined,
-        launchMonth: (s['Launch Month'] ?? '').trim() || undefined,
-        packageKey: (s['Package Key'] ?? '').trim() || undefined,
-        term: (s['Term'] ?? '').trim() || undefined,
-        aging: parseNumber(s['Aging']) ?? undefined,
-      });
-    }
-
-    return out;
-  }, [students]);
+    return merged.map(m => ({
+      firstName: m.firstName,
+      lastName: m.lastName,
+      email: m.email,
+      userId: m.userId,
+      batch: m.batch,
+      learnerType: m.learnerType,
+      region: m.region,
+      cohort: m.cohort,
+      cohortId: m.cohortId,
+      slot: m.slot,
+      secondaryStatus: m.secondaryStatus || '',
+      immersion: m.immersion,
+      spoc: m.spoc,
+      country: m.country,
+      launchMonth: m.launchMonth,
+      packageKey: m.packageKey,
+      term: m.term,
+      aging: m.aging
+    }));
+  }, [merged]);
 
   const [search, setSearch] = useState('');
   const [selectedCohorts, setSelectedCohorts] = useState<string[]>([]);
@@ -1074,7 +1039,7 @@ export default function LearnersPage() {
                     const archetypeItems = [
                       { label: 'International', val: lt.intl, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', icon: 'fa-globe-asia' },
                       { label: 'Domestic', val: lt.dom, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'fa-home' },
-                      ...(programId !== 'mba' ? [{ label: 'US Based', val: lt.us, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'fa-flag-usa' }] : [])
+                      { label: 'US Based', val: lt.us, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'fa-flag-usa' }
                     ];
 
                     return (

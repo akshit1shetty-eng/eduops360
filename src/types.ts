@@ -8,6 +8,8 @@ export type LearnerMerged = {
   email: string;
   userId?: string;
   batch?: string;
+  learnerType?: string;
+  country?: string;
   cohort?: string;
   cohortId?: string;
   status?: string;
@@ -22,6 +24,9 @@ export type LearnerMerged = {
   overallCgpa?: string;
   coursesCompleted?: string;
   coursesIncomplete?: string;
+  region?: string;
+  immersion?: string;
+  spoc?: string;
   coursework: Record<string, string | undefined>;
   courseGpa: Record<string, string | undefined>;
 };
