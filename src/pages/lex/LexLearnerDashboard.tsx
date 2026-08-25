@@ -183,22 +183,13 @@ export default function LexLearnerDashboard() {
     const launchMonthsSet = new Set<string>();
 
     const seenEmailsForStats = new Set<string>();
-    const filteredStudents = students.filter(s => {
-      const email = (
-        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
-      ).trim().toLowerCase();
-      if (!email) return false; // drop blank rows with no email
-
-      const rawStatus = v(s, 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
-      const status = normalizeSecondaryStatus(rawStatus);
-      return status !== 'deferred out' && status !== 'withdrawn';
-    });
-    const mappedRows = filteredStudents.map(s => {
-      const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
+    const filteredStudents = students;
+    const mappedRows = filteredStudents.map((s, idx) => {
+      const rawStatus = v(s, 'Secondary Status', 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Status');
       const normalized = normalizeSecondaryStatus(rawStatus);
 
-      const email = v(s, 'Email ID', 'Email', 'GGU Student Email ID', 'GGU Email');
-      const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || '';
+      const email = v(s, 'Email ID', 'Email', 'GGU Student Email ID', 'GGU Email') || v(s, 'GGU User ID', 'User ID', 'Prism User ID') || `learner-${idx + 1}`;
+      const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || `ID-${idx + 1}`;
       const term = v(s, 'Term', 'GGU Term Id', 'Current Term', 'Cohort Term') || '';
       const region = v(s, 'Region', 'Current Region', 'Geographic Region') || '';
       const country = (s['Country Of Residence'] || s['Country of Residence'] || s['Country'] || s['Country of  Residence'] || '').trim();

@@ -37,32 +37,27 @@ export default function LexDashboardHome() {
     let otherStatus = 0;
     const programsMap: Record<string, number> = {};
 
-    // Keep only rows that have a valid email and are not deferred out / withdrawn
     const seenEmails = new Set<string>();
-    const filteredStudents = students.filter(s => {
-      const email = (
-        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
-      ).trim().toLowerCase();
-      if (!email) return false; // drop completely empty / header-only rows
-
-      const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
-      const status = normalizeSecondaryStatus(rawStatus);
-      return status !== 'deferred out' && status !== 'withdrawn';
-    });
+    const filteredStudents = students;
 
     const cohortsMap: Record<string, number> = {};
     const countriesMap: Record<string, number> = {};
 
     for (const s of filteredStudents) {
-      // Deduplicate by email — one learner in multiple cohorts counts only once
+      // Deduplicate by email/id if email present, otherwise count each row
       const email = (
         s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
       ).trim().toLowerCase();
-      if (seenEmails.has(email)) continue;
-      seenEmails.add(email);
+      
+      if (email) {
+        if (seenEmails.has(email)) continue;
+        seenEmails.add(email);
+      }
 
       total++;
-      programsMap[s._programName] = (programsMap[s._programName] || 0) + 1;
+      if (s._programName) {
+        programsMap[s._programName] = (programsMap[s._programName] || 0) + 1;
+      }
 
       const cohort = v(s, 'Cohort #', 'Cohort ID', 'Cohort');
       if (cohort) cohortsMap[cohort] = (cohortsMap[cohort] || 0) + 1;
@@ -70,11 +65,11 @@ export default function LexDashboardHome() {
       const country = (s['Country Of Residence'] || s['Country of Residence'] || s['Country'] || s['Country of  Residence'] || '').trim();
       if (country) countriesMap[country] = (countriesMap[country] || 0) + 1;
 
-      const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
+      const rawStatus = v(s, 'Secondary Status', 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Status');
       const status = normalizeSecondaryStatus(rawStatus);
 
-      const isActive = isLearnerActive(rawStatus) || !status;
-      const isGraduated = status === 'completed' || status === 'graduated';
+      const isActive = status.includes('active') || isLearnerActive(rawStatus);
+      const isGraduated = status.includes('graduat') || status.includes('complet');
 
       const rawType = v(s, 'Learner Type', 'Type').toLowerCase();
       const isInt = rawType.includes('international') || rawType.includes('us');

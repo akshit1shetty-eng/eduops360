@@ -66,7 +66,10 @@ function getStudentEmail(row: StudentListRow): string {
   return (
     row['Email ID'] ??
     row['Email'] ??
+    row['GGU Email'] ??
     row['GGU Student Email ID'] ??
+    row['GGU User ID'] ??
+    row['User ID'] ??
     ''
   );
 }
@@ -110,13 +113,15 @@ function countCompletedCourses(coursework: Record<string, string | undefined>): 
   return count;
 }
 
-export function mergeLearners(options: {
+export function mergeLearners({
+  programId,
+  students,
+  grades = [],
+}: {
   programId: ProgramId;
   students: StudentListRow[];
-  grades: GradesheetRow[];
+  grades?: GradesheetRow[];
 }): LearnerMerged[] {
-  const { programId, students, grades } = options;
-
   const gradeIndex = new Map<string, GradesheetRow>();
   for (const g of grades) {
     const email = getGradesEmail(g);
@@ -129,21 +134,19 @@ export function mergeLearners(options: {
   }
 
   const result: LearnerMerged[] = [];
-  const seenKeys = new Set<string>();
 
   const studentRows = students
-    .filter((s) => normalizeEmail(getStudentEmail(s)))
-    .map((s) => {
+    .map((s, idx) => {
       const cohortId = (s['Cohort ID'] ?? '').trim();
-      const email = (getStudentEmail(s) ?? '').trim();
+      const email = (getStudentEmail(s) ?? '').trim() || `student-${idx + 1}@ggu.edu`;
 
-      const key = `${normalizeEmail(email)}__${cohortId}`;
+      const key = `${normalizeEmail(email)}__${cohortId}__${idx}`;
 
       const gradeRow =
-        gradeIndex.get(key) ??
+        gradeIndex.get(`${normalizeEmail(email)}__${cohortId}`) ??
         grades.find((g) => normalizeEmail(getGradesEmail(g)) === normalizeEmail(email));
 
-      const statusFromStudentList = v(s, 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
+      const statusFromStudentList = v(s, 'Secondary Status', 'secondary_status', 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Status');
       const statusFromGrades = v(gradeRow, 'upGrad Learner Status', 'GGU Learner Status', 'Status Details', 'Actual Status', 'Secondary Status', 'Status');
 
       const combinedStatus = statusFromStudentList || statusFromGrades;
