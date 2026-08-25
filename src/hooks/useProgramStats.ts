@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchSheetTab } from '../lib/sheets';
-import { SHEET_TABS } from '../lib/config';
+import { GGU_PROGRAM_IDS, GGU_STUDENT_LIST_SHEET_ID, GGU_STUDENT_LIST_TAB, SHEET_TABS } from '../lib/config';
+import { useGGUStudentList } from './useGGUStudentList';
 
 export interface ProgramStats {
   learnerCount: number | null;
@@ -22,7 +23,36 @@ function pickValue(row: Record<string, string>, candidates: string[]): string {
   return '';
 }
 
-export function useProgramStats(sheetId: string): ProgramStats {
+// ── GGU variant: reads from the singleton ────────────────────────────────────
+function useGguProgramStats(programId: string): ProgramStats {
+  const { rows: allRows, loading } = useGGUStudentList();
+
+  return useMemo(() => {
+    if (loading) return { learnerCount: null, cohortCount: null, loading: true, error: false };
+
+    const validRows = allRows.filter(r => Object.values(r).some(v => v && v.trim()));
+
+    const emails = new Set<string>();
+    const cohorts = new Set<string>();
+
+    for (const row of validRows) {
+      const email = pickValue(row, EMAIL_COLS).toLowerCase();
+      if (email) emails.add(email);
+      const cohort = pickValue(row, COHORT_COLS);
+      if (cohort) cohorts.add(cohort);
+    }
+
+    return {
+      learnerCount: emails.size || validRows.length,
+      cohortCount: cohorts.size,
+      loading: false,
+      error: false,
+    };
+  }, [allRows, loading]);
+}
+
+// ── Non-GGU variant: fetches the old per-program sheet ───────────────────────
+function useNonGguProgramStats(sheetId: string): ProgramStats {
   const [learnerCount, setLearnerCount] = useState<number | null>(null);
   const [cohortCount, setCohortCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,19 +73,16 @@ export function useProgramStats(sheetId: string): ProgramStats {
 
         if (cancelled) return;
 
-        // Filter out completely empty rows
         const validRows = rows.filter(r =>
           Object.values(r).some(v => v && v.trim())
         );
 
-        // Count unique learners by email
         const emails = new Set<string>();
         const cohorts = new Set<string>();
 
         for (const row of validRows) {
           const email = pickValue(row, EMAIL_COLS).toLowerCase();
           if (email) emails.add(email);
-
           const cohort = pickValue(row, COHORT_COLS);
           if (cohort) cohorts.add(cohort);
         }
@@ -74,4 +101,12 @@ export function useProgramStats(sheetId: string): ProgramStats {
   }, [sheetId]);
 
   return { learnerCount, cohortCount, loading, error };
+}
+
+// ── Public export: automatically routes GGU vs non-GGU ───────────────────────
+export function useProgramStats(sheetId: string, programId?: string): ProgramStats {
+  const isGgu = !!programId && GGU_PROGRAM_IDS.has(programId as any);
+  const gguStats = useGguProgramStats(programId || '');
+  const nonGguStats = useNonGguProgramStats(isGgu ? '' : sheetId);
+  return isGgu ? gguStats : nonGguStats;
 }

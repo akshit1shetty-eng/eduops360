@@ -37,7 +37,14 @@ export default function LexDashboardHome() {
     let otherStatus = 0;
     const programsMap: Record<string, number> = {};
 
+    // Keep only rows that have a valid email and are not deferred out / withdrawn
+    const seenEmails = new Set<string>();
     const filteredStudents = students.filter(s => {
+      const email = (
+        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
+      ).trim().toLowerCase();
+      if (!email) return false; // drop completely empty / header-only rows
+
       const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
       const status = normalizeSecondaryStatus(rawStatus);
       return status !== 'deferred out' && status !== 'withdrawn';
@@ -47,6 +54,13 @@ export default function LexDashboardHome() {
     const countriesMap: Record<string, number> = {};
 
     for (const s of filteredStudents) {
+      // Deduplicate by email — one learner in multiple cohorts counts only once
+      const email = (
+        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
+      ).trim().toLowerCase();
+      if (seenEmails.has(email)) continue;
+      seenEmails.add(email);
+
       total++;
       programsMap[s._programName] = (programsMap[s._programName] || 0) + 1;
 

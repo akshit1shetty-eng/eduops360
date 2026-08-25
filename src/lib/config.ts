@@ -117,3 +117,12 @@ export const SHEET_TABS = {
   dissertation: 'Dissertation',
   budget: 'Budget',
 } as const;
+
+// ─── GGU Consolidated Student List ───────────────────────────────────────────
+// All GGU programs share a single sheet with an "Actual Status" column instead
+// of the old per-program sheets.
+export const GGU_STUDENT_LIST_SHEET_ID = '1I0BEjbPOUN47CCwNZm3lz9oHFsSazS1uiyPcxaObLW4';
+export const GGU_STUDENT_LIST_TAB = 'upGrad Active Learner List';
+
+/** Program IDs that belong to Golden Gate University (GGU). */
+export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba', 'dba-dl', 'mba', 'm-psych']);

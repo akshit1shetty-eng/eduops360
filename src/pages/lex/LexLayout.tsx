@@ -44,7 +44,6 @@ function LexLayoutContent() {
   const navItems = [
     { name: 'Home', path: '/lex/home', icon: 'fas fa-home', permission: 'page_home' },
     { name: 'Learners', path: '/lex/learners', icon: 'fas fa-users', permission: 'page_learners' },
-    { name: 'Budget', path: '/lex/budget', icon: 'fas fa-wallet', permission: 'page_budget' },
   ].filter(item => permissions?.includes(item.permission));
 
   // Helper to check if a university is available (has at least one available program)
@@ -146,10 +145,10 @@ function LexLayoutContent() {
               padding: collapsed ? '10px 0' : '10px 12px',
               justifyContent: collapsed ? 'center' : 'flex-start',
             })}
-            title={collapsed ? "Programs" : undefined}
+            title={collapsed ? "Universities" : undefined}
           >
-            <i className="fas fa-th-large" style={{ fontSize: 14 }} />
-            {!collapsed && <span>Programs</span>}
+            <i className="fas fa-university" style={{ fontSize: 14 }} />
+            {!collapsed && <span>Universities</span>}
           </NavLink>
           {permissions?.includes('page_admin') && (
             <NavLink

@@ -125,16 +125,17 @@ export default function LexLearnerDashboard() {
         'GGU Email': raw['GGU Email'] ?? '',
         'Cohort #': raw['Cohort #'] ?? '',
         'Cohort ID': raw['Cohort ID'] ?? '',
-        'Launch Month': formatLaunchMonth(raw['Launch Month'] || ''),
-        'Term': raw['Term'] ?? '',
+        'Launch Month': formatLaunchMonth(raw['Batch Launch Month'] || raw['Launch Month'] || ''),
+        'Term': raw['GGU Term Id'] || raw['Term'] || '',
         'Learner Type': raw['Learner Type'] ?? '',
-        'Status': raw['Status'] ?? '',
+        'Status': (raw['Actual Status'] || raw['Status']) ?? '',
         'Country Of Residence': raw['Country Of Residence'] ?? '',
         'Region': raw['Region'] ?? '',
         'Contact': raw['Contact'] ?? '',
         'Package Key': raw['Package Key'] ?? '',
         'Status Details': raw['Status Details'] ?? '',
-        'Cohort Status': raw['Cohort Status'] ?? ''
+        'Cohort Status': raw['Cohort Status'] ?? '',
+        'Program': raw['Program'] ?? ''
       };
 
       const cols = selectedExportColumns.map(col => rowMap[col]);
@@ -181,7 +182,13 @@ export default function LexLearnerDashboard() {
     const statusesSet = new Set<string>();
     const launchMonthsSet = new Set<string>();
 
+    const seenEmailsForStats = new Set<string>();
     const filteredStudents = students.filter(s => {
+      const email = (
+        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
+      ).trim().toLowerCase();
+      if (!email) return false; // drop blank rows with no email
+
       const rawStatus = v(s, 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
       const status = normalizeSecondaryStatus(rawStatus);
       return status !== 'deferred out' && status !== 'withdrawn';
@@ -192,61 +199,70 @@ export default function LexLearnerDashboard() {
 
       const email = v(s, 'Email ID', 'Email', 'GGU Student Email ID', 'GGU Email');
       const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || '';
-      const term = v(s, 'Term', 'Current Term', 'Cohort Term') || '';
+      const term = v(s, 'Term', 'GGU Term Id', 'Current Term', 'Cohort Term') || '';
       const region = v(s, 'Region', 'Current Region', 'Geographic Region') || '';
       const country = (s['Country Of Residence'] || s['Country of Residence'] || s['Country'] || s['Country of  Residence'] || '').trim();
       const rawType = v(s, 'Learner Type', 'Type').toLowerCase();
-      const rawLaunch = (s['Launch Month'] || '').trim();
+      const rawLaunch = (s['Batch Launch Month'] || s['Launch Month'] || '').trim();
 
       let learnerType = 'Unknown';
       const isInt = rawType.includes('international') || rawType.includes('us');
       const isDom = rawType.includes('domestic');
 
-      if (isInt) {
-        learnerType = 'International';
-        international++;
-      } else if (isDom) {
-        learnerType = 'Domestic';
-        domestic++;
-      }
-
+      // For stats: count each unique email only once
       const isActive = isLearnerActive(rawStatus) || !normalized;
       const isGraduated = normalized === 'completed' || normalized === 'graduated';
 
       let mappedStatus = 'Inactive';
-      if (isGraduated) {
-        mappedStatus = 'Graduated';
-        graduated++;
-        if (isInt) graduatedInternational++;
-        if (isDom) graduatedDomestic++;
-      } else if (isActive) {
-        mappedStatus = 'Active';
-        active++;
-        if (isInt) activeInternational++;
-        if (isDom) activeDomestic++;
-      } else {
-        if (normalized === 'ipd' || normalized.includes('ipd') || normalized.includes('deferral') || normalized.includes('defferal')) {
-          mappedStatus = 'IPD';
-          ipd++;
-          if (isInt) ipdInternational++;
-          if (isDom) ipdDomestic++;
-        } else if (normalized === 'payment dropout' || normalized.includes('dropout') || normalized.includes('payment')) {
-          mappedStatus = 'Payment-Dropout';
-          paymentDropout++;
-          if (isInt) paymentDropoutInternational++;
-          if (isDom) paymentDropoutDomestic++;
-        } else {
-          mappedStatus = 'Other Inactive';
-          otherInactive++;
-          if (isInt) otherInactiveInternational++;
-          if (isDom) otherInactiveDomestic++;
+      if (isGraduated) mappedStatus = 'Graduated';
+      else if (isActive) mappedStatus = 'Active';
+      else if (normalized === 'ipd' || normalized.includes('ipd') || normalized.includes('deferral') || normalized.includes('defferal')) mappedStatus = 'IPD';
+      else if (normalized === 'payment dropout' || normalized.includes('dropout') || normalized.includes('payment')) mappedStatus = 'Payment-Dropout';
+      else mappedStatus = 'Other Inactive';
+
+      if (isInt) learnerType = 'International';
+      else if (isDom) learnerType = 'Domestic';
+
+      const isNewEmail = !seenEmailsForStats.has(email);
+      if (isNewEmail) {
+        seenEmailsForStats.add(email);
+
+        if (isInt) {
+          international++;
+        } else if (isDom) {
+          domestic++;
         }
-        inactive++;
-        if (isInt) inactiveInternational++;
-        if (isDom) inactiveDomestic++;
+
+        if (isGraduated) {
+          graduated++;
+          if (isInt) graduatedInternational++;
+          if (isDom) graduatedDomestic++;
+        } else if (isActive) {
+          active++;
+          if (isInt) activeInternational++;
+          if (isDom) activeDomestic++;
+        } else {
+          if (normalized === 'ipd' || normalized.includes('ipd') || normalized.includes('deferral') || normalized.includes('defferal')) {
+            ipd++;
+            if (isInt) ipdInternational++;
+            if (isDom) ipdDomestic++;
+          } else if (normalized === 'payment dropout' || normalized.includes('dropout') || normalized.includes('payment')) {
+            paymentDropout++;
+            if (isInt) paymentDropoutInternational++;
+            if (isDom) paymentDropoutDomestic++;
+          } else {
+            otherInactive++;
+            if (isInt) otherInactiveInternational++;
+            if (isDom) otherInactiveDomestic++;
+          }
+          inactive++;
+          if (isInt) inactiveInternational++;
+          if (isDom) inactiveDomestic++;
+        }
+
+        total++;
       }
 
-      total++;
       programsSet.add(s._programName);
       if (country) countriesSet.add(country);
       const cohort = v(s, 'Cohort #', 'Cohort ID', 'Cohort') || '-';

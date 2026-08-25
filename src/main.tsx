@@ -7,6 +7,8 @@ import eduopsFaviconUrl from './assets/eduops.png'
 import AppPreloader from './components/AppPreloader.tsx'
 import Layout from './components/Layout.tsx'
 import ProgramSelectorPage from './pages/ProgramSelectorPage.tsx'
+import UniversityProgramsPage from './pages/UniversityProgramsPage.tsx'
+import UniversityOverviewPage from './pages/UniversityOverviewPage.tsx'
 import DashboardPage from './pages/DashboardPage.tsx'
 import LearnerProfilePage from './pages/LearnerProfilePage.tsx'
 import LearnersPage from './pages/LearnersPage.tsx'
@@ -71,16 +73,26 @@ const router = createBrowserRouter([
   },
 
   // ── Protected: Program Selector ────────────────────────────────────────────
-  {
-    element: <ProtectedRoute />,
-    children: [
       {
-        path: '/programs',
-        element: <ProgramSelectorPage />,
-        errorElement: <ErrorPage />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: '/programs',
+            element: <ProgramSelectorPage />,
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: '/programs/:uniId',
+            element: <UniversityProgramsPage />,
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: '/programs/:uniId/overview',
+            element: <UniversityOverviewPage />,
+            errorElement: <ErrorPage />,
+          },
+        ],
       },
-    ],
-  },
 
   // ── Protected: Lex (Overall Dashboard) ─────────────────────────────────────
   {

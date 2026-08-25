@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../../lib/authService';
+import { authService, HARDCODED_SYSTEM_ROLES } from '../../lib/authService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Profile, Role } from '../../lib/authService';
 import { UNIVERSITIES } from '../../lib/universities';
@@ -55,13 +55,12 @@ export default function AdminPanel() {
   // Custom Role Form State
   const [roleName, setRoleName] = useState('');
   const [roleDescription, setRoleDescription] = useState('');
-  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
   const [editingRoleName, setEditingRoleName] = useState<string | null>(null);
-
+  const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
   // User Form State
   const [formEmail, setFormEmail] = useState('');
   const [formFullName, setFormFullName] = useState('');
-  const [formRole, setFormRole] = useState('user');
+  const [formRole, setFormRole] = useState('super admin');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // Bulk Upload State
@@ -71,7 +70,7 @@ export default function AdminPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bulkInputEmail, setBulkInputEmail] = useState('');
   const [bulkInputName, setBulkInputName] = useState('');
-  const [bulkInputRole, setBulkInputRole] = useState('user');
+  const [bulkInputRole, setBulkInputRole] = useState('super admin');
 
   // Fetch everything
   const loadData = useCallback(async () => {
@@ -87,7 +86,8 @@ export default function AdminPanel() {
       if (rolesRes.error) throw new Error(rolesRes.error.message);
 
       setProfiles(profilesRes.data || []);
-      setRoles(rolesRes.data || []);
+      const loadedRoles = rolesRes.data && rolesRes.data.length >= HARDCODED_SYSTEM_ROLES.length ? rolesRes.data : HARDCODED_SYSTEM_ROLES;
+      setRoles(loadedRoles);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to fetch database information');
     } finally {
@@ -114,7 +114,7 @@ export default function AdminPanel() {
   const openAddUser = () => {
     setFormEmail('');
     setFormFullName('');
-    setFormRole(roles[0]?.name || 'user');
+    setFormRole(roles[0]?.name || 'super admin');
     setShowAddUserModal(true);
   };
 
@@ -580,10 +580,10 @@ export default function AdminPanel() {
                 </button>
               </>
             ) : (
-              <button onClick={openCreateRole} style={styles.primaryBtnActionPurple}>
-                <i className="fas fa-plus-circle" />
-                <span>Create Custom Role</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+                <i className="fas fa-shield-alt text-indigo-500" />
+                <span>Pre-coded System Roles</span>
+              </div>
             )}
           </div>
         </div>

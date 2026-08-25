@@ -77,7 +77,7 @@ export const UNIVERSITIES: University[] = [
     name: 'Paris School of Business',
     fullName: 'Paris School of Business',
     location: 'Paris, France',
-    accentColor: '#ef4444',
+    accentColor: '#f59e0b',
     programs: [
       {
         id: 'psb-mba',
@@ -122,7 +122,7 @@ export const UNIVERSITIES: University[] = [
     name: 'Edgewood University',
     fullName: 'Edgewood University',
     location: 'Madison, Wisconsin, USA',
-    accentColor: '#f59e0b',
+    accentColor: '#ef4444',
     programs: [
       {
         id: 'edgewood-dba',
@@ -158,7 +158,7 @@ export function getAssignedUniversityId(role: string | undefined): string | null
 
 export function hasUniversityAccess(permissions: string[] | undefined, uniId: string): boolean {
   if (!permissions) return false;
-  if (permissions.includes('page_admin') || permissions.includes('page_home')) {
+  if (permissions.includes('page_admin') || permissions.includes('uni_all')) {
     return true;
   }
   return permissions.includes(`uni_${uniId}`);
@@ -166,7 +166,7 @@ export function hasUniversityAccess(permissions: string[] | undefined, uniId: st
 
 export function hasProgramAccess(permissions: string[] | undefined, programId: string, programUniId: string): boolean {
   if (!permissions) return false;
-  if (permissions.includes('page_admin') || permissions.includes('page_home')) {
+  if (permissions.includes('page_admin') || permissions.includes('uni_all')) {
     return true;
   }
   if (permissions.includes(`uni_${programUniId}`)) {

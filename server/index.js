@@ -72,8 +72,7 @@ db.exec(`
 // Always reset/overwrite system roles to ensure the new schema is applied
 try {
   db.exec('PRAGMA foreign_keys = OFF;');
-  db.exec('DELETE FROM roles WHERE is_system = 1');
-  db.exec("DELETE FROM roles WHERE name IN ('ggu level', 'psb level', 'esgci level', 'edgewood level')");
+  db.exec('DELETE FROM roles');
 
   const insertRole = db.prepare('INSERT OR REPLACE INTO roles (name, description, permissions, is_system) VALUES (?, ?, ?, ?)');
 
@@ -81,7 +80,6 @@ try {
   const superAdminPerms = [
     'page_home',
     'page_learners',
-    'page_budget',
     'page_program_dash',
     'page_live_sessions',
     'page_immersion',
@@ -89,7 +87,8 @@ try {
     'page_academic_perf',
     'page_admin',
     'action_edit_users',
-    'action_edit_budgets'
+    'action_edit_budgets',
+    'uni_all'
   ];
   insertRole.run('super admin', 'Super Administrator with full access to all panels and dashboards', JSON.stringify(superAdminPerms), 1);
 
@@ -97,45 +96,38 @@ try {
   const adminPerms = [
     'page_home',
     'page_learners',
-    'page_budget',
     'page_program_dash',
     'page_live_sessions',
     'page_immersion',
     'page_dissertation',
     'page_academic_perf',
-    'action_edit_budgets'
+    'action_edit_budgets',
+    'uni_all'
   ];
   insertRole.run('admin', 'Administrator with full access except Admin Panel and user editing', JSON.stringify(adminPerms), 1);
 
+  // 3. University Specific Viewers
+  insertRole.run('ggu viewer', 'Golden Gate University Viewer (Restricted to GGU details only)', JSON.stringify(['page_home', 'page_learners', 'uni_ggu']), 1);
+  insertRole.run('psb viewer', 'Paris School of Business Viewer (Restricted to PSB details only)', JSON.stringify(['page_home', 'page_learners', 'uni_psb']), 1);
+  insertRole.run('edgewood viewer', 'Edgewood University Viewer (Restricted to Edgewood details only)', JSON.stringify(['page_home', 'page_learners', 'uni_edgewood']), 1);
+  insertRole.run('esgci viewer', 'ESGCI Viewer (Restricted to ESGCI details only)', JSON.stringify(['page_home', 'page_learners', 'uni_esgci']), 1);
 
 } catch (err) {
   console.error('[SQLite DB Error] Failed to seed roles:', err);
 }
 
-// Pre-populate profiles if empty, then migrate all existing profiles to 'super admin'
-const countProfiles = db.prepare('SELECT COUNT(*) as count FROM profiles').all();
-const hasProfiles = countProfiles && countProfiles[0] && countProfiles[0].count > 0;
+// Pre-populate profiles with university-specific users
+try {
+  const insertProfile = db.prepare('INSERT OR REPLACE INTO profiles (id, email, role, full_name, created_at) VALUES (?, ?, ?, ?, ?)');
 
-if (!hasProfiles) {
-  const insertProfile = db.prepare('INSERT INTO profiles (id, email, role, full_name, created_at) VALUES (?, ?, ?, ?, ?)');
-
-  insertProfile.run(
-    'admin-shetty-id',
-    'akshit1.shetty@upgrad.com',
-    'super admin',
-    'Akshit Shetty',
-    new Date('2026-05-30T12:00:00Z').toISOString()
-  );
-
-  insertProfile.run(
-    'user-regular-id',
-    'user@example.com',
-    'super admin',
-    'Regular User',
-    new Date('2026-05-30T12:05:00Z').toISOString()
-  );
-
-
+  insertProfile.run('admin-shetty-id', 'akshit1.shetty@upgrad.com', 'super admin', 'Akshit Shetty', new Date().toISOString());
+  insertProfile.run('user-standard-id', 'standard.user@upgrad.com', 'user', 'Standard User', new Date().toISOString());
+  insertProfile.run('user-ggu-id', 'ggu.user@upgrad.com', 'ggu viewer', 'GGU Manager', new Date().toISOString());
+  insertProfile.run('user-psb-id', 'psb.user@upgrad.com', 'psb viewer', 'PSB Manager', new Date().toISOString());
+  insertProfile.run('user-edgewood-id', 'edgewood.user@upgrad.com', 'edgewood viewer', 'Edgewood Manager', new Date().toISOString());
+  insertProfile.run('user-esgci-id', 'esgci.user@upgrad.com', 'esgci viewer', 'ESGCI Manager', new Date().toISOString());
+} catch (err) {
+  console.error('[SQLite DB Error] Failed to seed profiles:', err);
 }
 
 // Ensure foreign keys are enabled
