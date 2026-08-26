@@ -80,7 +80,7 @@ export function getLearnerCategory(rawStatus: string | undefined, row?: any): Le
   if (row) {
     const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
     const normU = normalizeSecondaryStatus(colU);
-    if (normU === 'inactive') return 'IPD';
+    if (normU === 'inactive' || normU === 'loa') return 'IPD';
     if (normU === 'exit') return 'Other Inactive';
   }
 

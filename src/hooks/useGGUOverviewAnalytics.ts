@@ -209,7 +209,7 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
           statusMap[programMatch].exit += 1;
           totalExit += 1;
           countedRows += 1;
-        } else if (colU === 'inactive') {
+        } else if (colU === 'inactive' || colU === 'loa') {
           statusMap[programMatch].inactive += 1;
           totalInactive += 1;
           countedRows += 1;
@@ -415,7 +415,7 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
       if (!programMatch) return;
 
       const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
-      const isUValid = colU === 'active' || colU === 'exit' || colU === 'inactive';
+      const isUValid = colU === 'active' || colU === 'exit' || colU === 'inactive' || colU === 'loa';
 
       const actualStatus = (v(r, 'Actual Status', 'Secondary Status', 'Status') || '').trim();
       const normR = normalizeSecondaryStatus(actualStatus);
