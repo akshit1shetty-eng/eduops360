@@ -38,7 +38,7 @@ export function useUniversityLearnerStats(universityId: string) {
       });
 
       return {
-        total: statusTotals?.grandTotal ?? statusTotals?.total ?? 0,
+        total: statusTotals?.grandTotal ?? 0,
         active: statusTotals?.active ?? 0,
         graduated: graduatedFromColR,
       };
