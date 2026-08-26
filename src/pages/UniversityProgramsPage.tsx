@@ -330,19 +330,19 @@ export default function UniversityProgramsPage() {
               <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-center min-w-[90px]">
                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Total Learners</div>
                 <div className="text-sm font-black text-white">
-                  {uniStatsLoading ? <StatSkeleton /> : total.toLocaleString()}
+                  {uniStatsLoading ? <StatSkeleton /> : (total ?? 0).toLocaleString()}
                 </div>
               </div>
               <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-center min-w-[90px]">
                 <div className="text-[8px] font-black text-emerald-400 uppercase tracking-wider mb-0.5">Active</div>
                 <div className="text-sm font-black text-emerald-300">
-                  {uniStatsLoading ? <StatSkeleton /> : active.toLocaleString()}
+                  {uniStatsLoading ? <StatSkeleton /> : (active ?? 0).toLocaleString()}
                 </div>
               </div>
               <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-center min-w-[90px]">
                 <div className="text-[8px] font-black text-indigo-400 uppercase tracking-wider mb-0.5">Graduated</div>
                 <div className="text-sm font-black text-indigo-300">
-                  {uniStatsLoading ? <StatSkeleton /> : graduated.toLocaleString()}
+                  {uniStatsLoading ? <StatSkeleton /> : (graduated ?? 0).toLocaleString()}
                 </div>
               </div>
             </div>
@@ -405,7 +405,7 @@ export default function UniversityProgramsPage() {
                     Total Enrolled
                   </div>
                   <div className="text-base font-black text-indigo-950">
-                    {gguLoading ? <StatSkeleton /> : (statusTotals?.grandTotal || 6933).toLocaleString()}
+                    {gguLoading ? <StatSkeleton /> : (statusTotals?.grandTotal || total).toLocaleString()}
                   </div>
                 </div>
 
@@ -415,7 +415,7 @@ export default function UniversityProgramsPage() {
                     Active Learners
                   </div>
                   <div className="text-base font-black text-emerald-950">
-                    {gguLoading ? <StatSkeleton /> : (statusTotals?.active || 5096).toLocaleString()}
+                    {gguLoading ? <StatSkeleton /> : (statusTotals?.active || active).toLocaleString()}
                   </div>
                 </div>
 
@@ -425,17 +425,17 @@ export default function UniversityProgramsPage() {
                     Exit Learners
                   </div>
                   <div className="text-base font-black text-amber-950">
-                    {gguLoading ? <StatSkeleton /> : (statusTotals?.exit || 1607).toLocaleString()}
+                    {gguLoading ? <StatSkeleton /> : (statusTotals?.exit || 0).toLocaleString()}
                   </div>
                 </div>
 
                 <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-3">
                   <div className="flex items-center gap-1.5 text-[10px] font-black text-rose-700 uppercase tracking-wider mb-1">
                     <span className="w-2 h-2 rounded-full bg-rose-600" />
-                    Inactive Learners
+                    LOA
                   </div>
                   <div className="text-base font-black text-rose-950">
-                    {gguLoading ? <StatSkeleton /> : (statusTotals?.inactive || 230).toLocaleString()}
+                    {gguLoading ? <StatSkeleton /> : (statusTotals?.inactive || 0).toLocaleString()}
                   </div>
                 </div>
               </div>

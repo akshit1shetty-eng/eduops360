@@ -14,6 +14,7 @@ import { GGU_PROGRAM_IDS, PROGRAMS, SHEET_TABS } from '../lib/config';
 import { fetchSheetTab } from '../lib/sheets';
 import { useGGUStudentList } from './useGGUStudentList';
 import { UNIVERSITIES } from '../lib/universities';
+import { v } from '../lib/logic';
 import type { StudentListRow } from '../types';
 
 export interface CrossProgramLearner extends StudentListRow {
@@ -87,7 +88,7 @@ export function useAllLearnerData(universityId?: string | null) {
 
     return gguRows
       .filter(r => {
-        const colU = (r['GGU Data Type'] || r['col_20'] || '').trim();
+        const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim();
         return colU !== '';
       })
       .map(r => ({

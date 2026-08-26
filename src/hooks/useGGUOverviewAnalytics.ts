@@ -95,20 +95,25 @@ function getRowCountry(r: Record<string, string>): string {
   return v(r, 'Country Of Residence', 'Country', 'country_name', 'current_country', 'nationality') || '';
 }
 
-/** Extract Term from raw sheet record */
+/** Extract Term from Column K ("GGU Term Id") or raw sheet record */
 function getRowTerm(r: Record<string, string>): string {
+  if (r['GGU Term Id'] && r['GGU Term Id'].trim()) return r['GGU Term Id'].trim();
   if (r['Term'] && r['Term'].trim()) return r['Term'].trim();
   if (r['Intake Term'] && r['Intake Term'].trim()) return r['Intake Term'].trim();
   if (r['Term Code'] && r['Term Code'].trim()) return r['Term Code'].trim();
 
-  for (const k of Object.keys(r)) {
+  // Column K in GGU Master Learner list is 11th column (index 10)
+  const keys = Object.keys(r);
+  if (keys[10] && r[keys[10]] && r[keys[10]].trim()) return r[keys[10]].trim();
+
+  for (const k of keys) {
     const lk = k.toLowerCase().trim();
-    if (lk.includes('term') || lk.includes('cohort')) {
+    if (lk === 'ggu term id' || lk === 'term' || lk === 'col_10' || lk.includes('term')) {
       if (r[k] && r[k].trim()) return r[k].trim();
     }
   }
 
-  return v(r, 'Term', 'intake_term', 'term_code', 'cohort') || '';
+  return v(r, 'GGU Term Id', 'Term', 'intake_term', 'term_code', 'cohort') || '';
 }
 
 export interface GGUOverviewAnalyticsResult {
@@ -232,32 +237,26 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
       };
     });
 
-    // Helper function to pivot termLevelActive dynamically by selected countries
-    const getFilteredTermActive = (selectedCountries: string[]): TermActiveRow[] => {
-      if (selectedCountries.length === 0) {
-        return BASELINE_TERM_LEVEL_ACTIVE;
-      }
-
-      const normSelected = selectedCountries.map(c => c.toLowerCase().trim());
-
-      const filteredRows = rows.filter(r => {
-        const country = getRowCountry(r).toLowerCase().trim();
-        return normSelected.some(sc => country === sc || country.includes(sc) || sc.includes(country));
-      });
-
-      if (filteredRows.length === 0) {
-        return [];
-      }
-
-      // Group filtered rows by term
+    // Helper function to pivot termLevelActive dynamically matching Excel formula:
+    // =COUNTIFS('Master Learner list'!$K:$K, $A9, 'Master Learner list'!$U:$U, "Active", 'Master Learner list'!$T:$T, B$8)
+    const computeTermActiveMatrix = (targetRows: Record<string, string>[]): TermActiveRow[] => {
       const termMap: Record<string, Record<string, number>> = {};
 
-      filteredRows.forEach(r => {
-        const term = getRowTerm(r) || 'Other';
-        const rawProgram = getRowProgram(r);
+      targetRows.forEach(r => {
+        // Condition 1: Column U (GGU Data Type) must be "Active"
+        const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
+        if (colU !== 'active') return;
 
+        // Condition 2: Column K (GGU Term Id / Term)
+        const term = getRowTerm(r);
+        if (!term || term.toLowerCase() === 'other') return;
+
+        // Condition 3: Column T (Program)
+        const rawProgram = getRowProgram(r);
         const programMatch = GGU_PROGRAMS.find(p => p.toLowerCase() === rawProgram.toLowerCase()) ||
           GGU_PROGRAMS.find(p => rawProgram.toLowerCase().includes(p.toLowerCase().replace('ggu ', '')));
+
+        if (!programMatch) return;
 
         if (!termMap[term]) {
           termMap[term] = {
@@ -272,9 +271,7 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
           };
         }
 
-        if (programMatch && termMap[term][programMatch] !== undefined) {
-          termMap[term][programMatch] += 1;
-        }
+        termMap[term][programMatch] += 1;
       });
 
       const terms = Object.keys(termMap).sort();
@@ -303,6 +300,22 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
           grandTotal,
         };
       });
+    };
+
+    const termLevelActive = computeTermActiveMatrix(rows);
+
+    const getFilteredTermActive = (selectedCountries: string[]): TermActiveRow[] => {
+      if (selectedCountries.length === 0) {
+        return termLevelActive;
+      }
+
+      const normSelected = selectedCountries.map(c => c.toLowerCase().trim());
+      const filteredRows = rows.filter(r => {
+        const country = getRowCountry(r).toLowerCase().trim();
+        return normSelected.some(sc => country === sc || country.includes(sc) || sc.includes(country));
+      });
+
+      return computeTermActiveMatrix(filteredRows);
     };
 
     // Live Cohort Graduation calculation based on exact Excel formulas

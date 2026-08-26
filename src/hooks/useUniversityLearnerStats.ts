@@ -1,50 +1,66 @@
 import { useMemo } from 'react';
 import { useAllLearnerData } from './useAllLearnerData';
-import { v, normalizeSecondaryStatus, isLearnerActive } from '../lib/logic';
+import { useGGUStudentList } from './useGGUStudentList';
+import { useGGUOverviewAnalytics } from './useGGUOverviewAnalytics';
+import { v, isLearnerActive, isLearnerGraduated } from '../lib/logic';
 
 export function useUniversityLearnerStats(universityId: string) {
-  const { students, loading } = useAllLearnerData(universityId);
+  const { students, loading: allLoading } = useAllLearnerData(universityId);
+  const { rows: gguRows } = useGGUStudentList();
+  const { statusTotals, loading: gguLoading } = useGGUOverviewAnalytics();
+
+  const isGGU = universityId === 'ggu';
+  const loading = isGGU ? gguLoading : allLoading;
 
   const stats = useMemo(() => {
-    let total = 0;
+    if (isGGU) {
+      let graduatedFromColR = 0;
+      const targetRows = gguRows && gguRows.length > 0 ? gguRows : students;
+
+      targetRows.forEach(s => {
+        const rawColR = (
+          s['Actual Status'] ||
+          s['Actual status'] ||
+          s['actual_status'] ||
+          v(s, 'Actual Status', 'actual_status', 'Learner Status', 'Secondary Status', 'Status') ||
+          ''
+        ).replace(/\u00a0/g, ' ').trim().toLowerCase();
+
+        if (
+          rawColR.includes('graduat') ||
+          rawColR.includes('complet') ||
+          rawColR.includes('alumni') ||
+          rawColR.includes('passed') ||
+          rawColR.startsWith('grad')
+        ) {
+          graduatedFromColR += 1;
+        }
+      });
+
+      return {
+        total: statusTotals?.grandTotal ?? statusTotals?.total ?? 0,
+        active: statusTotals?.active ?? 0,
+        graduated: graduatedFromColR,
+      };
+    }
+
+    const total = students.length;
     let active = 0;
     let graduated = 0;
 
-    const seenEmails = new Set<string>();
-    const filteredStudents = students.filter(s => {
-      const email = (
-        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
-      ).trim().toLowerCase();
-      if (!email) return false;
+    students.forEach(s => {
+      const rawStatus = (v(s, 'Actual Status', 'Learner Status', 'Secondary Status', 'Status Details', 'Status') || '').trim();
 
-      const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
-      const status = normalizeSecondaryStatus(rawStatus);
-      return status !== 'deferred out' && status !== 'withdrawn';
+      if (isLearnerActive(rawStatus, s)) {
+        active += 1;
+      }
+      if (isLearnerGraduated(rawStatus)) {
+        graduated += 1;
+      }
     });
 
-    for (const s of filteredStudents) {
-      const email = (
-        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
-      ).trim().toLowerCase();
-      if (seenEmails.has(email)) continue;
-      seenEmails.add(email);
-
-      total++;
-      const rawStatus = v(s, 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Secondary Status', 'Status');
-      const status = normalizeSecondaryStatus(rawStatus);
-
-      const isActive = isLearnerActive(rawStatus) || !status;
-      const isGraduated = status === 'completed' || status === 'graduated';
-
-      if (isGraduated) {
-        graduated++;
-      } else if (isActive) {
-        active++;
-      }
-    }
-
     return { total, active, graduated };
-  }, [students]);
+  }, [students, gguRows, universityId, isGGU, statusTotals]);
 
   return { loading, ...stats };
 }
