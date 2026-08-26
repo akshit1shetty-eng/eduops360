@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
 import { UNIVERSITIES } from '../../lib/universities';
-import { v, normalizeSecondaryStatus, isLearnerActive } from '../../lib/logic';
+import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
 
 function StatSkeleton() {
   return <div className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />;
@@ -37,23 +37,12 @@ export default function LexDashboardHome() {
     let otherStatus = 0;
     const programsMap: Record<string, number> = {};
 
-    const seenEmails = new Set<string>();
     const filteredStudents = students;
 
     const cohortsMap: Record<string, number> = {};
     const countriesMap: Record<string, number> = {};
 
     for (const s of filteredStudents) {
-      // Deduplicate by email/id if email present, otherwise count each row
-      const email = (
-        s['Email ID'] || s['Email'] || s['GGU Email'] || s['GGU Student Email ID'] || ''
-      ).trim().toLowerCase();
-      
-      if (email) {
-        if (seenEmails.has(email)) continue;
-        seenEmails.add(email);
-      }
-
       total++;
       if (s._programName) {
         programsMap[s._programName] = (programsMap[s._programName] || 0) + 1;
@@ -62,39 +51,31 @@ export default function LexDashboardHome() {
       const cohort = v(s, 'Cohort #', 'Cohort ID', 'Cohort');
       if (cohort) cohortsMap[cohort] = (cohortsMap[cohort] || 0) + 1;
 
-      const country = (s['Country Of Residence'] || s['Country of Residence'] || s['Country'] || s['Country of  Residence'] || '').trim();
+      const country = (v(s, 'Country Of Residence', 'Country of Residence', 'Country', 'Country of  Residence') || '').trim();
       if (country) countriesMap[country] = (countriesMap[country] || 0) + 1;
 
-      const rawStatus = v(s, 'Secondary Status', 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Status');
-      const status = normalizeSecondaryStatus(rawStatus);
+      const rawStatus = v(s, 'Actual Status', 'Secondary Status', 'Learner Status', 'Status Details', 'Status');
+      const category = getLearnerCategory(rawStatus, s);
+      const residency = getLearnerResidency(s);
 
-      const isActive = status.includes('active') || isLearnerActive(rawStatus);
-      const isGraduated = status.includes('graduat') || status.includes('complet');
+      const isInt = residency === 'International';
+      const isDom = residency === 'Domestic';
 
-      const rawType = v(s, 'Learner Type', 'Type').toLowerCase();
-      const isInt = rawType.includes('international') || rawType.includes('us');
-      const isDom = rawType.includes('domestic');
+      if (isInt) international++;
+      else if (isDom) domestic++;
 
-      if (isInt) {
-        international++;
-      } else if (isDom) {
-        domestic++;
-      }
-
-      if (isGraduated) {
-        graduated++;
-      } else if (isActive) {
+      if (category === 'Active') {
         active++;
         if (isInt) activeInternational++;
         if (isDom) activeDomestic++;
+      } else if (category === 'Graduated') {
+        graduated++;
+      } else if (category === 'IPD') {
+        ipd++;
+      } else if (category === 'Payment-Dropout') {
+        paymentDropout++;
       } else {
-        if (status === 'ipd' || status.includes('ipd') || status.includes('deferral') || status.includes('defferal')) {
-          ipd++;
-        } else if (status === 'payment dropout' || status.includes('dropout') || status.includes('payment')) {
-          paymentDropout++;
-        } else {
-          otherStatus++;
-        }
+        otherStatus++;
       }
     }
 
@@ -282,7 +263,7 @@ export default function LexDashboardHome() {
               <div className="text-xl font-black text-slate-900 tracking-tight mb-0.5">
                 {loading ? <StatSkeleton /> : stats.otherStatus.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">Other Inactive</div>
+              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">LOA</div>
             </div>
           </div>
         </div>

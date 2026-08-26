@@ -80,17 +80,22 @@ export function useAllLearnerData(universityId?: string | null) {
   }, [universityId]);
 
   // Convert GGU rows (tagged with Program column) into CrossProgramLearner.
-  // The `Program` column (col T) holds the program name from the sheet.
+  // Filter for rows where Column U (GGU Data Type) is non-blank.
   const gguStudents = useMemo<CrossProgramLearner[]>(() => {
     // Filter by university if needed
     if (universityId && universityId !== 'ggu') return [];
 
-    return gguRows.map(r => ({
-      ...r,
-      _programId: 'ggu',
-      // Use the Program column as the display name; fall back to 'GGU'
-      _programName: (r['Program'] || 'GGU').trim(),
-    }));
+    return gguRows
+      .filter(r => {
+        const colU = (r['GGU Data Type'] || r['col_20'] || '').trim();
+        return colU !== '';
+      })
+      .map(r => ({
+        ...r,
+        _programId: 'ggu',
+        // Use the Program column as the display name; fall back to 'GGU'
+        _programName: (r['Program'] || 'GGU').trim(),
+      }));
   }, [gguRows, universityId]);
 
   const students = useMemo<CrossProgramLearner[]>(() => {

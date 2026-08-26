@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
-import { v, normalizeSecondaryStatus, isLearnerActive } from '../../lib/logic';
+import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
 import FilterDropdown from '../../components/FilterDropdown';
 
 function StatSkeleton() {
@@ -25,8 +25,8 @@ function statusClass(status: string): string {
   const s = (status || '').trim().toLowerCase();
   if (s.includes('active')) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
   if (s.includes('completed') || s.includes('graduated')) return 'bg-purple-50 text-purple-700 border-purple-100';
-  if (s.includes('defer')) return 'bg-amber-50 text-amber-700 border-amber-100';
-  if (s.includes('withdrawn')) return 'bg-rose-50 text-rose-700 border-rose-100';
+  if (s.includes('defer') || s.includes('ipd')) return 'bg-amber-50 text-amber-700 border-amber-100';
+  if (s.includes('withdrawn') || s.includes('dropout')) return 'bg-rose-50 text-rose-700 border-rose-100';
   return 'bg-slate-50 text-slate-700 border-slate-100';
 }
 
@@ -182,76 +182,55 @@ export default function LexLearnerDashboard() {
     const statusesSet = new Set<string>();
     const launchMonthsSet = new Set<string>();
 
-    const seenEmailsForStats = new Set<string>();
     const filteredStudents = students;
     const mappedRows = filteredStudents.map((s, idx) => {
-      const rawStatus = v(s, 'Secondary Status', 'Learner Status', 'Actual Status', 'Actual status', 'Status Details', 'Status');
-      const normalized = normalizeSecondaryStatus(rawStatus);
+      const rawStatus = v(s, 'Actual Status', 'Secondary Status', 'Learner Status', 'Status Details', 'Status');
+      const mappedStatus = getLearnerCategory(rawStatus, s);
 
-      const email = v(s, 'Email ID', 'Email', 'GGU Student Email ID', 'GGU Email') || v(s, 'GGU User ID', 'User ID', 'Prism User ID') || `learner-${idx + 1}`;
+      const email = v(s, 'Email ID', 'GGU Email', 'Email', 'GGU Student Email ID') || v(s, 'GGU User ID', 'User ID', 'Prism User ID') || `learner-${idx + 1}`;
       const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || `ID-${idx + 1}`;
       const term = v(s, 'Term', 'GGU Term Id', 'Current Term', 'Cohort Term') || '';
       const region = v(s, 'Region', 'Current Region', 'Geographic Region') || '';
-      const country = (s['Country Of Residence'] || s['Country of Residence'] || s['Country'] || s['Country of  Residence'] || '').trim();
-      const rawType = v(s, 'Learner Type', 'Type').toLowerCase();
-      const rawLaunch = (s['Batch Launch Month'] || s['Launch Month'] || '').trim();
+      const country = (v(s, 'Country Of Residence', 'Country of Residence', 'Country', 'Country of  Residence') || '').trim();
+      const rawLaunch = (v(s, 'Batch Launch Month', 'Launch Month') || '').trim();
 
-      let learnerType = 'Unknown';
-      const isInt = rawType.includes('international') || rawType.includes('us');
-      const isDom = rawType.includes('domestic');
+      const learnerType = getLearnerResidency(s);
+      const isInt = learnerType === 'International';
+      const isDom = learnerType === 'Domestic';
 
-      // For stats: count each unique email only once
-      const isActive = isLearnerActive(rawStatus) || !normalized;
-      const isGraduated = normalized === 'completed' || normalized === 'graduated';
+      total++;
 
-      let mappedStatus = 'Inactive';
-      if (isGraduated) mappedStatus = 'Graduated';
-      else if (isActive) mappedStatus = 'Active';
-      else if (normalized === 'ipd' || normalized.includes('ipd') || normalized.includes('deferral') || normalized.includes('defferal')) mappedStatus = 'IPD';
-      else if (normalized === 'payment dropout' || normalized.includes('dropout') || normalized.includes('payment')) mappedStatus = 'Payment-Dropout';
-      else mappedStatus = 'Other Inactive';
+      if (isInt) {
+        international++;
+      } else if (isDom) {
+        domestic++;
+      }
 
-      if (isInt) learnerType = 'International';
-      else if (isDom) learnerType = 'Domestic';
-
-      const isNewEmail = !seenEmailsForStats.has(email);
-      if (isNewEmail) {
-        seenEmailsForStats.add(email);
-
-        if (isInt) {
-          international++;
-        } else if (isDom) {
-          domestic++;
-        }
-
-        if (isGraduated) {
-          graduated++;
-          if (isInt) graduatedInternational++;
-          if (isDom) graduatedDomestic++;
-        } else if (isActive) {
-          active++;
-          if (isInt) activeInternational++;
-          if (isDom) activeDomestic++;
+      if (mappedStatus === 'Graduated') {
+        graduated++;
+        if (isInt) graduatedInternational++;
+        if (isDom) graduatedDomestic++;
+      } else if (mappedStatus === 'Active') {
+        active++;
+        if (isInt) activeInternational++;
+        if (isDom) activeDomestic++;
+      } else {
+        if (mappedStatus === 'IPD') {
+          ipd++;
+          if (isInt) ipdInternational++;
+          if (isDom) ipdDomestic++;
+        } else if (mappedStatus === 'Payment-Dropout') {
+          paymentDropout++;
+          if (isInt) paymentDropoutInternational++;
+          if (isDom) paymentDropoutDomestic++;
         } else {
-          if (normalized === 'ipd' || normalized.includes('ipd') || normalized.includes('deferral') || normalized.includes('defferal')) {
-            ipd++;
-            if (isInt) ipdInternational++;
-            if (isDom) ipdDomestic++;
-          } else if (normalized === 'payment dropout' || normalized.includes('dropout') || normalized.includes('payment')) {
-            paymentDropout++;
-            if (isInt) paymentDropoutInternational++;
-            if (isDom) paymentDropoutDomestic++;
-          } else {
-            otherInactive++;
-            if (isInt) otherInactiveInternational++;
-            if (isDom) otherInactiveDomestic++;
-          }
-          inactive++;
-          if (isInt) inactiveInternational++;
-          if (isDom) inactiveDomestic++;
+          otherInactive++;
+          if (isInt) otherInactiveInternational++;
+          if (isDom) otherInactiveDomestic++;
         }
-
-        total++;
+        inactive++;
+        if (isInt) inactiveInternational++;
+        if (isDom) inactiveDomestic++;
       }
 
       programsSet.add(s._programName);
@@ -731,7 +710,7 @@ export default function LexLearnerDashboard() {
                   {loading ? <StatSkeleton /> : stats.otherInactive.toLocaleString()}
                 </div>
               </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Other Inactive</div>
+              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">LOA</div>
 
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">

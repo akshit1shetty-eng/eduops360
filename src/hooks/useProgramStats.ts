@@ -30,7 +30,20 @@ function useGguProgramStats(programId: string): ProgramStats {
   return useMemo(() => {
     if (loading) return { learnerCount: null, cohortCount: null, loading: true, error: false };
 
-    const validRows = allRows.filter(r => Object.values(r).some(v => v && v.trim()));
+    const validRows = allRows.filter(r => {
+      const hasContent = Object.values(r).some(v => v && v.trim());
+      if (!hasContent) return false;
+      if (!programId) return true;
+
+      const rowProg = (r['Program'] || '').toLowerCase().trim();
+      const pId = programId.toLowerCase().trim();
+
+      // Normalize comparison (e.g. dba-et -> dba et)
+      const normPId = pId.replace(/-/g, ' ');
+      const normRow = rowProg.replace(/^ggu\s+/, '').replace(/-/g, ' ');
+
+      return normRow.includes(normPId) || normPId.includes(normRow);
+    });
 
     const emails = new Set<string>();
     const cohorts = new Set<string>();
@@ -43,12 +56,12 @@ function useGguProgramStats(programId: string): ProgramStats {
     }
 
     return {
-      learnerCount: emails.size || validRows.length,
+      learnerCount: validRows.length,
       cohortCount: cohorts.size,
       loading: false,
       error: false,
     };
-  }, [allRows, loading]);
+  }, [allRows, loading, programId]);
 }
 
 // ── Non-GGU variant: fetches the old per-program sheet ───────────────────────

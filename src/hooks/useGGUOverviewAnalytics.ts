@@ -20,7 +20,7 @@ import {
   type CohortCountRow,
   type TermActiveRow,
 } from '../lib/gguOverviewData';
-import { v, normalizeSecondaryStatus, isLearnerActive } from '../lib/logic';
+import { v, normalizeSecondaryStatus, isLearnerActive, isLearnerGraduated } from '../lib/logic';
 
 const GGU_PROGRAMS = [
   'GGU DBA',
@@ -50,22 +50,25 @@ function getRowProgram(r: Record<string, string>): string {
   return v(r, 'Program', 'program_name', 'programname', 'course') || '';
 }
 
-/** Extract Status from Column M (or Secondary Status column) */
+/** Extract Status (prefer Column U GGU Data Type, then Actual Status from Column R) */
 function getRowStatus(r: Record<string, string>): string {
+  const colU = v(r, 'GGU Data Type', 'ggu_data_type', 'col_20');
+  if (colU && colU.trim()) {
+    const normU = colU.trim().toLowerCase();
+    if (normU === 'active') return 'Active';
+  }
+  if (r['Actual Status'] && r['Actual Status'].trim()) return r['Actual Status'].trim();
   if (r['Secondary Status'] && r['Secondary Status'].trim()) return r['Secondary Status'].trim();
   if (r['Status'] && r['Status'].trim()) return r['Status'].trim();
 
   for (const k of Object.keys(r)) {
     const lk = k.toLowerCase().trim();
-    if (lk === 'secondary status' || lk === 'status' || lk === 'student status' || lk === 'col_12') {
+    if (lk === 'actual status' || lk === 'actual_status' || lk === 'secondary status' || lk === 'status' || lk === 'student status' || lk === 'col_17' || lk === 'col_12') {
       if (r[k] && r[k].trim()) return r[k].trim();
     }
   }
 
-  const keys = Object.keys(r);
-  if (keys[12] && r[keys[12]] && r[keys[12]].trim()) return r[keys[12]].trim();
-
-  return v(r, 'Secondary Status', 'secondary_status', 'Status', 'student_status', 'active_status') || '';
+  return v(r, 'Actual Status', 'actual_status', 'Secondary Status', 'secondary_status', 'Status', 'student_status', 'active_status') || '';
 }
 
 /** Extract Country from Column N ("Country Of Residence") */
@@ -185,31 +188,28 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
     let totalInactive = 0;
     let countedRows = 0;
 
-    rows.forEach(r => {
-      const rawProgram = getRowProgram(r);
-      const rawStatus = getRowStatus(r);
+    // Filter rows for non-blank Column U (GGU Data Type)
+    const validRows = rows.filter(r => (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim() !== '');
 
-      if (!rawProgram && !rawStatus) return;
+    validRows.forEach(r => {
+      const rawProgram = getRowProgram(r);
+      const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
+
+      if (!rawProgram || !colU) return;
 
       const programMatch = GGU_PROGRAMS.find(p => p.toLowerCase() === rawProgram.toLowerCase()) ||
         GGU_PROGRAMS.find(p => rawProgram.toLowerCase().includes(p.toLowerCase().replace('ggu ', '')));
 
       if (programMatch && statusMap[programMatch]) {
-        const norm = normalizeSecondaryStatus(rawStatus);
-
-        if (isLearnerActive(rawStatus) || norm.includes('active') || norm.includes('registered') || norm.includes('coursework')) {
+        if (colU === 'active') {
           statusMap[programMatch].active += 1;
           totalActive += 1;
           countedRows += 1;
-        } else if (norm.includes('exit') || norm.includes('dropout') || norm.includes('disqualified') || norm.includes('graduat') || norm.includes('alumni') || norm.includes('cancel') || norm.includes('terminate') || norm.includes('withdraw')) {
+        } else if (colU === 'exit') {
           statusMap[programMatch].exit += 1;
           totalExit += 1;
           countedRows += 1;
-        } else if (norm.includes('inactive') || norm.includes('break') || norm.includes('defer') || norm.includes('suspend')) {
-          statusMap[programMatch].inactive += 1;
-          totalInactive += 1;
-          countedRows += 1;
-        } else if (norm) {
+        } else if (colU === 'inactive') {
           statusMap[programMatch].inactive += 1;
           totalInactive += 1;
           countedRows += 1;
@@ -305,6 +305,206 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
       });
     };
 
+    // Live Cohort Graduation calculation based on exact Excel formulas
+    const closedGradMap: Record<string, { totalEnrolment: number; graduatedLearners: number }> = {};
+    const activeGradMap: Record<string, { totalEnrolment: number; graduatedLearners: number }> = {};
+    GGU_PROGRAMS.forEach(p => {
+      closedGradMap[p] = { totalEnrolment: 0, graduatedLearners: 0 };
+      activeGradMap[p] = { totalEnrolment: 0, graduatedLearners: 0 };
+    });
+
+    rows.forEach(r => {
+      const rawProgram = getRowProgram(r);
+      const rawStatus = getRowStatus(r);
+      const programMatch = GGU_PROGRAMS.find(p => p.toLowerCase() === rawProgram.toLowerCase()) ||
+        GGU_PROGRAMS.find(p => rawProgram.toLowerCase().includes(p.toLowerCase().replace('ggu ', '')));
+
+      if (!programMatch || !closedGradMap[programMatch]) return;
+
+      const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
+      const isUActiveOrExit = colU === 'active' || colU === 'exit';
+
+      const isGrad = isLearnerGraduated(rawStatus);
+      const cohortStatus = normalizeSecondaryStatus(r['Cohort Status'] || '');
+      const isClosed = cohortStatus.includes('closed') || cohortStatus.includes('close');
+
+      if (isClosed) {
+        if (isUActiveOrExit) {
+          closedGradMap[programMatch].totalEnrolment += 1;
+        }
+        if (isGrad) {
+          closedGradMap[programMatch].graduatedLearners += 1;
+        }
+      } else {
+        if (isUActiveOrExit) {
+          activeGradMap[programMatch].totalEnrolment += 1;
+        }
+        if (isGrad) {
+          activeGradMap[programMatch].graduatedLearners += 1;
+        }
+      }
+    });
+
+    let closedTotalEnrolment = 0;
+    let closedTotalGraduated = 0;
+    const closedCohortGraduation: GraduationRow[] = GGU_PROGRAMS.map(program => {
+      const { totalEnrolment, graduatedLearners } = closedGradMap[program] || { totalEnrolment: 0, graduatedLearners: 0 };
+      closedTotalEnrolment += totalEnrolment;
+      closedTotalGraduated += graduatedLearners;
+      return {
+        program,
+        totalEnrolment,
+        graduatedLearners,
+        graduationPct: totalEnrolment > 0 ? Number(((graduatedLearners / totalEnrolment) * 100).toFixed(2)) : null,
+      };
+    });
+
+    const closedCohortTotal = {
+      totalEnrolment: closedTotalEnrolment,
+      graduatedLearners: closedTotalGraduated,
+      graduationPct: closedTotalEnrolment > 0 ? Number(((closedTotalGraduated / closedTotalEnrolment) * 100).toFixed(2)) : 0,
+    };
+
+    let activeTotalEnrolment = 0;
+    let activeTotalGraduated = 0;
+    const activeCohortGraduation: GraduationRow[] = GGU_PROGRAMS.map(program => {
+      const { totalEnrolment, graduatedLearners } = activeGradMap[program] || { totalEnrolment: 0, graduatedLearners: 0 };
+      activeTotalEnrolment += totalEnrolment;
+      activeTotalGraduated += graduatedLearners;
+      return {
+        program,
+        totalEnrolment,
+        graduatedLearners,
+        graduationPct: totalEnrolment > 0 ? Number(((graduatedLearners / totalEnrolment) * 100).toFixed(2)) : null,
+      };
+    });
+
+    const activeCohortTotal = {
+      totalEnrolment: activeTotalEnrolment,
+      graduatedLearners: activeTotalGraduated,
+      graduationPct: activeTotalEnrolment > 0 ? Number(((activeTotalGraduated / activeTotalEnrolment) * 100).toFixed(2)) : 0,
+    };
+
+    // Live Retention & Cohort Counts calculation based on exact Excel formulas
+    const activeRetentionMap: Record<string, { enrolment: number; dropout: number }> = {};
+    const historicalRetentionMap: Record<string, { enrolment: number; dropout: number }> = {};
+    const cohortsMap: Record<string, Set<string>> = {};
+    const liveCohortsMap: Record<string, Set<string>> = {};
+
+    GGU_PROGRAMS.forEach(p => {
+      activeRetentionMap[p] = { enrolment: 0, dropout: 0 };
+      historicalRetentionMap[p] = { enrolment: 0, dropout: 0 };
+      cohortsMap[p] = new Set<string>();
+      liveCohortsMap[p] = new Set<string>();
+    });
+
+    const DROPOUT_STATUSES_SET = new Set([
+      'disqualified',
+      'payment-dropout',
+      'payment dropout',
+      'refunded',
+      'withdrawn',
+      'dropped'
+    ]);
+
+    rows.forEach(r => {
+      const rawProgram = getRowProgram(r);
+      const programMatch = GGU_PROGRAMS.find(p => p.toLowerCase() === rawProgram.toLowerCase()) ||
+        GGU_PROGRAMS.find(p => rawProgram.toLowerCase().includes(p.toLowerCase().replace('ggu ', '')));
+
+      if (!programMatch) return;
+
+      const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
+      const isUValid = colU === 'active' || colU === 'exit' || colU === 'inactive';
+
+      const actualStatus = (v(r, 'Actual Status', 'Secondary Status', 'Status') || '').trim();
+      const normR = normalizeSecondaryStatus(actualStatus);
+      // Exclude 'Disqualified / IPD' explicitly from Dropout count
+      const isDropout = !normR.includes('ipd') && (
+        DROPOUT_STATUSES_SET.has(normR) ||
+        normR === 'disqualified' ||
+        normR.includes('payment-dropout') || normR.includes('payment dropout') ||
+        normR.includes('refunded') || normR.includes('withdrawn') || normR.includes('dropped')
+      );
+
+      const cohortStatus = normalizeSecondaryStatus(r['Cohort Status'] || '');
+      const isActiveCohort = cohortStatus.includes('active');
+
+      const cohort = v(r, 'Cohort #', 'Cohort ID', 'Cohort', 'Batch Launch Month', 'GGU Term Id');
+      if (cohort) {
+        cohortsMap[programMatch].add(cohort);
+        if (isActiveCohort) {
+          liveCohortsMap[programMatch].add(cohort);
+        }
+      }
+
+      // 1. Retention Active Cohort (Cohort Status S:S = "Active")
+      if (isActiveCohort) {
+        if (isUValid) {
+          activeRetentionMap[programMatch].enrolment += 1;
+        }
+        if (isDropout) {
+          activeRetentionMap[programMatch].dropout += 1;
+        }
+      }
+
+      // 2. Historical Retention (All Cohorts)
+      if (isUValid) {
+        historicalRetentionMap[programMatch].enrolment += 1;
+      }
+      if (isDropout) {
+        historicalRetentionMap[programMatch].dropout += 1;
+      }
+    });
+
+    const retentionActiveCohort: RetentionRow[] = GGU_PROGRAMS.map(program => {
+      const { enrolment, dropout } = activeRetentionMap[program] || { enrolment: 0, dropout: 0 };
+      const total = enrolment + dropout;
+      const pct = total > 0 ? Number(((enrolment / total) * 100).toFixed(2)) : 0;
+      return { program, totalEnrolment: enrolment, disqualifiedDropout: dropout, total, retentionPct: pct };
+    });
+
+    const retentionActiveTotal = (() => {
+      const totalEnrolment = retentionActiveCohort.reduce((a, c) => a + c.totalEnrolment, 0);
+      const disqualifiedDropout = retentionActiveCohort.reduce((a, c) => a + c.disqualifiedDropout, 0);
+      const total = totalEnrolment + disqualifiedDropout;
+      const pct = total > 0 ? Number(((totalEnrolment / total) * 100).toFixed(2)) : 0;
+      return { totalEnrolment, disqualifiedDropout, total, retentionPct: pct };
+    })();
+
+    const historicalRetention: RetentionRow[] = GGU_PROGRAMS.map(program => {
+      const { enrolment, dropout } = historicalRetentionMap[program] || { enrolment: 0, dropout: 0 };
+      const total = enrolment + dropout;
+      const pct = total > 0 ? Number(((enrolment / total) * 100).toFixed(2)) : 0;
+      return { program, totalEnrolment: enrolment, disqualifiedDropout: dropout, total, retentionPct: pct };
+    });
+
+    const historicalRetentionTotal = (() => {
+      const totalEnrolment = historicalRetention.reduce((a, c) => a + c.totalEnrolment, 0);
+      const disqualifiedDropout = historicalRetention.reduce((a, c) => a + c.disqualifiedDropout, 0);
+      const total = totalEnrolment + disqualifiedDropout;
+      const pct = total > 0 ? Number(((totalEnrolment / total) * 100).toFixed(2)) : 0;
+      return { totalEnrolment, disqualifiedDropout, total, retentionPct: pct };
+    })();
+
+    const cohortCounts: CohortCountRow[] = GGU_PROGRAMS.map(program => {
+      const allTimeCohorts = cohortsMap[program]?.size || 0;
+      const liveCohorts = liveCohortsMap[program]?.size || 0;
+      const closedCohorts = Math.max(0, allTimeCohorts - liveCohorts);
+      return {
+        program,
+        allTimeCohorts,
+        liveCohorts,
+        closedCohorts,
+      };
+    });
+
+    const cohortTotals = {
+      allTimeCohorts: cohortCounts.reduce((a, c) => a + c.allTimeCohorts, 0),
+      liveCohorts: cohortCounts.reduce((a, c) => a + c.liveCohorts, 0),
+      closedCohorts: cohortCounts.reduce((a, c) => a + c.closedCohorts, 0),
+    };
+
     return {
       loading: false,
       totalRawRows: rows.length,
@@ -314,17 +514,17 @@ export function useGGUOverviewAnalytics(): GGUOverviewAnalyticsResult {
       statusTotals: isCalculatedLive
         ? { active: totalActive, exit: totalExit, inactive: totalInactive, grandTotal: totalActive + totalExit + totalInactive }
         : BASELINE_STATUS_TOTALS,
-      retentionActiveCohort: BASELINE_RETENTION_ACTIVE,
-      retentionActiveTotal: BASELINE_RETENTION_ACTIVE_TOTAL,
-      historicalRetention: BASELINE_HISTORICAL_RETENTION,
-      historicalRetentionTotal: BASELINE_HISTORICAL_RETENTION_TOTAL,
-      closedCohortGraduation: BASELINE_CLOSED_GRADUATION,
-      closedCohortTotal: BASELINE_CLOSED_TOTAL,
-      activeCohortGraduation: BASELINE_ACTIVE_GRADUATION,
-      activeCohortTotal: BASELINE_ACTIVE_GRADUATION_TOTAL,
-      cohortCounts: BASELINE_COHORT_COUNTS,
-      cohortTotals: BASELINE_COHORT_TOTAL,
-      termLevelActive: BASELINE_TERM_LEVEL_ACTIVE,
+      retentionActiveCohort: isCalculatedLive ? retentionActiveCohort : BASELINE_RETENTION_ACTIVE,
+      retentionActiveTotal: isCalculatedLive ? retentionActiveTotal : BASELINE_RETENTION_ACTIVE_TOTAL,
+      historicalRetention: isCalculatedLive ? historicalRetention : BASELINE_HISTORICAL_RETENTION,
+      historicalRetentionTotal: isCalculatedLive ? historicalRetentionTotal : BASELINE_HISTORICAL_RETENTION_TOTAL,
+      closedCohortGraduation: isCalculatedLive ? closedCohortGraduation : BASELINE_CLOSED_GRADUATION,
+      closedCohortTotal: isCalculatedLive ? closedCohortTotal : BASELINE_CLOSED_TOTAL,
+      activeCohortGraduation: isCalculatedLive ? activeCohortGraduation : BASELINE_ACTIVE_GRADUATION,
+      activeCohortTotal: isCalculatedLive ? activeCohortTotal : BASELINE_ACTIVE_GRADUATION_TOTAL,
+      cohortCounts: isCalculatedLive ? cohortCounts : BASELINE_COHORT_COUNTS,
+      cohortTotals: isCalculatedLive ? cohortTotals : BASELINE_COHORT_TOTAL,
+      termLevelActive: isCalculatedLive ? getFilteredTermActive([]) : BASELINE_TERM_LEVEL_ACTIVE,
       getFilteredTermActive,
     };
   }, [rows, loading, allCountries]);

@@ -25,6 +25,7 @@ export interface CohortCountRow {
   program: string;
   allTimeCohorts: number;
   liveCohorts: number;
+  closedCohorts: number;
 }
 
 export interface TermActiveRow {
@@ -135,19 +136,20 @@ export const ACTIVE_COHORT_GRADUATION_TOTAL = {
 
 // 6. Number of Cohorts
 export const COHORT_COUNTS: CohortCountRow[] = [
-  { program: 'GGU DBA', allTimeCohorts: 27, liveCohorts: 27 },
-  { program: 'GGU MBA', allTimeCohorts: 32, liveCohorts: 11 },
-  { program: 'GGU DBA ET', allTimeCohorts: 14, liveCohorts: 14 },
-  { program: 'GGU MPsych', allTimeCohorts: 3, liveCohorts: 3 },
-  { program: 'GGU DBA DL', allTimeCohorts: 2, liveCohorts: 2 },
-  { program: 'GGU SJD', allTimeCohorts: 4, liveCohorts: 1 },
-  { program: 'GGU MBA SA', allTimeCohorts: 31, liveCohorts: 11 },
-  { program: 'GGU Bachelors SA', allTimeCohorts: 18, liveCohorts: 7 },
+  { program: 'GGU DBA', allTimeCohorts: 40, liveCohorts: 40, closedCohorts: 0 },
+  { program: 'GGU MBA', allTimeCohorts: 32, liveCohorts: 11, closedCohorts: 21 },
+  { program: 'GGU DBA ET', allTimeCohorts: 14, liveCohorts: 14, closedCohorts: 0 },
+  { program: 'GGU MPsych', allTimeCohorts: 3, liveCohorts: 3, closedCohorts: 0 },
+  { program: 'GGU DBA DL', allTimeCohorts: 2, liveCohorts: 2, closedCohorts: 0 },
+  { program: 'GGU SJD', allTimeCohorts: 4, liveCohorts: 0, closedCohorts: 4 },
+  { program: 'GGU MBA SA', allTimeCohorts: 38, liveCohorts: 11, closedCohorts: 27 },
+  { program: 'GGU Bachelors SA', allTimeCohorts: 49, liveCohorts: 37, closedCohorts: 12 },
 ];
 
 export const COHORT_COUNTS_TOTAL = {
-  allTimeCohorts: 131,
-  liveCohorts: 76,
+  allTimeCohorts: 182,
+  liveCohorts: 118,
+  closedCohorts: 64,
 };
 
 // 7. Term Level Active Matrix

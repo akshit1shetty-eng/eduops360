@@ -17,6 +17,10 @@ const ACTIVE_SECONDARY_STATUSES_SET = new Set([
   normalizeSecondaryStatus('Registered'),
   normalizeSecondaryStatus('Coursework Phase'),
   normalizeSecondaryStatus('Active (Prospective Deferral)'),
+  normalizeSecondaryStatus('Active / SA to Online'),
+  normalizeSecondaryStatus('Active / 2nd Year'),
+  normalizeSecondaryStatus('Re - Admitted'),
+  normalizeSecondaryStatus('Re Registration yet to be processed'),
 ]);
 
 export function v(row: any, ...possibleKeys: string[]): string {
@@ -26,17 +30,75 @@ export function v(row: any, ...possibleKeys: string[]): string {
     const normalizedSearch = search.toLowerCase().replace(/[^a-z0-9]/g, '');
     for (const k of rowKeys) {
       if (k.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedSearch) {
-        return (row[k] ?? '').toString().trim();
+        const val = (row[k] ?? '').toString().trim();
+        if (val !== '') return val;
       }
     }
   }
   return '';
 }
 
-export function isLearnerActive(status: string | undefined): boolean {
+export function isLearnerActive(status: string | undefined, row?: any): boolean {
+  if (row) {
+    const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
+    if (colU && normalizeSecondaryStatus(colU) === 'active') return true;
+  }
   if (!status) return false;
   const s = normalizeSecondaryStatus(status);
   return ACTIVE_SECONDARY_STATUSES_SET.has(s) || s.includes('active') || s.includes('enrolled') || s.includes('coursework');
+}
+
+export function isLearnerGraduated(status: string | undefined): boolean {
+  if (!status) return false;
+  const s = normalizeSecondaryStatus(status);
+  return s.includes('graduat') || s.includes('complet');
+}
+
+export function isLearnerIPD(status: string | undefined): boolean {
+  if (!status) return false;
+  const s = normalizeSecondaryStatus(status);
+  return s === 'ipd' || s.includes('ipd') || s.includes('defer') || s.includes('defferal');
+}
+
+export function isLearnerPaymentDropout(status: string | undefined): boolean {
+  if (!status) return false;
+  const s = normalizeSecondaryStatus(status);
+  return s.includes('payment dropout') || s.includes('dropout') || s.includes('payment');
+}
+
+export type LearnerStatusCategory = 'Active' | 'Graduated' | 'IPD' | 'Payment-Dropout' | 'Other Inactive';
+
+export function getLearnerCategory(rawStatus: string | undefined, row?: any): LearnerStatusCategory {
+  if (row) {
+    const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
+    if (colU && normalizeSecondaryStatus(colU) === 'active') return 'Active';
+  }
+  if (isLearnerGraduated(rawStatus)) return 'Graduated';
+  if (isLearnerIPD(rawStatus)) return 'IPD';
+  if (isLearnerPaymentDropout(rawStatus)) return 'Payment-Dropout';
+
+  if (row) {
+    const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
+    const normU = normalizeSecondaryStatus(colU);
+    if (normU === 'inactive') return 'IPD';
+    if (normU === 'exit') return 'Other Inactive';
+  }
+
+  if (isLearnerActive(rawStatus)) return 'Active';
+  return 'Other Inactive';
+}
+
+export function getLearnerResidency(row: any): 'International' | 'Domestic' {
+  const rawType = v(row, 'Learner Type', 'Type').toLowerCase();
+  const country = (v(row, 'Country Of Residence', 'Country of Residence', 'Country', 'Country of  Residence') || '').trim().toLowerCase();
+
+  if (rawType.includes('international') || rawType.includes('us')) return 'International';
+  if (rawType.includes('domestic')) return 'Domestic';
+
+  if (country === 'india') return 'Domestic';
+  if (country) return 'International';
+
+  return 'Domestic';
 }
 
 export const NEEDS_ATTENTION_STATUSES = ['Active', 'Active (Prospective Deferral)'] as const;
@@ -134,6 +196,7 @@ export function mergeLearners({
   }
 
   const result: LearnerMerged[] = [];
+  const seenKeys = new Set<string>();
 
   const studentRows = students
     .map((s, idx) => {
