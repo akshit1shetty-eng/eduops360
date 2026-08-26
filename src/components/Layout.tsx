@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useProgramConfig } from '../hooks/useProgramConfig';
 import { useAuth } from '../hooks/useAuth';
+import { UNIVERSITIES } from '../lib/universities';
 
 
 function SidebarLink(props: { to: string; label: string; iconClass: string; collapsed: boolean }) {
@@ -30,6 +31,11 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut, profile } = useAuth();
+
+  const targetUni = UNIVERSITIES.find(u =>
+    u.programs.some(p => p.id === programId || programId.startsWith(p.id.split('-')[0]))
+  );
+  const backToProgramsPath = targetUni ? `/programs/${targetUni.id}` : '/programs/ggu';
 
   const handleLogout = async () => {
     await signOut();
@@ -91,7 +97,7 @@ export default function Layout() {
         >
           <button
             className="sidebar-logo-btn"
-            onClick={() => navigate('/programs')}
+            onClick={() => navigate(backToProgramsPath)}
             title="Back to Programs"
             style={{
               padding: collapsed ? '8px 0' : '8px',
@@ -124,45 +130,75 @@ export default function Layout() {
 
         {/* Nav section */}
         <div className="sidebar-nav-section" style={{ padding: collapsed ? '16px 8px' : '16px 12px' }}>
-          <nav className="sidebar-nav">
-            <SidebarLink to={`/${programId}/dashboard`} label="Dashboard" iconClass="fas fa-th-large" collapsed={collapsed} />
-            <SidebarLink to={`/${programId}/learners`} label="Learners" iconClass="fas fa-users" collapsed={collapsed} />
-          </nav>
+          {(() => {
+            const isDissertationPhase = programId === 'dba-dissertation' || programId.includes('dissertation') || location.pathname.includes('/dissertation');
+            const isTaughtPhase = programId === 'dba-taught' || programId.includes('taught');
 
-          {programId !== 'mba' && programId !== 'm-psych' && (
-            <>
-              {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Coursework Phase</div>}
-              {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
-            </>
-          )}
-          <nav className="sidebar-nav">
-            {programId !== 'mba' && programId !== 'dba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
-              <SidebarLink to={`/${programId}/live-sessions`} label="Live Sessions" iconClass="fas fa-video" collapsed={collapsed} />
-            )}
-            {programId !== 'mba' && programId !== 'm-psych' && (
-              <SidebarLink to={`/${programId}/academic-performance`} label="Academic Performance" iconClass="fas fa-chart-line" collapsed={collapsed} />
-            )}
-          </nav>
+            if (isDissertationPhase) {
+              return (
+                <>
+                  {!collapsed && (
+                    <div className="sidebar-section-label" style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>
+                      Dissertation Phase
+                    </div>
+                  )}
+                  {collapsed && (
+                    <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />
+                  )}
+                  <nav className="sidebar-nav" style={{ marginTop: collapsed ? 0 : 8 }}>
+                    <SidebarLink to={`/${programId}/dashboard`} label="Dissertation Overview" iconClass="fas fa-chart-pie" collapsed={collapsed} />
+                    <SidebarLink to={`/${programId}/learners`} label="Dissertation Candidates" iconClass="fas fa-user-graduate" collapsed={collapsed} />
+                    <SidebarLink to={`/${programId}/dissertation`} label="Dissertation Summary" iconClass="fas fa-scroll" collapsed={collapsed} />
+                  </nav>
+                </>
+              );
+            }
 
-          {programId !== 'mba' && programId !== 'm-psych' && (
-            <>
-              {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Dissertation Phase</div>}
-              {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
-              <nav className="sidebar-nav">
-                <SidebarLink to={`/${programId}/dissertation`} label="Dissertation" iconClass="fas fa-scroll" collapsed={collapsed} />
-              </nav>
-            </>
-          )}
+            return (
+              <>
+                <nav className="sidebar-nav">
+                  <SidebarLink to={`/${programId}/dashboard`} label="Dashboard" iconClass="fas fa-th-large" collapsed={collapsed} />
+                  <SidebarLink to={`/${programId}/learners`} label="Learners" iconClass="fas fa-users" collapsed={collapsed} />
+                </nav>
 
-          {programId !== 'dba' && programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
-            <>
-              {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Immersion</div>}
-              {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
-              <nav className="sidebar-nav">
-                <SidebarLink to={`/${programId}/immersion`} label="Immersion" iconClass="fas fa-globe-americas" collapsed={collapsed} />
-              </nav>
-            </>
-          )}
+                {/* Coursework Phase - Only for Taught Phase or general programs */}
+                {programId !== 'mba' && programId !== 'm-psych' && (
+                  <>
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Coursework Phase</div>}
+                    {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
+                    <nav className="sidebar-nav">
+                      {programId !== 'mba' && programId !== 'dba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
+                        <SidebarLink to={`/${programId}/live-sessions`} label="Live Sessions" iconClass="fas fa-video" collapsed={collapsed} />
+                      )}
+                      <SidebarLink to={`/${programId}/academic-performance`} label="Academic Performance" iconClass="fas fa-chart-line" collapsed={collapsed} />
+                    </nav>
+                  </>
+                )}
+
+                {/* Dissertation Phase - Only for general DBA programs if any */}
+                {!isTaughtPhase && programId !== 'mba' && programId !== 'm-psych' && (
+                  <>
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Dissertation Phase</div>}
+                    {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
+                    <nav className="sidebar-nav">
+                      <SidebarLink to={`/${programId}/dissertation`} label="Dissertation Summary" iconClass="fas fa-scroll" collapsed={collapsed} />
+                    </nav>
+                  </>
+                )}
+
+                {/* Immersion - Only for non-dissertation / non-dba programs */}
+                {programId !== 'dba' && programId !== 'dba-taught' && programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
+                  <>
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Immersion</div>}
+                    {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
+                    <nav className="sidebar-nav">
+                      <SidebarLink to={`/${programId}/immersion`} label="Immersion" iconClass="fas fa-globe-americas" collapsed={collapsed} />
+                    </nav>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* User Profile & Logout section */}
@@ -240,7 +276,7 @@ export default function Layout() {
             </div>
           </div>
           <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button className="topbar-icon-btn topbar-back-btn" title="Back to Programs" onClick={() => navigate('/programs')}>
+            <button className="topbar-icon-btn topbar-back-btn" title="Back to Programs" onClick={() => navigate(backToProgramsPath)}>
               <i className="fas fa-arrow-left" style={{ fontSize: '12px' }} />
               <span>Back to Programs</span>
             </button>

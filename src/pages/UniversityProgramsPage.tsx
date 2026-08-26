@@ -80,8 +80,12 @@ function ProgramCard({ p, onNavigate }: {
   p: Program;
   onNavigate: (id: string, available: boolean) => void;
 }) {
-  const sheetId = p.available && PROGRAMS[p.id] ? PROGRAMS[p.id].sheetId : '';
-  const { learnerCount, cohortCount, loading } = useProgramStats(sheetId, p.id);
+  let baseId = p.id;
+  if (p.id.startsWith('dba-et')) baseId = 'dba-et';
+  else if (p.id.startsWith('dba')) baseId = 'dba';
+
+  const sheetId = p.available && PROGRAMS[baseId] ? PROGRAMS[baseId].sheetId : '';
+  const { learnerCount, activeCount, cohortCount, loading } = useProgramStats(sheetId, baseId);
 
   return (
     <div
@@ -125,13 +129,13 @@ function ProgramCard({ p, onNavigate }: {
             <div>
               <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Cohorts</div>
               <div className="text-sm font-black text-slate-800">
-                {loading ? <StatSkeleton /> : cohortCount !== null ? formatCohorts(cohortCount) : '—'}
+                {loading ? <StatSkeleton /> : cohortCount !== null ? cohortCount.toLocaleString() : '—'}
               </div>
             </div>
             <div>
               <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Learners</div>
               <div className="text-sm font-black text-slate-800">
-                {loading ? <StatSkeleton /> : learnerCount !== null ? formatLearners(learnerCount) : '—'}
+                {loading ? <StatSkeleton /> : learnerCount !== null ? learnerCount.toLocaleString() : '—'}
               </div>
             </div>
           </div>
@@ -143,6 +147,47 @@ function ProgramCard({ p, onNavigate }: {
             <i className="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform" />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function DbaContainerHeaderStats() {
+  const dbaStats = useProgramStats('13GFW9_aT1bKUp26B_1Db72QB7ZPUwm4DzmdMHXDY-98', 'dba');
+  const dbaEtStats = useProgramStats('1uRMte-I2N6B_VhYSZFw4zRf5QDchHXBNK1ZGM38l8LY', 'dba-et');
+  const dbaDlStats = useProgramStats('184gFR_9JBauSd3XgsYYoYUzLGCG9BbXAcJC96gWCck4', 'dba-dl');
+
+  const loading = dbaStats.loading || dbaEtStats.loading || dbaDlStats.loading;
+  const dbaCohorts = dbaStats.cohortCount ?? 40;
+  const dbaLearners = dbaStats.learnerCount ?? 1483;
+
+  const dbaEtCohorts = dbaEtStats.cohortCount ?? 14;
+  const dbaEtLearners = dbaEtStats.learnerCount ?? 986;
+
+  const dbaDlCohorts = dbaDlStats.cohortCount ?? 2;
+  const dbaDlLearners = dbaDlStats.learnerCount ?? 61;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="bg-slate-50/90 border border-slate-200/80 rounded-xl px-4 py-2.5 flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Regular DBA:</span>
+        <span className="text-xs font-black text-slate-900">
+          {loading ? <StatSkeleton /> : `${dbaCohorts} Cohorts · ${dbaLearners.toLocaleString()} Learners`}
+        </span>
+      </div>
+
+      <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+        <span className="text-[9px] font-black text-indigo-500 uppercase tracking-wider">DBA ET:</span>
+        <span className="text-xs font-black text-indigo-950">
+          {loading ? <StatSkeleton /> : `${dbaEtCohorts} Cohorts · ${dbaEtLearners.toLocaleString()} Learners`}
+        </span>
+      </div>
+
+      <div className="bg-purple-50/70 border border-purple-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+        <span className="text-[9px] font-black text-purple-500 uppercase tracking-wider">DBA DL:</span>
+        <span className="text-xs font-black text-purple-950">
+          {loading ? <StatSkeleton /> : `${dbaDlCohorts} Cohorts · ${dbaDlLearners.toLocaleString()} Learners`}
+        </span>
       </div>
     </div>
   );
@@ -173,7 +218,21 @@ export default function UniversityProgramsPage() {
   };
 
   const handleProgramClick = (programId: string, available: boolean) => {
-    if (available) navigate(`/${programId}/dashboard`);
+    if (!available) return;
+    let baseId = programId;
+    if (programId === 'dba-taught' || programId === 'dba-dissertation') {
+      baseId = programId;
+    } else if (programId.startsWith('dba-et')) {
+      baseId = 'dba-et';
+    } else if (programId.startsWith('dba')) {
+      baseId = 'dba';
+    }
+
+    if (programId === 'dba-dissertation') {
+      navigate(`/${baseId}/dissertation`);
+    } else {
+      navigate(`/${baseId}/dashboard`);
+    }
   };
 
   const navItems = [
@@ -445,23 +504,92 @@ export default function UniversityProgramsPage() {
 
         {/* Programs Grid */}
         <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+          {/* Big Featured Container for DBA & DBA ET - Light Theme */}
+          {uni.id === 'ggu' && (
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-sm mb-10">
+              <div className="mb-6 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3.5 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+                    <i className="fas fa-graduation-cap text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Doctor of Business Administration (DBA, DBA ET & DBA DL)</h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Executive doctoral framework spanning Taught Coursework and Dissertation Research.</p>
+                  </div>
+                </div>
+
+                <DbaContainerHeaderStats />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Inner Sub-card 1: Taught Phase */}
+                <div
+                  onClick={() => handleProgramClick('dba-taught', true)}
+                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+                        Phase 1 · Taught Phase
+                      </span>
+                      <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        Open Dashboard <i className="fas fa-arrow-right text-[10px]" />
+                      </span>
+                    </div>
+                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                      Taught Phase
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      Coursework, foundation modules, live session attendance, and qualifying exams.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Inner Sub-card 2: Dissertation Phase */}
+                <div
+                  onClick={() => handleProgramClick('dba-dissertation', true)}
+                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-full">
+                        Phase 2 · Dissertation Phase
+                      </span>
+                      <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        Open Dashboard <i className="fas fa-arrow-right text-[10px]" />
+                      </span>
+                    </div>
+                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                      Dissertation Phase
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      Topic proposal approval, research defense, doctoral thesis review, and graduation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <div className="w-1 h-4 rounded-full bg-indigo-600" />
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Academic Programs</h3>
+              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                {uni.id === 'ggu' ? 'Other Academic Programs' : 'Academic Programs'}
+              </h3>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                {programs.filter(p => p.available).length} Active
+                {programs.filter(p => p.available && p.id !== 'dba-taught' && p.id !== 'dba-dissertation').length} Active
               </span>
               <span className="text-[10px] font-black text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">
-                {programs.length} Total
+                {programs.filter(p => p.id !== 'dba-taught' && p.id !== 'dba-dissertation').length} Total
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {programs.map(p => (
+            {programs.filter(p => p.id !== 'dba-taught' && p.id !== 'dba-dissertation').map(p => (
               <ProgramCard key={p.id} p={p} onNavigate={handleProgramClick} />
             ))}
           </div>

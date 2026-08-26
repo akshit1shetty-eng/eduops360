@@ -38,7 +38,8 @@ export function useAcademicReviewData() {
 
                 if (cancelled) return;
 
-                const validRows = data.filter(r =>
+                const safeData = Array.isArray(data) ? data : [];
+                const validRows = safeData.filter(r =>
                     Object.values(r).some(v => v && v.trim())
                 );
 

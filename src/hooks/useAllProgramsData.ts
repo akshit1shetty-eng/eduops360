@@ -75,7 +75,7 @@ export function useAllProgramsData() {
           const learners: ProgramLearner[] = [];
           const seen = new Set<string>();
 
-          for (const row of rows) {
+          for (const row of Array.isArray(rows) ? rows : []) {
             const email = v(row, 'Email ID', 'GGU Email ID', 'Email', 'GGU Student Email ID', 'GGU Email').toLowerCase();
             if (!email) continue;
 

@@ -86,7 +86,7 @@ export function useAllLearnerData(universityId?: string | null) {
     // Filter by university if needed
     if (universityId && universityId !== 'ggu') return [];
 
-    return gguRows
+    return (gguRows || [])
       .filter(r => {
         const colU = (v(r, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim();
         return colU !== '';

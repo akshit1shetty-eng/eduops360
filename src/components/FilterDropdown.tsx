@@ -16,8 +16,8 @@ export default function FilterDropdown({
   label,
   iconClass,
   placeholder,
-  values,
-  selected,
+  values = [],
+  selected = [],
   onToggle,
   isOpen,
   setIsOpen,
@@ -45,9 +45,12 @@ export default function FilterDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, setIsOpen]);
 
-  const filteredValues = values.filter((v) => {
+  const safeValues = Array.isArray(values) ? values : [];
+  const safeSelected = Array.isArray(selected) ? selected : [];
+
+  const filteredValues = safeValues.filter((v) => {
     const displayValue = formatValue ? formatValue(v) : v;
-    return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
+    return String(displayValue ?? '').toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -63,21 +66,21 @@ export default function FilterDropdown({
           setIsOpen(!isOpen);
         }}
         className={`w-full px-3 py-2 text-left border rounded-xl transition-all flex items-center justify-between group-hover/filter:shadow-sm ${
-          selected.length > 0
+          safeSelected.length > 0
             ? 'border-indigo-500 bg-indigo-50/60 text-indigo-700 dark:text-indigo-400 font-bold'
             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
         }`}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <i className={`${iconClass} text-xs ${selected.length > 0 ? 'text-indigo-600' : 'text-gray-400'}`} />
+          <i className={`${iconClass} text-xs ${safeSelected.length > 0 ? 'text-indigo-600' : 'text-gray-400'}`} />
           <span className="text-sm truncate">
-            {selected.length > 0 ? `${selected.length} Selected` : placeholder}
+            {safeSelected.length > 0 ? `${safeSelected.length} Selected` : placeholder}
           </span>
         </div>
         <i
           className={`fas fa-chevron-down text-[10px] transition-transform duration-300 ${
             isOpen ? 'rotate-180' : ''
-          } ${selected.length > 0 ? 'text-indigo-400' : 'text-gray-300'}`}
+          } ${safeSelected.length > 0 ? 'text-indigo-400' : 'text-gray-300'}`}
         />
       </button>
 
@@ -119,7 +122,7 @@ export default function FilterDropdown({
                   >
                     <input
                       type="checkbox"
-                      checked={selected.includes(v)}
+                      checked={safeSelected.includes(v)}
                       onChange={(e) => {
                         e.stopPropagation();
                         onToggle(v);
@@ -128,7 +131,7 @@ export default function FilterDropdown({
                     />
                     <span
                       className={`text-sm ml-3 transition-all truncate pr-4 ${
-                        selected.includes(v)
+                        safeSelected.includes(v)
                           ? 'text-indigo-700 dark:text-indigo-400 font-bold'
                           : 'text-gray-600 dark:text-gray-400'
                       }`}
@@ -136,7 +139,7 @@ export default function FilterDropdown({
                     >
                       {formatValue ? formatValue(v) : v}
                     </span>
-                    {selected.includes(v) && (
+                    {safeSelected.includes(v) && (
                       <div className="absolute right-3">
                         <i className="fas fa-check text-indigo-500 text-xs" />
                       </div>
@@ -148,9 +151,9 @@ export default function FilterDropdown({
           </div>
           
           {/* Footer with summary */}
-          {selected.length > 0 && (
+          {safeSelected.length > 0 && (
             <div className="p-2 border-t border-gray-50 dark:border-white/5 bg-indigo-50/30 dark:bg-indigo-900/10 flex justify-between items-center">
-                <span className="text-[9px] font-bold text-indigo-600/60 dark:text-indigo-400/60 uppercase">{selected.length} items selected</span>
+                <span className="text-[9px] font-bold text-indigo-600/60 dark:text-indigo-400/60 uppercase">{safeSelected.length} items selected</span>
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();

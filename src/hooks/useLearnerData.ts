@@ -55,8 +55,8 @@ export function useLearnerData() {
         ]);
 
         if (cancelled) return;
-        setNonGguStudents(studentRows);
-        setGrades(gradeRows);
+        setNonGguStudents(Array.isArray(studentRows) ? studentRows : []);
+        setGrades(Array.isArray(gradeRows) ? gradeRows : []);
       } catch (e) {
         if (cancelled) return;
         if (!background) setNonGguError(e instanceof Error ? e.message : 'Unknown error');

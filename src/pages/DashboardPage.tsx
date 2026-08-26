@@ -35,6 +35,7 @@ function isCombinedSlot(value: string): boolean {
 import { useLiveSessionsData } from '../hooks/useLiveSessionsData';
 import { useDissertationData } from '../hooks/useDissertationData';
 import { useAcademicReviewData } from '../hooks/useAcademicReviewData';
+import { useProgramStats } from '../hooks/useProgramStats';
 
 function v(row: any, ...possibleKeys: string[]): string {
   if (!row) return '';
@@ -57,6 +58,7 @@ export default function DashboardPage() {
   const { rows: liveSessionsRows } = useLiveSessionsData();
   const { rows: dissertationRows } = useDissertationData();
   const { rows: academicReviewRows } = useAcademicReviewData();
+  const { learnerCount: pTotal, activeCount: pActive, graduatedCount: pGraduated } = useProgramStats(config.sheetId, programId);
 
   const goToLearners = () => navigate(`/${programId}/learners`);
   const onCardKeyDown = (e: React.KeyboardEvent) => {
@@ -295,7 +297,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
               Welcome to Your Dashboard,
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent ml-2">
-                GGU {config.name}
+                {programId.startsWith('dba') ? 'GGU DBA & DBA ET' : `GGU ${config.name}`}
               </span>
             </h1>
             <p className="text-gray-600">Piloting learners to their destination.</p>
@@ -303,164 +305,67 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Program Overview - hide for MBA and DBA DL */}
-      {programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          {/* Live Sessions Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-100 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-orange-100">
-                  <i className="fas fa-book-open text-orange-600 text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">Coursework Phase</h2>
-                  <p className="text-sm text-gray-600">Learners • Attendance • Ratings</p>
-                </div>
+      {/* Top Learner Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-blue-100 shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-users text-blue-600 text-xl" />
               </div>
-              <a
-                href={`/${programId}/live-sessions`}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-              >
-                View Details
-              </a>
+              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                <i className="fas fa-arrow-up text-xs mr-1" />Total
+              </span>
             </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-1">
+              <AnimatedNumber value={pTotal ?? totalLearners} />
+            </h3>
+            <p className="text-sm text-gray-600">Total Learners</p>
+            <div className="mt-4 h-1 bg-gradient-to-r from-blue-200 to-blue-400 rounded-full"></div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-white rounded-xl p-3 border border-blue-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-users text-blue-500" />
-                  <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">Coursework</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber
-                    value={
-                      programId === 'dba-et'
-                        ? dbaEtCourseworkLearners
-                        : learnersInCoursework
-                    }
-                  />
-                </h3>
-                <p className="text-xs text-gray-600">Learners</p>
+        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-emerald-100 shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-user-check text-emerald-600 text-xl" />
               </div>
-
-              <div className="bg-white rounded-xl p-3 border border-red-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-exclamation-triangle text-red-500" />
-                  <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">Attention</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={attention.length} />
-                </h3>
-                <p className="text-xs text-gray-600">Need Attention</p>
-              </div>
-
-              <div className="bg-white rounded-xl p-3 border border-green-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-podcast text-green-500" />
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">Attendance</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber
-                    value={liveSessionsSummary.attendanceRate === null ? null : liveSessionsSummary.attendanceRate * 100}
-                    formatter={(v) => `${v.toFixed(2)}% `}
-                  />
-                </h3>
-                <p className="text-xs text-gray-600">Live Attendance</p>
-              </div>
-
-              <div className="bg-white rounded-xl p-3 border border-orange-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-star text-orange-500" />
-                  <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">Rating</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber
-                    value={liveSessionsSummary.avgRating}
-                    formatter={(v) => `${v.toFixed(2)}/5`}
-                  />
-                </h3 >
-                <p className="text-xs text-gray-600">Avg Rating</p>
-              </div >
-            </div >
-          </div >
-
-          {/* Dissertation Phase Card */}
-          < div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg border border-purple-100 p-4" >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-purple-100">
-                  <i className="fas fa-graduation-cap text-purple-600 text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">Dissertation Phase</h2>
-                  <p className="text-sm text-gray-600">Learners • Defense • Graduation</p>
-                </div>
-              </div>
-              <a
-                href={`/${programId}/dissertation`}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-              >
-                View Details
-              </a>
+              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                <i className="fas fa-check text-xs mr-1" />Active
+              </span>
             </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-1">
+              <AnimatedNumber value={pActive ?? activeLearnersCount} />
+            </h3>
+            <p className="text-sm text-gray-600">Active Learners</p>
+            <div className="mt-4 h-1 bg-gradient-to-r from-emerald-200 to-emerald-400 rounded-full"></div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-white rounded-xl p-3 border border-purple-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-users text-purple-500" />
-                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">Dissertation</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={dissertationSummary.total} />
-                </h3>
-                <p className="text-xs text-gray-600">Learners</p>
+        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-indigo-100 shadow-lg group-hover:scale-110 transition-transform">
+                <i className="fas fa-trophy text-indigo-600 text-xl" />
               </div>
-
-              <div className="bg-white rounded-xl p-3 border border-orange-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className={`fas ${programId === 'dba-et' ? 'fa-lightbulb' : 'fa-hourglass-half'} ${programId === 'dba-et' ? 'text-amber-500' : 'text-orange-500'}`} />
-                  <span className={`text-xs font-medium bg-opacity-10 px-2 py-1 rounded ${programId === 'dba-et' ? 'text-amber-600 bg-amber-50' : 'text-orange-600 bg-orange-50'}`}>
-                    {programId === 'dba-et' ? 'Topic' : 'Waitlist'}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={programId === 'dba-et' ? dissertationSummary.topicProposalApproved : dissertationSummary.readyForResearchDefense} />
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {programId === 'dba-et' ? 'Topic Proposal Approved' : 'Ready for Research Defense'}
-                </p>
-              </div>
-
-              <div className="bg-white rounded-xl p-3 border border-emerald-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className={`fas ${programId === 'dba-et' ? 'fa-file-signature' : 'fa-check-double'} text-emerald-500`} />
-                  <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                    {programId === 'dba-et' ? 'Proposal' : 'Defense'}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={programId === 'dba-et' ? dissertationSummary.researchProposalApproved : dissertationSummary.researchDefenseCompleted} />
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {programId === 'dba-et' ? 'Research Proposal Approved' : 'Research Defense Completed'}
-                </p>
-              </div>
-
-              <div className="bg-white rounded-xl p-3 border border-indigo-100">
-                <div className="flex items-center justify-between mb-2">
-                  <i className="fas fa-trophy text-indigo-500" />
-                  <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Graduation</span>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={dissertationSummary.graduated} />
-                </h3>
-                <p className="text-xs text-gray-600">Graduated</p>
-              </div>
+              <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                <i className="fas fa-graduation-cap text-xs mr-1" />Alumni
+              </span>
             </div>
-          </div >
-        </div >
-      )}
+            <h3 className="text-2xl font-bold text-gray-800 mb-1">
+              <AnimatedNumber value={pGraduated ?? (programId === 'mba' ? graduatedLearnersCount : dissertationSummary.graduated)} />
+            </h3>
+            <p className="text-sm text-gray-600">Graduated Learners</p>
+            <div className="mt-4 h-1 bg-gradient-to-r from-indigo-200 to-indigo-400 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+
 
       {/* Academic Standing Monitor Section - Featured Banner Style */}
       {(programId === 'dba' || programId === 'dba-et' || programId === 'dba-dl') && (
@@ -557,65 +462,6 @@ export default function DashboardPage() {
 
 
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-blue-100 shadow-lg group-hover:scale-110 transition-transform">
-                <i className="fas fa-users text-blue-600 text-xl" />
-              </div>
-              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                <i className="fas fa-arrow-up text-xs mr-1" />Total
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">
-              <AnimatedNumber value={totalLearners} />
-            </h3>
-            <p className="text-sm text-gray-600">Total Learners</p>
-            <div className="mt-4 h-1 bg-gradient-to-r from-blue-200 to-blue-400 rounded-full"></div>
-          </div>
-        </div>
-
-        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-emerald-100 shadow-lg group-hover:scale-110 transition-transform">
-                <i className="fas fa-user-check text-emerald-600 text-xl" />
-              </div>
-              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                <i className="fas fa-check text-xs mr-1" />Active
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">
-              <AnimatedNumber value={activeLearnersCount} />
-            </h3>
-            <p className="text-sm text-gray-600">Active Learners</p>
-            <div className="mt-4 h-1 bg-gradient-to-r from-emerald-200 to-emerald-400 rounded-full"></div>
-          </div>
-        </div>
-
-        <div role="button" tabIndex={0} onClick={goToLearners} onKeyDown={onCardKeyDown} className="group cursor-pointer relative bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-xl p-4 border border-white border-opacity-20 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full opacity-10 -mr-10 -mt-10 group-hover:opacity-20 transition-opacity"></div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-indigo-100 shadow-lg group-hover:scale-110 transition-transform">
-                <i className="fas fa-trophy text-indigo-600 text-xl" />
-              </div>
-              <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                <i className="fas fa-graduation-cap text-xs mr-1" />Alumni
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-1">
-              <AnimatedNumber value={programId === 'mba' ? graduatedLearnersCount : dissertationSummary.graduated} />
-            </h3>
-            <p className="text-sm text-gray-600">Graduated Learners</p>
-            <div className="mt-4 h-1 bg-gradient-to-r from-indigo-200 to-indigo-400 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-
-    </div >
+    </div>
   );
 }

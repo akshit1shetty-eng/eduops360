@@ -34,7 +34,7 @@ export function useLiveSessionsData() {
                 });
 
                 if (cancelled) return;
-                setRows(data);
+                setRows(Array.isArray(data) ? data : []);
                 hadData = true;
             } catch (e) {
                 if (cancelled) return;

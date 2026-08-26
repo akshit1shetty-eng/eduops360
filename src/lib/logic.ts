@@ -177,15 +177,18 @@ function countCompletedCourses(coursework: Record<string, string | undefined>): 
 
 export function mergeLearners({
   programId,
-  students,
+  students = [],
   grades = [],
 }: {
   programId: ProgramId;
   students: StudentListRow[];
   grades?: GradesheetRow[];
 }): LearnerMerged[] {
+  const safeStudents = Array.isArray(students) ? students : [];
+  const safeGrades = Array.isArray(grades) ? grades : [];
+
   const gradeIndex = new Map<string, GradesheetRow>();
-  for (const g of grades) {
+  for (const g of safeGrades) {
     const email = getGradesEmail(g);
     const cohortId = ((g['Cohort ID'] ?? g['uG Cohort ID'] ?? '') as string).trim();
     const key = `${normalizeEmail(email)}__${cohortId}`;
@@ -198,7 +201,7 @@ export function mergeLearners({
   const result: LearnerMerged[] = [];
   const seenKeys = new Set<string>();
 
-  const studentRows = students
+  const studentRows = safeStudents
     .map((s, idx) => {
       const cohortId = (s['Cohort ID'] ?? '').trim();
       const email = (getStudentEmail(s) ?? '').trim() || `student-${idx + 1}@ggu.edu`;
@@ -330,7 +333,8 @@ export function getLearnersNeedingAttentionFromGrades(programId: ProgramId, grad
   const alerts: NeedsAttentionLearner[] = [];
   const { grades: gradeCols, gpas: gpaCols } = getProgramCourseworkDirectColLists(programId);
 
-  for (const g of grades) {
+  const safeGrades = Array.isArray(grades) ? grades : [];
+  for (const g of safeGrades) {
     const upGradStatus = (g['upGrad Learner Status'] ?? '').trim();
     const gguStatus = (g['GGU Learner Status'] ?? '').trim();
     const statusDetails = (g['Status Details'] ?? '').trim();

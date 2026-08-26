@@ -33,7 +33,8 @@ function ensureLoading() {
   cache = { status: 'loading', promise };
   promise
     .then(rows => {
-      cache = { status: 'done', rows };
+      const safeRows = Array.isArray(rows) ? rows : [];
+      cache = { status: 'done', rows: safeRows };
       notify();
     })
     .catch(err => {

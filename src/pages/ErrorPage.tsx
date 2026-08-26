@@ -4,6 +4,8 @@ export default function ErrorPage() {
     const error = useRouteError();
     const navigate = useNavigate();
 
+    console.error('[ErrorPage caught error]:', error);
+
     let title = "Something went wrong";
     let message = "An unexpected error occurred: " + (error instanceof Error ? error.message : (error as any)?.statusText || JSON.stringify(error));
 
@@ -36,9 +38,15 @@ export default function ErrorPage() {
                         {title}
                     </h1>
 
-                    <p className="text-gray-500 mb-8 leading-relaxed font-medium">
+                    <p className="text-gray-500 mb-4 leading-relaxed font-medium">
                         {message}
                     </p>
+
+                    {error instanceof Error && error.stack && (
+                        <div className="bg-slate-900 text-rose-300 p-3 rounded-xl text-[10px] font-mono text-left overflow-auto max-h-40 mb-6">
+                            {error.stack}
+                        </div>
+                    )}
 
                     <div className="flex flex-col gap-3">
                         <button

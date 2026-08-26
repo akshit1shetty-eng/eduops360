@@ -224,13 +224,13 @@ export default function LearnerProfilePage() {
   const { rows: arRows } = useAcademicReviewData();
 
   const learnerRows = useMemo(() => {
-    if (!decodedUserId) return [];
+    if (!decodedUserId || !Array.isArray(merged)) return [];
     return merged.filter((l) => (l.userId ?? '').trim() === decodedUserId);
   }, [merged, decodedUserId]);
 
   const learnerInfo = useMemo(() => {
     if (!decodedUserId) return null;
-    const fromStudent = students.find((s) => (s['User ID'] ?? '').trim() === decodedUserId) ?? null;
+    const fromStudent = (Array.isArray(students) ? students : []).find((s) => (s['User ID'] ?? '').trim() === decodedUserId) ?? null;
     const fromMerged = learnerRows[0] ?? null;
 
     if (!fromStudent && !fromMerged) return null;
@@ -276,7 +276,7 @@ export default function LearnerProfilePage() {
 
   const dissertationRow = useMemo(() => {
     if (!latestCohort || !learnerInfo?.email) return null;
-    if (!dissertationRows || dissertationRows.length === 0) return null;
+    if (!Array.isArray(dissertationRows) || dissertationRows.length === 0) return null;
 
     const wantedEmail = normEmail(learnerInfo.email);
     const wantedCohortDigits = programId === 'dba'

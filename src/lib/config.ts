@@ -43,6 +43,16 @@ export const PROGRAMS: Record<string, ProgramConfig> = {
       }
     ]
   },
+  'dba-et-taught': {
+    sheetId: '1uRMte-I2N6B_VhYSZFw4zRf5QDchHXBNK1ZGM38l8LY',
+    name: 'DBA ET (Taught Phase)',
+    totalCourses: 7,
+  },
+  'dba-et-dissertation': {
+    sheetId: '1uRMte-I2N6B_VhYSZFw4zRf5QDchHXBNK1ZGM38l8LY',
+    name: 'DBA ET (Dissertation Phase)',
+    totalCourses: 7,
+  },
   'dba': {
     sheetId: '13GFW9_aT1bKUp26B_1Db72QB7ZPUwm4DzmdMHXDY-98',
     name: 'DBA',
@@ -68,6 +78,16 @@ export const PROGRAMS: Record<string, ProgramConfig> = {
         ]
       }
     ]
+  },
+  'dba-taught': {
+    sheetId: '13GFW9_aT1bKUp26B_1Db72QB7ZPUwm4DzmdMHXDY-98',
+    name: 'DBA (Taught Phase)',
+    totalCourses: 7,
+  },
+  'dba-dissertation': {
+    sheetId: '13GFW9_aT1bKUp26B_1Db72QB7ZPUwm4DzmdMHXDY-98',
+    name: 'DBA (Dissertation Phase)',
+    totalCourses: 7,
   },
   'dba-dl': {
     sheetId: '184gFR_9JBauSd3XgsYYoYUzLGCG9BbXAcJC96gWCck4',
@@ -115,6 +135,7 @@ export const SHEET_TABS = {
   liveSessions: 'Live Sessions',
   immersion: 'Immersion',
   dissertation: 'Dissertation',
+  dissertationSummary: 'Dissertation Summary',
   budget: 'Budget',
 } as const;
 
@@ -125,4 +146,4 @@ export const GGU_STUDENT_LIST_SHEET_ID = '1I0BEjbPOUN47CCwNZm3lz9oHFsSazS1uiyPcx
 export const GGU_STUDENT_LIST_TAB = 'upGrad Active Learner List';
 
 /** Program IDs that belong to Golden Gate University (GGU). */
-export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba', 'dba-dl', 'mba', 'm-psych']);
+export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba-et-taught', 'dba-et-dissertation', 'dba', 'dba-taught', 'dba-dissertation', 'dba-dl', 'mba', 'm-psych']);

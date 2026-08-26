@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SHEET_TABS } from '../lib/config';
+import { GGU_STUDENT_LIST_SHEET_ID, SHEET_TABS } from '../lib/config';
 import { fetchSheetTab, type SheetRecord } from '../lib/sheets';
 import { useProgramConfig } from './useProgramConfig';
 
@@ -22,8 +22,8 @@ export function useDissertationData() {
         async function load(options?: { background?: boolean }) {
             const background = options?.background ?? false;
 
-            // MBA and DBA DL don't have a dissertation tab
-            if (programId === 'mba' || programId === 'dba-dl') {
+            // MBA doesn't have a dissertation tab
+            if (programId === 'mba') {
                 if (!background) setLoading(false);
                 setRows([]);
                 return;
@@ -36,10 +36,21 @@ export function useDissertationData() {
             if (!background && !hadData) setError(null);
 
             try {
-                const data = await fetchSheetTab({
-                    spreadsheetId: config.sheetId,
-                    sheetName: SHEET_TABS.dissertation,
-                });
+                let data: DissertationRow[] = [];
+                try {
+                    const res = await fetchSheetTab({
+                        spreadsheetId: GGU_STUDENT_LIST_SHEET_ID,
+                        sheetName: SHEET_TABS.dissertationSummary,
+                    });
+                    data = Array.isArray(res) ? res : [];
+                } catch {
+                    // Fallback to program sheet or dissertation tab if Dissertation Summary not found
+                    const res = await fetchSheetTab({
+                        spreadsheetId: config.sheetId,
+                        sheetName: SHEET_TABS.dissertation,
+                    });
+                    data = Array.isArray(res) ? res : [];
+                }
 
                 if (cancelled) return;
                 setRows(data);

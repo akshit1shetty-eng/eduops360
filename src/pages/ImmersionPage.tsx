@@ -212,7 +212,7 @@ export default function ImmersionPage() {
 
     fetchSheetTab({ spreadsheetId: config.sheetId, sheetName: SHEET_TABS.immersion })
       .then((data) => {
-        if (!cancelled) setRows(data.map(coerceRow));
+        if (!cancelled) setRows((Array.isArray(data) ? data : []).map(coerceRow));
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Unknown error');

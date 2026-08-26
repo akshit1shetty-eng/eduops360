@@ -362,7 +362,7 @@ export default function AcademicPerformancePage() {
     /* Derived cohorts */
     const cohorts = useMemo(() => {
         const set = new Set<string>();
-        rows.forEach(r => {
+        (rows || []).forEach(r => {
             const id = v(r, 'Cohort ID') || v(r, 'Cohort');
             if (id) set.add(cohortIdToNumMap.get(id) || id);
         });
@@ -370,7 +370,7 @@ export default function AcademicPerformancePage() {
     }, [rows, cohortIdToNumMap]);
 
     /* Compute AR analytics per row */
-    const processedRows = useMemo(() => rows.map((row: Record<string, any>) => {
+    const processedRows = useMemo(() => (rows || []).map((row: Record<string, any>) => {
         // Find best keys ignoring case/spaces if needed, or stick to literal lookups and fallbacks
         const ar1Date = v(row, 'Academic Review 1 Date') || v(row, '1st Academic Review Date') || v(row, 'AR1 Date');
         const ar1Cgpa = parseGPA(v(row, '1st Academic Review CGPA'));

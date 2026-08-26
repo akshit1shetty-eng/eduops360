@@ -164,7 +164,7 @@ export default function LearnersPage() {
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
 
-    return rows.filter((l) => {
+    return (rows || []).filter((l) => {
       if (term) {
         const name = `${l.firstName} ${l.lastName}`.toLowerCase();
         const email = (l.email ?? '').toLowerCase();
@@ -539,7 +539,7 @@ export default function LearnersPage() {
   const [attentionPage, setAttentionPage] = useState(1);
   const attention = useMemo(() => {
     const filteredEmails = new Set(filtered.map((f) => (f.email ?? '').trim().toLowerCase()));
-    return needsAttention.filter((n) => filteredEmails.has((n.email ?? '').trim().toLowerCase()));
+    return (needsAttention || []).filter((n) => filteredEmails.has((n.email ?? '').trim().toLowerCase()));
   }, [needsAttention, filtered]);
   const totalAttentionPages = Math.max(1, Math.ceil(attention.length / 10));
   const safeAttentionPage = Math.min(attentionPage, totalAttentionPages);
