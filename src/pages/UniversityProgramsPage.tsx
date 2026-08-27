@@ -229,7 +229,7 @@ export default function UniversityProgramsPage() {
     }
 
     if (programId === 'dba-dissertation') {
-      navigate(`/${baseId}/dissertation`);
+      navigate(`/dba-dissertation/dissertation?program=overall`);
     } else {
       navigate(`/${baseId}/dashboard`);
     }
@@ -267,7 +267,7 @@ export default function UniversityProgramsPage() {
       {/* ── Sidebar ── */}
       <aside style={{ ...styles.sidebar, width: collapsed ? 56 : 240, transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)' }}>
         <div style={{ ...styles.sidebarLogo, padding: collapsed ? '24px 8px' : '24px 20px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
-          <div onClick={() => navigate('/lex/home')} style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%' }}>
+          <div onClick={() => navigate('/lex/home')} style={{ display: 'flex', items: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%' }}>
             <div style={{ ...styles.sidebarLogoIcon, width: collapsed ? 36 : 40, height: collapsed ? 36 : 40 }}>
               <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: collapsed ? 18 : 22 }} />
             </div>
@@ -504,7 +504,7 @@ export default function UniversityProgramsPage() {
 
         {/* Programs Grid */}
         <div className="px-8 py-8 max-w-6xl mx-auto w-full">
-          {/* Big Featured Container for DBA & DBA ET - Light Theme */}
+          {/* Big Featured Container for DBA, DBA ET & DBA DL - Light Theme */}
           {uni.id === 'ggu' && (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-sm mb-10">
               <div className="mb-6 pb-6 border-b border-slate-100">
@@ -547,7 +547,7 @@ export default function UniversityProgramsPage() {
 
                 {/* Inner Sub-card 2: Dissertation Phase */}
                 <div
-                  onClick={() => handleProgramClick('dba-dissertation', true)}
+                  onClick={() => navigate('/dba-dissertation/dissertation?program=overall')}
                   className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
                 >
                   <div>

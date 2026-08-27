@@ -48,10 +48,17 @@ export function isLearnerActive(status: string | undefined, row?: any): boolean 
   return ACTIVE_SECONDARY_STATUSES_SET.has(s) || s.includes('active') || s.includes('enrolled') || s.includes('coursework');
 }
 
-export function isLearnerGraduated(status: string | undefined): boolean {
+export function isLearnerGraduated(status: string | undefined, row?: any): boolean {
+  if (row) {
+    const actualStatus = v(row, 'Actual Status', 'Secondary Status', 'Learner Status', 'Status Details', 'Status', 'GGU Status', 'Cohort Status');
+    if (actualStatus) {
+      const s = normalizeSecondaryStatus(actualStatus);
+      if (s.includes('graduat') || s.includes('complet') || s.includes('alumni') || s.includes('degree') || s.includes('pass')) return true;
+    }
+  }
   if (!status) return false;
   const s = normalizeSecondaryStatus(status);
-  return s.includes('graduat') || s.includes('complet');
+  return s.includes('graduat') || s.includes('complet') || s.includes('alumni') || s.includes('degree') || s.includes('pass');
 }
 
 export function isLearnerIPD(status: string | undefined): boolean {
@@ -69,22 +76,19 @@ export function isLearnerPaymentDropout(status: string | undefined): boolean {
 export type LearnerStatusCategory = 'Active' | 'Graduated' | 'IPD' | 'Payment-Dropout' | 'Other Inactive';
 
 export function getLearnerCategory(rawStatus: string | undefined, row?: any): LearnerStatusCategory {
-  if (row) {
-    const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
-    if (colU && normalizeSecondaryStatus(colU) === 'active') return 'Active';
-  }
-  if (isLearnerGraduated(rawStatus)) return 'Graduated';
-  if (isLearnerIPD(rawStatus)) return 'IPD';
-  if (isLearnerPaymentDropout(rawStatus)) return 'Payment-Dropout';
+  if (isLearnerGraduated(rawStatus, row)) return 'Graduated';
 
   if (row) {
     const colU = v(row, 'GGU Data Type', 'ggu_data_type', 'data_type');
     const normU = normalizeSecondaryStatus(colU);
-    if (normU === 'inactive' || normU === 'loa') return 'IPD';
+    if (normU === 'active') return 'Active';
+    if (normU === 'loa' || normU === 'inactive') return 'IPD';
     if (normU === 'exit') return 'Other Inactive';
   }
 
-  if (isLearnerActive(rawStatus)) return 'Active';
+  if (isLearnerIPD(rawStatus)) return 'IPD';
+  if (isLearnerPaymentDropout(rawStatus)) return 'Payment-Dropout';
+  if (isLearnerActive(rawStatus, row)) return 'Active';
   return 'Other Inactive';
 }
 

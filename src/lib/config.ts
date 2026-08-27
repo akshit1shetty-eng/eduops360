@@ -115,6 +115,11 @@ export const PROGRAMS: Record<string, ProgramConfig> = {
       }
     ]
   },
+  'dba-dl-dissertation': {
+    sheetId: '184gFR_9JBauSd3XgsYYoYUzLGCG9BbXAcJC96gWCck4',
+    name: 'DBA DL (Dissertation Phase)',
+    totalCourses: 7,
+  },
   'mba': {
     sheetId: '19yCBp1fBmmy32M8HV4qDSCsE3fG1JnPgMHJUuHnuv7M',
     name: 'MBA',
@@ -146,4 +151,4 @@ export const GGU_STUDENT_LIST_SHEET_ID = '1I0BEjbPOUN47CCwNZm3lz9oHFsSazS1uiyPcx
 export const GGU_STUDENT_LIST_TAB = 'upGrad Active Learner List';
 
 /** Program IDs that belong to Golden Gate University (GGU). */
-export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba-et-taught', 'dba-et-dissertation', 'dba', 'dba-taught', 'dba-dissertation', 'dba-dl', 'mba', 'm-psych']);
+export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba-et-taught', 'dba-et-dissertation', 'dba', 'dba-taught', 'dba-dissertation', 'dba-dl', 'dba-dl-dissertation', 'mba', 'm-psych']);

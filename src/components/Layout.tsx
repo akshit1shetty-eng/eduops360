@@ -5,13 +5,13 @@ import { useAuth } from '../hooks/useAuth';
 import { UNIVERSITIES } from '../lib/universities';
 
 
-function SidebarLink(props: { to: string; label: string; iconClass: string; collapsed: boolean }) {
+function SidebarLink(props: { to: string; label: string; iconClass: string; collapsed: boolean; isActiveCustom?: boolean }) {
   return (
     <NavLink
       to={props.to}
       className="sidebar-link sidebar-nav-item"
       style={({ isActive }) => ({
-        ...(isActive ? styles.navItemActive : styles.navItem),
+        ...((props.isActiveCustom !== undefined ? props.isActiveCustom : isActive) ? styles.navItemActive : styles.navItem),
         padding: props.collapsed ? '10px 0' : '10px 12px',
         justifyContent: props.collapsed ? 'center' : 'flex-start',
       })}
@@ -27,6 +27,7 @@ function SidebarLink(props: { to: string; label: string; iconClass: string; coll
 
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { programId, config } = useProgramConfig();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,6 +43,7 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const currentProgParam = (new URLSearchParams(location.search).get('program') || 'overall').toLowerCase();
 
   return (
     <div className="app-layout">
@@ -145,10 +147,40 @@ export default function Layout() {
                   {collapsed && (
                     <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />
                   )}
-                  <nav className="sidebar-nav" style={{ marginTop: collapsed ? 0 : 8 }}>
-                    <SidebarLink to={`/${programId}/dashboard`} label="Dissertation Overview" iconClass="fas fa-chart-pie" collapsed={collapsed} />
-                    <SidebarLink to={`/${programId}/learners`} label="Dissertation Candidates" iconClass="fas fa-user-graduate" collapsed={collapsed} />
-                    <SidebarLink to={`/${programId}/dissertation`} label="Dissertation Summary" iconClass="fas fa-scroll" collapsed={collapsed} />
+                  <nav className="sidebar-nav" style={{ marginTop: collapsed ? 0 : 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <SidebarLink
+                      to={`/${programId}/dissertation?program=overall`}
+                      label="Overall Overview"
+                      iconClass="fas fa-globe"
+                      collapsed={collapsed}
+                      isActiveCustom={location.pathname.includes('/dissertation') && currentProgParam === 'overall'}
+                    />
+                    {!collapsed && (
+                      <div style={{ padding: '10px 12px 2px 12px', fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Doctoral Programs
+                      </div>
+                    )}
+                    <SidebarLink
+                      to={`/dba-dissertation/dissertation?program=dba`}
+                      label="DBA"
+                      iconClass="fas fa-graduation-cap"
+                      collapsed={collapsed}
+                      isActiveCustom={location.pathname.includes('/dissertation') && currentProgParam === 'dba'}
+                    />
+                    <SidebarLink
+                      to={`/dba-et-dissertation/dissertation?program=dba-et`}
+                      label="DBA ET"
+                      iconClass="fas fa-microchip"
+                      collapsed={collapsed}
+                      isActiveCustom={location.pathname.includes('/dissertation') && currentProgParam === 'dba-et'}
+                    />
+                    <SidebarLink
+                      to={`/dba-dl-dissertation/dissertation?program=dba-dl`}
+                      label="DBA DL"
+                      iconClass="fas fa-award"
+                      collapsed={collapsed}
+                      isActiveCustom={location.pathname.includes('/dissertation') && currentProgParam === 'dba-dl'}
+                    />
                   </nav>
                 </>
               );

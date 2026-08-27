@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchSheetTab } from '../lib/sheets';
 import { GGU_PROGRAM_IDS, GGU_STUDENT_LIST_SHEET_ID, GGU_STUDENT_LIST_TAB, SHEET_TABS } from '../lib/config';
 import { useGGUStudentList } from './useGGUStudentList';
-import { v } from '../lib/logic';
+import { v, isLearnerGraduated } from '../lib/logic';
 
 export interface ProgramStats {
   learnerCount: number | null;
@@ -112,13 +112,7 @@ function useGguProgramStats(programId: string): ProgramStats {
         ''
       ).replace(/\u00a0/g, ' ').trim().toLowerCase();
 
-      if (
-        rawColR.includes('graduat') ||
-        rawColR.includes('complet') ||
-        rawColR.includes('alumni') ||
-        rawColR.includes('passed') ||
-        rawColR.startsWith('grad')
-      ) {
+      if (isLearnerGraduated(rawColR, r)) {
         graduatedCount += 1;
       }
     });

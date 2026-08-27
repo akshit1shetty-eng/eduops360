@@ -32,9 +32,8 @@ export default function LexDashboardHome() {
     let activeInternational = 0;
     let activeDomestic = 0;
     let graduated = 0;
-    let ipd = 0;
-    let paymentDropout = 0;
-    let otherStatus = 0;
+    let loa = 0;
+    let exit = 0;
     const programsMap: Record<string, number> = {};
 
     const filteredStudents = students;
@@ -64,18 +63,16 @@ export default function LexDashboardHome() {
       if (isInt) international++;
       else if (isDom) domestic++;
 
-      if (category === 'Active') {
+      if (category === 'Graduated') {
+        graduated++;
+      } else if (category === 'Active') {
         active++;
         if (isInt) activeInternational++;
         if (isDom) activeDomestic++;
-      } else if (category === 'Graduated') {
-        graduated++;
       } else if (category === 'IPD') {
-        ipd++;
-      } else if (category === 'Payment-Dropout') {
-        paymentDropout++;
-      } else {
-        otherStatus++;
+        loa++;
+      } else if (category === 'Other Inactive' || category === 'Payment-Dropout') {
+        exit++;
       }
     }
 
@@ -83,9 +80,8 @@ export default function LexDashboardHome() {
       total,
       active,
       graduated,
-      ipd,
-      paymentDropout,
-      otherStatus,
+      loa,
+      exit,
       international,
       domestic,
       activeInternational,
@@ -134,12 +130,12 @@ export default function LexDashboardHome() {
         </div>
       </div>
 
-      {/* Status Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 mb-10">
-        {/* Card 1: Total Volume */}
+      {/* Status Metrics Grid - 5 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-10">
+        {/* Card 1: Total Learners */}
         <div
           onClick={() => navigate('/lex/learners')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
         >
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-slate-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
           <div className="relative z-10 flex flex-col justify-between h-full">
@@ -150,18 +146,18 @@ export default function LexDashboardHome() {
               <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider leading-none">Total Volume</span>
             </div>
             <div>
-              <div className="text-xl font-black text-slate-900 tracking-tight mb-0.5">
+              <div className="text-2xl font-black text-slate-900 tracking-tight mb-0.5">
                 {loading ? <StatSkeleton /> : stats.total.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">Total Learners</div>
+              <div className="text-[9px] font-extrabold text-slate-600 uppercase tracking-wider">Total Learners</div>
             </div>
           </div>
         </div>
 
-        {/* Card 2: Active Learners */}
+        {/* Card 2: Active Pool */}
         <div
           onClick={() => navigate('/lex/learners?status=Active')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
         >
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-indigo-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
           <div className="relative z-10 flex flex-col justify-between h-full">
@@ -172,18 +168,18 @@ export default function LexDashboardHome() {
               <span className="text-[9.5px] font-black text-indigo-400 uppercase tracking-wider leading-none">Active Pool</span>
             </div>
             <div>
-              <div className="text-xl font-black text-indigo-700 tracking-tight mb-0.5">
+              <div className="text-2xl font-black text-indigo-700 tracking-tight mb-0.5">
                 {loading ? <StatSkeleton /> : stats.active.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">Active Learners</div>
+              <div className="text-[9px] font-extrabold text-slate-600 uppercase tracking-wider">Active Learners</div>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Graduated Alumni */}
+        {/* Card 3: Alumni Success */}
         <div
           onClick={() => navigate('/lex/learners?status=Graduated')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
         >
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
           <div className="relative z-10 flex flex-col justify-between h-full">
@@ -194,40 +190,40 @@ export default function LexDashboardHome() {
               <span className="text-[9.5px] font-black text-emerald-500 uppercase tracking-wider leading-none">Alumni Success</span>
             </div>
             <div>
-              <div className="text-xl font-black text-emerald-700 tracking-tight mb-0.5">
+              <div className="text-2xl font-black text-emerald-700 tracking-tight mb-0.5">
                 {loading ? <StatSkeleton /> : stats.graduated.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">Graduated</div>
+              <div className="text-[9px] font-extrabold text-slate-600 uppercase tracking-wider">Graduated</div>
             </div>
           </div>
         </div>
 
-        {/* Card 4: IPD (In Process of Deferral) */}
+        {/* Card 4: LOA (Leave of Absence) */}
         <div
           onClick={() => navigate('/lex/learners?status=IPD')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
         >
-          <div className="absolute -right-4 -top-4 w-16 h-16 bg-yellow-50/50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute -right-4 -top-4 w-16 h-16 bg-amber-50 rounded-full opacity-60 group-hover:scale-110 transition-transform duration-700" />
           <div className="relative z-10 flex flex-col justify-between h-full">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-yellow-400 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i className="fas fa-hourglass text-[9px]" />
+              <div className="w-8 h-8 bg-amber-100 border border-amber-200 rounded-xl flex items-center justify-center text-amber-700 shadow-sm">
+                <i className="fas fa-clock text-xs text-amber-700" />
               </div>
-              <span className="text-[9.5px] font-black text-yellow-400 uppercase tracking-wider leading-none">IPD</span>
+              <span className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider leading-none">LOA</span>
             </div>
             <div>
-              <div className="text-xl font-black text-yellow-700 tracking-tight mb-0.5">
-                {loading ? <StatSkeleton /> : stats.ipd.toLocaleString()}
+              <div className="text-2xl font-black text-amber-600 tracking-tight mb-0.5">
+                {loading ? <StatSkeleton /> : stats.loa.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">In Process of Deferral</div>
+              <div className="text-[9px] font-extrabold text-slate-600 uppercase tracking-wider">Leave of Absence</div>
             </div>
           </div>
         </div>
 
-        {/* Card 5: Payment-Dropout */}
+        {/* Card 5: Exit (Excluding Graduated) */}
         <div
-          onClick={() => navigate('/lex/learners?status=Payment-Dropout')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
+          onClick={() => navigate('/lex/learners?status=Other%20Inactive')}
+          className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
         >
           <div className="absolute -right-4 -top-4 w-16 h-16 bg-rose-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
           <div className="relative z-10 flex flex-col justify-between h-full">
@@ -235,35 +231,13 @@ export default function LexDashboardHome() {
               <div className="w-8 h-8 bg-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <i className="fas fa-user-minus text-[9px]" />
               </div>
-              <span className="text-[9.5px] font-black text-rose-500 uppercase tracking-wider leading-none">Payment-Dropout</span>
+              <span className="text-[9.5px] font-black text-rose-500 uppercase tracking-wider leading-none">Exit</span>
             </div>
             <div>
-              <div className="text-xl font-black text-rose-600 tracking-tight mb-0.5">
-                {loading ? <StatSkeleton /> : stats.paymentDropout.toLocaleString()}
+              <div className="text-2xl font-black text-rose-600 tracking-tight mb-0.5">
+                {loading ? <StatSkeleton /> : stats.exit.toLocaleString()}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">Payment Dropout</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 6: All Other Inactive Statuses */}
-        <div
-          onClick={() => navigate('/lex/learners?status=Other%20Inactive')}
-          className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-lg relative overflow-hidden group cursor-pointer hover:-translate-y-1"
-        >
-          <div className="absolute -right-4 -top-4 w-16 h-16 bg-slate-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-700" />
-          <div className="relative z-10 flex flex-col justify-between h-full">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i className="fas fa-tags text-[9px]" />
-              </div>
-              <span className="text-[9.5px] font-black text-slate-500 uppercase tracking-wider leading-none">Others</span>
-            </div>
-            <div>
-              <div className="text-xl font-black text-slate-900 tracking-tight mb-0.5">
-                {loading ? <StatSkeleton /> : stats.otherStatus.toLocaleString()}
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider opacity-70">LOA</div>
+              <div className="text-[9px] font-extrabold text-slate-600 uppercase tracking-wider">Exit Learners</div>
             </div>
           </div>
         </div>

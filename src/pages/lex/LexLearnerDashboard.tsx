@@ -158,25 +158,20 @@ export default function LexLearnerDashboard() {
   const { rows, stats, filterOptions } = useMemo(() => {
     let total = 0;
     let active = 0;
-    let inactive = 0;
     let international = 0;
     let domestic = 0;
     let activeInternational = 0;
     let activeDomestic = 0;
-    let inactiveInternational = 0;
-    let inactiveDomestic = 0;
     let graduated = 0;
     let graduatedInternational = 0;
     let graduatedDomestic = 0;
-    let ipd = 0;
-    let ipdInternational = 0;
-    let ipdDomestic = 0;
-    let paymentDropout = 0;
-    let paymentDropoutInternational = 0;
-    let paymentDropoutDomestic = 0;
-    let otherInactive = 0;
-    let otherInactiveInternational = 0;
-    let otherInactiveDomestic = 0;
+    let loa = 0;
+    let loaInternational = 0;
+    let loaDomestic = 0;
+    let exit = 0;
+    let exitInternational = 0;
+    let exitDomestic = 0;
+
     const programsSet = new Set<string>();
     const countriesSet = new Set<string>();
     const statusesSet = new Set<string>();
@@ -214,23 +209,14 @@ export default function LexLearnerDashboard() {
         active++;
         if (isInt) activeInternational++;
         if (isDom) activeDomestic++;
-      } else {
-        if (mappedStatus === 'IPD') {
-          ipd++;
-          if (isInt) ipdInternational++;
-          if (isDom) ipdDomestic++;
-        } else if (mappedStatus === 'Payment-Dropout') {
-          paymentDropout++;
-          if (isInt) paymentDropoutInternational++;
-          if (isDom) paymentDropoutDomestic++;
-        } else {
-          otherInactive++;
-          if (isInt) otherInactiveInternational++;
-          if (isDom) otherInactiveDomestic++;
-        }
-        inactive++;
-        if (isInt) inactiveInternational++;
-        if (isDom) inactiveDomestic++;
+      } else if (mappedStatus === 'IPD') {
+        loa++;
+        if (isInt) loaInternational++;
+        if (isDom) loaDomestic++;
+      } else if (mappedStatus === 'Other Inactive' || mappedStatus === 'Payment-Dropout') {
+        exit++;
+        if (isInt) exitInternational++;
+        if (isDom) exitDomestic++;
       }
 
       programsSet.add(s._programName);
@@ -257,6 +243,7 @@ export default function LexLearnerDashboard() {
         formattedLaunch: formatLaunchMonth(rawLaunch)
       };
     });
+
     const sortedLaunchMonths = Array.from(launchMonthsSet).sort((a, b) => {
       if (a === '-' || b === '-') return 0;
       const parse = (s: string) => {
@@ -264,7 +251,7 @@ export default function LexLearnerDashboard() {
         const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(m);
         return new Date(2000 + Number(y), month).getTime();
       };
-      return parse(a) - parse(b); // Past to New
+      return parse(a) - parse(b);
     });
 
     return {
@@ -272,30 +259,24 @@ export default function LexLearnerDashboard() {
       stats: {
         total,
         active,
-        inactive,
         international,
         domestic,
         activeInternational,
         activeDomestic,
-        inactiveInternational,
-        inactiveDomestic,
         graduated,
         graduatedInternational,
         graduatedDomestic,
-        ipd,
-        ipdInternational,
-        ipdDomestic,
-        paymentDropout,
-        paymentDropoutInternational,
-        paymentDropoutDomestic,
-        otherInactive,
-        otherInactiveInternational,
-        otherInactiveDomestic
+        loa,
+        loaInternational,
+        loaDomestic,
+        exit,
+        exitInternational,
+        exitDomestic
       },
       filterOptions: {
         countries: Array.from(countriesSet).sort(),
         programs: Array.from(programsSet).sort(),
-        statuses: ['Active', 'IPD', 'Payment-Dropout', 'Other Inactive', 'Graduated'],
+        statuses: ['Active', 'IPD', 'Exit', 'Graduated'],
         residencies: ['International', 'Domestic'],
         launchMonths: sortedLaunchMonths
       }
@@ -315,7 +296,15 @@ export default function LexLearnerDashboard() {
 
       // Filters
       if (selectedCountries.length > 0 && !selectedCountries.includes(r.country || '')) return false;
-      if (selectedStatuses.length > 0 && !selectedStatuses.includes(r.mappedStatus)) return false;
+      if (selectedStatuses.length > 0) {
+        const matchesStatus = selectedStatuses.some(s => {
+          if (s === 'Exit' || s === 'Other Inactive' || s === 'Payment-Dropout') {
+            return r.mappedStatus !== 'Active' && r.mappedStatus !== 'Graduated' && r.mappedStatus !== 'IPD';
+          }
+          return r.mappedStatus === s;
+        });
+        if (!matchesStatus) return false;
+      }
       if (selectedPrograms.length > 0 && !selectedPrograms.includes(r.program)) return false;
       if (selectedResidencies.length > 0 && !selectedResidencies.includes(r.learnerType)) return false;
       if (selectedLaunchMonths.length > 0 && !selectedLaunchMonths.includes(r.formattedLaunch)) return false;
@@ -358,9 +347,9 @@ export default function LexLearnerDashboard() {
         </div>
       </div>
 
-      {/* Top Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {/* Total Learners Card */}
+      {/* Top Metrics Cards - 5 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
+        {/* Card 1: Total Volume */}
         {(() => {
           const isSelected = selectedStatuses.length === 0;
           return (
@@ -426,7 +415,7 @@ export default function LexLearnerDashboard() {
           );
         })()}
 
-        {/* Active Learners Card */}
+        {/* Card 2: Active Pool */}
         {(() => {
           const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Active';
           return (
@@ -440,7 +429,7 @@ export default function LexLearnerDashboard() {
                   <div className="w-7 h-7 bg-indigo-700 rounded-lg flex items-center justify-center text-white shadow-sm">
                     <i className="fas fa-user-check text-[10px]" />
                   </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Active Pool</div>
+                  <div className="text-[9.5px] font-black text-indigo-400 uppercase tracking-wider">Active Pool</div>
                 </div>
                 <div className="text-xl font-black text-indigo-700">
                   {loading ? <StatSkeleton /> : stats.active.toLocaleString()}
@@ -492,7 +481,7 @@ export default function LexLearnerDashboard() {
           );
         })()}
 
-        {/* Graduated Learners Card */}
+        {/* Card 3: Alumni Success */}
         {(() => {
           const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Graduated';
           return (
@@ -506,7 +495,7 @@ export default function LexLearnerDashboard() {
                   <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-sm">
                     <i className="fas fa-graduation-cap text-[10px]" />
                   </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Alumni Success</div>
+                  <div className="text-[9.5px] font-black text-emerald-500 uppercase tracking-wider">Alumni Success</div>
                 </div>
                 <div className="text-xl font-black text-emerald-600">
                   {loading ? <StatSkeleton /> : stats.graduated.toLocaleString()}
@@ -558,37 +547,37 @@ export default function LexLearnerDashboard() {
           );
         })()}
 
-        {/* IPD Learners Card */}
+        {/* Card 4: LOA (Leave of Absence) */}
         {(() => {
           const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'IPD';
           return (
             <div
               onClick={() => setSelectedStatuses(isSelected ? [] : ['IPD'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-amber-500 ring-2 ring-amber-500/10' : 'border-slate-100'
+              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-100'
                 }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-amber-400 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-hourglass-half text-[10px]" />
+                  <div className="w-7 h-7 bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-center text-amber-700 shadow-sm">
+                    <i className="fas fa-clock text-[10px] text-amber-700" />
                   </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">IPD</div>
+                  <div className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider">LOA</div>
                 </div>
-                <div className="text-xl font-black text-amber-400">
-                  {loading ? <StatSkeleton /> : stats.ipd.toLocaleString()}
+                <div className="text-xl font-black text-amber-600">
+                  {loading ? <StatSkeleton /> : stats.loa.toLocaleString()}
                 </div>
               </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">In Process of Deferral</div>
+              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Leave of Absence</div>
 
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
                   className="bg-indigo-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.ipdInternational / (stats.ipd || 1)) * 100}%` }}
+                  style={{ width: `${(stats.loaInternational / (stats.loa || 1)) * 100}%` }}
                 />
                 <div
                   className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.ipdDomestic / (stats.ipd || 1)) * 100}%` }}
+                  style={{ width: `${(stats.loaDomestic / (stats.loa || 1)) * 100}%` }}
                 />
               </div>
 
@@ -598,9 +587,9 @@ export default function LexLearnerDashboard() {
                   <div className="text-[13px] font-black text-indigo-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
-                        {stats.ipdInternational.toLocaleString()}
+                        {stats.loaInternational.toLocaleString()}
                         <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.ipdInternational / (stats.ipd || 1)) * 100).toFixed(1)}%)
+                          ({((stats.loaInternational / (stats.loa || 1)) * 100).toFixed(1)}%)
                         </span>
                       </>
                     )}
@@ -611,9 +600,9 @@ export default function LexLearnerDashboard() {
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
-                        {stats.ipdDomestic.toLocaleString()}
+                        {stats.loaDomestic.toLocaleString()}
                         <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.ipdDomestic / (stats.ipd || 1)) * 100).toFixed(1)}%)
+                          ({((stats.loaDomestic / (stats.loa || 1)) * 100).toFixed(1)}%)
                         </span>
                       </>
                     )}
@@ -624,12 +613,12 @@ export default function LexLearnerDashboard() {
           );
         })()}
 
-        {/* Payment Dropout Card */}
+        {/* Card 5: Exit (Excluding Graduated) */}
         {(() => {
-          const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Payment-Dropout';
+          const isSelected = selectedStatuses.length > 0 && selectedStatuses.includes('Exit');
           return (
             <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['Payment-Dropout'])}
+              onClick={() => setSelectedStatuses(isSelected ? [] : ['Exit'])}
               className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-rose-500 ring-2 ring-rose-500/10' : 'border-slate-100'
                 }`}
             >
@@ -638,23 +627,23 @@ export default function LexLearnerDashboard() {
                   <div className="w-7 h-7 bg-rose-600 rounded-lg flex items-center justify-center text-white shadow-sm">
                     <i className="fas fa-user-minus text-[10px]" />
                   </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Payment-Dropout</div>
+                  <div className="text-[9.5px] font-black text-rose-500 uppercase tracking-wider">Exit</div>
                 </div>
                 <div className="text-xl font-black text-rose-600">
-                  {loading ? <StatSkeleton /> : stats.paymentDropout.toLocaleString()}
+                  {loading ? <StatSkeleton /> : stats.exit.toLocaleString()}
                 </div>
               </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Payment Dropout</div>
+              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Exit Learners</div>
 
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
                   className="bg-indigo-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.paymentDropoutInternational / (stats.paymentDropout || 1)) * 100}%` }}
+                  style={{ width: `${(stats.exitInternational / (stats.exit || 1)) * 100}%` }}
                 />
                 <div
                   className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.paymentDropoutDomestic / (stats.paymentDropout || 1)) * 100}%` }}
+                  style={{ width: `${(stats.exitDomestic / (stats.exit || 1)) * 100}%` }}
                 />
               </div>
 
@@ -664,9 +653,9 @@ export default function LexLearnerDashboard() {
                   <div className="text-[13px] font-black text-indigo-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
-                        {stats.paymentDropoutInternational.toLocaleString()}
+                        {stats.exitInternational.toLocaleString()}
                         <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.paymentDropoutInternational / (stats.paymentDropout || 1)) * 100).toFixed(1)}%)
+                          ({((stats.exitInternational / (stats.exit || 1)) * 100).toFixed(1)}%)
                         </span>
                       </>
                     )}
@@ -677,75 +666,9 @@ export default function LexLearnerDashboard() {
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
-                        {stats.paymentDropoutDomestic.toLocaleString()}
+                        {stats.exitDomestic.toLocaleString()}
                         <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.paymentDropoutDomestic / (stats.paymentDropout || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Others Card */}
-        {(() => {
-          const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Other Inactive';
-          return (
-            <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['Other Inactive'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-slate-600 ring-2 ring-slate-600/10' : 'border-slate-100'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-slate-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-tags text-[10px]" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Others</div>
-                </div>
-                <div className="text-xl font-black text-slate-600">
-                  {loading ? <StatSkeleton /> : stats.otherInactive.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">LOA</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.otherInactiveInternational / (stats.otherInactive || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.otherInactiveDomestic / (stats.otherInactive || 1)) * 100}%` }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.otherInactiveInternational.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.otherInactiveInternational / (stats.otherInactive || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.otherInactiveDomestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.otherInactiveDomestic / (stats.otherInactive || 1)) * 100).toFixed(1)}%)
+                          ({((stats.exitDomestic / (stats.exit || 1)) * 100).toFixed(1)}%)
                         </span>
                       </>
                     )}

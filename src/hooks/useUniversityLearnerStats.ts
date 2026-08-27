@@ -54,7 +54,7 @@ export function useUniversityLearnerStats(universityId: string) {
       if (isLearnerActive(rawStatus, s)) {
         active += 1;
       }
-      if (isLearnerGraduated(rawStatus)) {
+      if (isLearnerGraduated(rawStatus, s)) {
         graduated += 1;
       }
     });
