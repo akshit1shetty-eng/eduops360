@@ -267,7 +267,7 @@ export default function UniversityProgramsPage() {
       {/* ── Sidebar ── */}
       <aside style={{ ...styles.sidebar, width: collapsed ? 56 : 240, transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)' }}>
         <div style={{ ...styles.sidebarLogo, padding: collapsed ? '24px 8px' : '24px 20px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
-          <div onClick={() => navigate('/lex/home')} style={{ display: 'flex', items: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%' }}>
+          <div onClick={() => navigate('/lex/home')} style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%' }}>
             <div style={{ ...styles.sidebarLogoIcon, width: collapsed ? 36 : 40, height: collapsed ? 36 : 40 }}>
               <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: collapsed ? 18 : 22 }} />
             </div>
