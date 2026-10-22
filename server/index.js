@@ -4,6 +4,7 @@ import { createClient } from '@libsql/client';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import nodemailer from 'nodemailer';
+import { randomBytes } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -77,6 +78,15 @@ async function initDb() {
     )
   `);
 
+  // 4. Sessions table (server-issued login tokens)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  `);
+
   // System roles are always refreshed so permission changes in code apply; custom roles are kept
   const superAdminPerms = [
     'page_home',
@@ -110,7 +120,7 @@ async function initDb() {
     ['edgewood viewer', 'Edgewood University Viewer (Restricted to Edgewood details only)', ['page_home', 'page_learners', 'uni_edgewood']],
     ['esgci viewer', 'ESGCI Viewer (Restricted to ESGCI details only)', ['page_home', 'page_learners', 'uni_esgci']],
     // Default role for bulk uploads and users whose custom role was deleted
-    ['user', 'Standard user with no dashboard access until a role is assigned', []],
+    ['user', 'Standard user with Home and Learners access across all universities', ['page_home', 'page_learners', 'uni_all']],
   ];
 
   // Seed users are only inserted if missing, so edits made in the Admin Panel are preserved
@@ -164,6 +174,50 @@ async function augmentProfileWithPermissions(profile) {
   const roleRecord = roles[0];
   const permissions = roleRecord ? JSON.parse(roleRecord.permissions) : [];
   return { ...profile, permissions };
+}
+
+// ─── Sessions ────────────────────────────────────────────────────────────────
+
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+async function createSession(userId) {
+  const token = randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  await db.batch([
+    { sql: 'DELETE FROM sessions WHERE expires_at < ?', args: [Date.now()] },
+    { sql: 'INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)', args: [token, userId, expiresAt] },
+  ], 'write');
+  return { token, expiresAt };
+}
+
+function getBearerToken(req) {
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+}
+
+// Rejects requests without a valid session token; attaches the caller's profile as req.profile
+async function requireAuth(req, res, next) {
+  const token = getBearerToken(req);
+  if (!token) {
+    return res.status(401).json({ error: { message: 'Not signed in' } });
+  }
+  const rows = await query(
+    'SELECT p.* FROM sessions s JOIN profiles p ON p.id = s.user_id WHERE s.token = ? AND s.expires_at > ?',
+    [token, Date.now()]
+  );
+  if (rows.length === 0) {
+    return res.status(401).json({ error: { message: 'Session expired. Please sign in again.' } });
+  }
+  req.profile = await augmentProfileWithPermissions(rows[0]);
+  next();
+}
+
+// User and role management is limited to roles with the user-editing permission
+function requireAdmin(req, res, next) {
+  if (!req.profile?.permissions?.includes('action_edit_users')) {
+    return res.status(403).json({ error: { message: 'You do not have permission to manage users and roles' } });
+  }
+  next();
 }
 
 // ─── API Endpoints ───────────────────────────────────────────────────────────
@@ -272,8 +326,12 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     });
   }
 
+  const { token: accessToken, expiresAt } = await createSession(profile.id);
+
   return res.json({
     session: {
+      access_token: accessToken,
+      expires_at: expiresAt,
       user: {
         id: profile.id,
         email: profile.email
@@ -284,7 +342,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 });
 
 // 3. Get all profiles (including role permissions)
-app.get('/api/profiles', async (req, res) => {
+app.get('/api/profiles', requireAuth, requireAdmin, async (req, res) => {
   try {
     const rows = await query('SELECT * FROM profiles');
     const data = await Promise.all(rows.map(augmentProfileWithPermissions));
@@ -296,8 +354,12 @@ app.get('/api/profiles', async (req, res) => {
 });
 
 // 4. Get single profile (with role permissions)
-app.get('/api/profiles/:id', async (req, res) => {
+app.get('/api/profiles/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
+  // Users may only read their own profile; admins may read any
+  if (id !== req.profile.id && !req.profile.permissions.includes('action_edit_users')) {
+    return res.status(403).json({ data: null, error: { message: 'Not allowed to view this profile' } });
+  }
   try {
     const rows = await query('SELECT * FROM profiles WHERE id = ?', [id]);
     const profile = rows[0] || null;
@@ -312,7 +374,7 @@ app.get('/api/profiles/:id', async (req, res) => {
 });
 
 // 5. Create user manually (Admin Action)
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', requireAuth, requireAdmin, async (req, res) => {
   const { email, full_name, role } = req.body;
   if (!email || !role) {
     return res.status(400).json({ error: 'Email and role are required' });
@@ -353,7 +415,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // 6. Update user (Admin Action)
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { email, full_name, role } = req.body;
   if (!email || !role) {
@@ -391,13 +453,14 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // 7. Delete user (Admin Action)
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     const changes = await run('DELETE FROM profiles WHERE id = ?', [id]);
     if (changes === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+    await run('DELETE FROM sessions WHERE user_id = ?', [id]);
     return res.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -405,8 +468,32 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// 7b. Bulk delete users (Admin Action) — the caller's own account is never deleted
+app.post('/api/users/bulk-delete', requireAuth, requireAdmin, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'A list of user ids is required' });
+  }
+  const targetIds = [...new Set(ids.map(String))].filter(id => id !== req.profile.id);
+  if (targetIds.length === 0) {
+    return res.status(400).json({ error: 'You cannot delete your own account' });
+  }
+
+  try {
+    const placeholders = targetIds.map(() => '?').join(', ');
+    const [deleted] = await db.batch([
+      { sql: `DELETE FROM profiles WHERE id IN (${placeholders})`, args: targetIds },
+      { sql: `DELETE FROM sessions WHERE user_id IN (${placeholders})`, args: targetIds },
+    ], 'write');
+    return res.json({ success: true, count: deleted.rowsAffected });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return res.status(500).json({ error: { message } });
+  }
+});
+
 // 8. Bulk upload users (Admin Action)
-app.post('/api/users/bulk-upload', async (req, res) => {
+app.post('/api/users/bulk-upload', requireAuth, requireAdmin, async (req, res) => {
   const { users } = req.body;
   if (!users || !Array.isArray(users)) {
     return res.status(400).json({ error: 'Invalid user list format' });
@@ -451,7 +538,7 @@ app.post('/api/users/bulk-upload', async (req, res) => {
 });
 
 // 9. Get all custom roles
-app.get('/api/roles', async (req, res) => {
+app.get('/api/roles', requireAuth, async (req, res) => {
   try {
     const rows = await query('SELECT * FROM roles');
     const data = rows.map(r => ({
@@ -468,7 +555,7 @@ app.get('/api/roles', async (req, res) => {
 });
 
 // 10. Create a role
-app.post('/api/roles', async (req, res) => {
+app.post('/api/roles', requireAuth, requireAdmin, async (req, res) => {
   const { name, description, permissions } = req.body;
   if (!name || !permissions || !Array.isArray(permissions)) {
     return res.status(400).json({ error: 'Role name and permissions list are required' });
@@ -498,7 +585,7 @@ app.post('/api/roles', async (req, res) => {
 });
 
 // 11. Delete custom role
-app.delete('/api/roles/:name', async (req, res) => {
+app.delete('/api/roles/:name', requireAuth, requireAdmin, async (req, res) => {
   const { name } = req.params;
   const roleName = name.trim().toLowerCase();
 
@@ -527,7 +614,7 @@ app.delete('/api/roles/:name', async (req, res) => {
 });
 
 // 12. Update custom role
-app.put('/api/roles/:name', async (req, res) => {
+app.put('/api/roles/:name', requireAuth, requireAdmin, async (req, res) => {
   const { name } = req.params;
   const { description, permissions } = req.body;
 
@@ -559,7 +646,11 @@ app.put('/api/roles/:name', async (req, res) => {
 });
 
 // 13. Sign out
-app.post('/api/auth/sign-out', (req, res) => {
+app.post('/api/auth/sign-out', async (req, res) => {
+  const token = getBearerToken(req);
+  if (token) {
+    await run('DELETE FROM sessions WHERE token = ?', [token]);
+  }
   return res.json({ success: true });
 });
 

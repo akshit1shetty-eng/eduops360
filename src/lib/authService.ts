@@ -10,6 +10,8 @@ export interface Profile {
 }
 
 export interface Session {
+  access_token?: string;
+  expires_at?: number;
   user: {
     id: string;
     email: string;
@@ -99,57 +101,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
-const FALLBACK_PROFILES: Profile[] = [
-  {
-    id: 'admin-shetty-id',
-    email: 'akshit1.shetty@upgrad.com',
-    role: 'super admin',
-    full_name: 'Akshit Shetty',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('super admin')
-  },
-  {
-    id: 'user-standard-id',
-    email: 'standard.user@upgrad.com',
-    role: 'user',
-    full_name: 'Standard User',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('user')
-  },
-  {
-    id: 'user-ggu-id',
-    email: 'ggu.user@upgrad.com',
-    role: 'ggu viewer',
-    full_name: 'GGU Manager',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('ggu viewer')
-  },
-  {
-    id: 'user-psb-id',
-    email: 'psb.user@upgrad.com',
-    role: 'psb viewer',
-    full_name: 'PSB Manager',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('psb viewer')
-  },
-  {
-    id: 'user-edgewood-id',
-    email: 'edgewood.user@upgrad.com',
-    role: 'edgewood viewer',
-    full_name: 'Edgewood Manager',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('edgewood viewer')
-  },
-  {
-    id: 'user-esgci-id',
-    email: 'esgci.user@upgrad.com',
-    role: 'esgci viewer',
-    full_name: 'ESGCI Manager',
-    created_at: new Date().toISOString(),
-    permissions: getPermissionsForRole('esgci viewer')
-  }
-];
-
 // Subscriber system for auth state changes
 type AuthListener = (session: Session | null) => void;
 const listeners = new Set<AuthListener>();
@@ -162,6 +113,41 @@ function notifyListeners(session: Session | null) {
       console.error('Error in auth listener:', e);
     }
   });
+}
+
+function readStoredSession(): Session | null {
+  const stored = localStorage.getItem(SESSION_KEY);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as Session;
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  }
+}
+
+// Clears a session the server no longer accepts (expired, revoked, or from before server-issued tokens)
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  notifyListeners(null);
+}
+
+// Authenticated fetch: attaches the session token and signs out on 401
+async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = readStoredSession()?.access_token;
+  const headers = new Headers(init.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+
+  const response = await fetch(`${API_URL}${path}`, { ...init, headers });
+  if (response.status === 401) clearSession();
+  return response;
+}
+
+async function readError(response: Response, fallback: string): Promise<{ message: string }> {
+  const errRes = (await response.json().catch(() => ({}))) as { error?: { message?: string } | string };
+  const msg = typeof errRes.error === 'string' ? errRes.error : errRes.error?.message;
+  return { message: msg || fallback };
 }
 
 export const authService = {
@@ -182,14 +168,12 @@ export const authService = {
     }
 
     if (!response.ok) {
-      const errRes = (await response.json().catch(() => ({}))) as { error?: { message?: string } | string };
-      const msg = typeof errRes.error === 'string' ? errRes.error : errRes.error?.message;
-      throw new Error(msg || 'Failed to send verification code');
+      throw new Error((await readError(response, 'Failed to send verification code')).message);
     }
   },
 
   /**
-   * Verifies the OTP code via the Express/Turso API.
+   * Verifies the OTP code via the Express/Turso API and stores the server-issued session token.
    */
   async verifyOtp(email: string, token: string): Promise<{ session: Session | null; error: { message: string } | null }> {
     const normalized = email.trim().toLowerCase();
@@ -220,88 +204,60 @@ export const authService = {
 
   /**
    * Retrieves the current session (cached in browser localStorage).
+   * Sessions without a server-issued token are discarded.
    */
   getCurrentSession(): Session | null {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (!stored) return null;
-    try {
-      return JSON.parse(stored) as Session;
-    } catch {
+    const session = readStoredSession();
+    if (session && (!session.access_token || (session.expires_at && session.expires_at < Date.now()))) {
       localStorage.removeItem(SESSION_KEY);
       return null;
     }
+    return session;
   },
 
   /**
-   * Retrieves the profile associated with a user ID from Express/SQLite API or Fallback.
+   * Retrieves the signed-in user's profile; permissions come from the server.
    */
   async getProfile(userId: string): Promise<{ data: Profile | null; error: { message: string } | null }> {
     try {
-      const response = await fetch(`${API_URL}/profiles/${userId}`);
+      const response = await apiFetch(`/profiles/${encodeURIComponent(userId)}`);
       if (response.ok) {
-        const result = (await response.json()) as { data: Profile | null; error: { message: string } | null };
-        if (result.data) {
-          result.data.permissions = getPermissionsForRole(result.data.role);
-        }
-        return result;
+        return (await response.json()) as { data: Profile | null; error: { message: string } | null };
       }
+      return { data: null, error: await readError(response, 'Failed to fetch profile') };
     } catch (e) {
-      console.warn('Profile fetch error, using local fallback profiles:', e);
+      console.warn('Profile fetch error:', e);
+      return { data: null, error: { message: 'Failed to fetch profile' } };
     }
-
-    const fallback = FALLBACK_PROFILES.find(p => p.id === userId || p.email.toLowerCase() === userId.toLowerCase());
-    if (fallback) {
-      return {
-        data: {
-          ...fallback,
-          permissions: getPermissionsForRole(fallback.role)
-        },
-        error: null
-      };
-    }
-
-    return { data: null, error: { message: 'Failed to fetch profile' } };
   },
 
   /**
-   * Retrieves all profiles from Express/SQLite API or Fallback.
+   * Retrieves all profiles (Admin Action).
    */
   async getProfiles(): Promise<{ data: Profile[] | null; error: { message: string } | null }> {
     try {
-      const response = await fetch(`${API_URL}/profiles`);
+      const response = await apiFetch('/profiles');
       if (response.ok) {
-        const result = (await response.json()) as { data: Profile[] | null; error: { message: string } | null };
-        if (result.data) {
-          result.data = result.data.map(p => ({
-            ...p,
-            permissions: getPermissionsForRole(p.role)
-          }));
-        }
-        return result;
+        return (await response.json()) as { data: Profile[] | null; error: { message: string } | null };
       }
+      return { data: null, error: await readError(response, 'Failed to fetch users') };
     } catch (e) {
-      console.warn('Profiles fetch error, using local fallback profiles:', e);
+      console.warn('Profiles fetch error:', e);
+      return { data: null, error: { message: 'Failed to fetch users' } };
     }
-
-    return {
-      data: FALLBACK_PROFILES.map(p => ({ ...p, permissions: getPermissionsForRole(p.role) })),
-      error: null
-    };
   },
 
   /**
    * Creates a user manually (Admin Action).
    */
   async createUser(email: string, fullName: string, role: string): Promise<{ success: boolean; data?: Profile; error?: { message: string } }> {
-    const response = await fetch(`${API_URL}/users`, {
+    const response = await apiFetch('/users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, full_name: fullName, role })
     });
 
     if (!response.ok) {
-      const errRes = (await response.json()) as { error?: { message: string } };
-      return { success: false, error: errRes.error || { message: 'Failed to create user' } };
+      return { success: false, error: await readError(response, 'Failed to create user') };
     }
 
     return (await response.json()) as { success: boolean; data: Profile };
@@ -311,15 +267,13 @@ export const authService = {
    * Updates user details (Admin Action).
    */
   async updateUser(id: string, email: string, fullName: string, role: string): Promise<{ success: boolean; error?: { message: string } }> {
-    const response = await fetch(`${API_URL}/users/${id}`, {
+    const response = await apiFetch(`/users/${encodeURIComponent(id)}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, full_name: fullName, role })
     });
 
     if (!response.ok) {
-      const errRes = (await response.json()) as { error?: { message: string } };
-      return { success: false, error: errRes.error || { message: 'Failed to update user' } };
+      return { success: false, error: await readError(response, 'Failed to update user') };
     }
 
     return (await response.json()) as { success: boolean };
@@ -329,119 +283,133 @@ export const authService = {
    * Deletes a user (Admin Action).
    */
   async deleteUser(id: string): Promise<{ success: boolean; error?: { message: string } }> {
-    const response = await fetch(`${API_URL}/users/${id}`, {
+    const response = await apiFetch(`/users/${encodeURIComponent(id)}`, {
       method: 'DELETE'
     });
 
     if (!response.ok) {
-      const errRes = (await response.json()) as { error?: { message: string } };
-      return { success: false, error: errRes.error || { message: 'Failed to delete user' } };
+      return { success: false, error: await readError(response, 'Failed to delete user') };
     }
 
     return (await response.json()) as { success: boolean };
   },
 
   /**
+   * Deletes several users at once (Admin Action). The signed-in admin is never deleted.
+   */
+  async bulkDeleteUsers(ids: string[]): Promise<{ success: boolean; count?: number; error?: { message: string } }> {
+    const response = await apiFetch('/users/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids })
+    });
+
+    if (!response.ok) {
+      return { success: false, error: await readError(response, 'Failed to delete users') };
+    }
+
+    return (await response.json()) as { success: boolean; count: number };
+  },
+
+  /**
    * Bulk uploads users (Admin Action).
    */
   async bulkUploadUsers(usersList: { email: string; name: string; role: string }[]): Promise<{ success: boolean; count: number; errors: string[] }> {
-    const response = await fetch(`${API_URL}/users/bulk-upload`, {
+    const response = await apiFetch('/users/bulk-upload', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ users: usersList })
     });
 
     if (!response.ok) {
-      throw new Error('Failed to bulk upload users');
+      throw new Error((await readError(response, 'Failed to bulk upload users')).message);
     }
 
     return (await response.json()) as { success: boolean; count: number; errors: string[] };
   },
 
   /**
-   * Creates a new role.
+   * Creates a new role (Admin Action).
    */
   async createRole(name: string, description: string, permissions: string[]): Promise<{ success: boolean; error?: { message: string } }> {
     try {
-      const response = await fetch(`${API_URL}/roles`, {
+      const response = await apiFetch('/roles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, permissions })
       });
       if (response.ok) {
         return (await response.json()) as { success: boolean };
       }
+      return { success: false, error: await readError(response, 'Failed to create role') };
     } catch (e) {
       console.warn('createRole failed', e);
+      return { success: false, error: { message: 'Failed to create role' } };
     }
-    return { success: true };
   },
 
   /**
-   * Updates an existing role.
+   * Updates an existing role (Admin Action).
    */
   async updateRole(name: string, description: string, permissions: string[]): Promise<{ success: boolean; error?: { message: string } }> {
     try {
-      const response = await fetch(`${API_URL}/roles/${encodeURIComponent(name)}`, {
+      const response = await apiFetch(`/roles/${encodeURIComponent(name)}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, permissions })
       });
       if (response.ok) {
         return (await response.json()) as { success: boolean };
       }
+      return { success: false, error: await readError(response, 'Failed to update role') };
     } catch (e) {
       console.warn('updateRole failed', e);
+      return { success: false, error: { message: 'Failed to update role' } };
     }
-    return { success: true };
   },
 
   /**
-   * Deletes a role.
+   * Deletes a role (Admin Action).
    */
   async deleteRole(name: string): Promise<{ success: boolean; error?: { message: string } }> {
     try {
-      const response = await fetch(`${API_URL}/roles/${encodeURIComponent(name)}`, {
+      const response = await apiFetch(`/roles/${encodeURIComponent(name)}`, {
         method: 'DELETE'
       });
       if (response.ok) {
         return (await response.json()) as { success: boolean };
       }
+      return { success: false, error: await readError(response, 'Failed to delete role') };
     } catch (e) {
       console.warn('deleteRole failed', e);
+      return { success: false, error: { message: 'Failed to delete role' } };
     }
-    return { success: true };
   },
 
   /**
-   * Fetches all roles. Returns pre-coded system roles.
+   * Fetches all roles. Falls back to the pre-coded system roles if the server is unreachable.
    */
   async getRoles(): Promise<{ data: Role[] | null; error: { message: string } | null }> {
     try {
-      const response = await fetch(`${API_URL}/roles`);
+      const response = await apiFetch('/roles');
       if (response.ok) {
         const res = (await response.json()) as { data: Role[] | null };
         if (res.data && res.data.length >= HARDCODED_SYSTEM_ROLES.length) {
           return { data: res.data, error: null };
         }
       }
-    } catch (e) {
+    } catch {
       console.warn('Backend fetch failed, returning pre-coded system roles');
     }
     return { data: HARDCODED_SYSTEM_ROLES, error: null };
   },
 
   /**
-   * Signs out the user by clearing the session locally and remotely.
+   * Signs out the user by revoking the session on the server and clearing it locally.
    */
   async signOut(): Promise<void> {
     try {
-      await fetch(`${API_URL}/auth/sign-out`, { method: 'POST' });
+      await apiFetch('/auth/sign-out', { method: 'POST' });
     } catch (e) {
       console.warn('Sign out request failed', e);
     }
-    localStorage.removeItem(SESSION_KEY);
-    notifyListeners(null);
+    clearSession();
   },
 
   /**

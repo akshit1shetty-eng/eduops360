@@ -49,6 +49,8 @@ export default function AdminPanel() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
 
@@ -182,6 +184,29 @@ export default function AdminPanel() {
 
     triggerToast('🗑️ User account deleted.');
     setShowDeleteUserModal(false);
+    setSelectedUserIds(ids => ids.filter(id => id !== selectedUserId));
+    void loadData();
+  };
+
+  const toggleUserSelected = (id: string) => {
+    setSelectedUserIds(ids => (ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]));
+  };
+
+  const submitBulkDeleteUsers = async () => {
+    if (selectedUserIds.length === 0) return;
+
+    setLoading(true);
+    const res = await authService.bulkDeleteUsers(selectedUserIds);
+    setLoading(false);
+
+    if (!res.success) {
+      triggerToast(`❌ ${res.error?.message || 'Failed to delete users'}`);
+      return;
+    }
+
+    triggerToast(`🗑️ ${res.count ?? selectedUserIds.length} user account(s) deleted.`);
+    setShowBulkDeleteModal(false);
+    setSelectedUserIds([]);
     void loadData();
   };
 
@@ -414,6 +439,18 @@ export default function AdminPanel() {
     p.role.toLowerCase().includes(search.toLowerCase())
   );
 
+  // The signed-in admin can't select (and so can't bulk-delete) their own account
+  const selectableProfiles = filteredProfiles.filter(p => p.id !== adminProfile?.id);
+  const allVisibleSelected = selectableProfiles.length > 0 && selectableProfiles.every(p => selectedUserIds.includes(p.id));
+  const someVisibleSelected = selectableProfiles.some(p => selectedUserIds.includes(p.id));
+  const toggleSelectAllVisible = () => {
+    const visibleIds = selectableProfiles.map(p => p.id);
+    setSelectedUserIds(ids => allVisibleSelected
+      ? ids.filter(id => !visibleIds.includes(id))
+      : [...new Set([...ids, ...visibleIds])]);
+  };
+  const selectedProfiles = profiles.filter(p => selectedUserIds.includes(p.id));
+
   const totalUsersCount = profiles.length;
   const adminUsersCount = profiles.filter(p => p.role === 'admin').length;
   const activeRolesCount = roles.length;
@@ -633,6 +670,20 @@ export default function AdminPanel() {
                 <h2 style={styles.tableTitle}>All Users</h2>
                 <p style={styles.tableSub}>{filteredProfiles.length} of {totalUsersCount} users</p>
               </div>
+              {selectedUserIds.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', marginRight: 12 }}>
+                  <button onClick={() => setSelectedUserIds([])} style={{ ...styles.btnSecondary, padding: '8px 14px', fontSize: 12 }}>
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => setShowBulkDeleteModal(true)}
+                    style={{ ...styles.btnPrimary, background: '#ef4444', boxShadow: 'none', padding: '8px 14px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <i className="fas fa-trash-alt" />
+                    Delete selected ({selectedUserIds.length})
+                  </button>
+                </div>
+              )}
               <div style={styles.searchWrapper}>
                 <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13 }} />
                 <input
@@ -649,7 +700,18 @@ export default function AdminPanel() {
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHead}>
-                    <th style={{ ...styles.th, width: '40%' }}>User</th>
+                    <th style={{ ...styles.th, width: 44 }}>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all users"
+                        checked={allVisibleSelected}
+                        ref={el => { if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected; }}
+                        onChange={toggleSelectAllVisible}
+                        disabled={selectableProfiles.length === 0}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#ED2B3B' }}
+                      />
+                    </th>
+                    <th style={{ ...styles.th, width: '38%' }}>User</th>
                     <th style={{ ...styles.th, width: '20%' }}>Role</th>
                     <th style={{ ...styles.th, width: '25%' }}>Created At</th>
                     <th style={{ ...styles.th, width: '15%', textAlign: 'right' }}>Actions</th>
@@ -659,21 +721,32 @@ export default function AdminPanel() {
                   {loading ? (
                     Array.from({ length: 4 }).map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={4} style={styles.td}>
+                        <td colSpan={5} style={styles.td}>
                           <div style={{ height: 16, background: '#f1f5f9', borderRadius: 6, width: '100%', animation: 'pulse 1.5s infinite' }} />
                         </td>
                       </tr>
                     ))
                   ) : filteredProfiles.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ ...styles.td, textAlign: 'center', padding: '40px 24px', color: '#94a3b8', fontWeight: 600 }}>
+                      <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '40px 24px', color: '#94a3b8', fontWeight: 600 }}>
                         <i className="fas fa-search" style={{ fontSize: 24, marginBottom: 8, display: 'block', opacity: 0.4 }} />
                         No users found
                       </td>
                     </tr>
                   ) : (
                     filteredProfiles.map(p => (
-                      <tr key={p.id} style={styles.tableRow}>
+                      <tr key={p.id} style={{ ...styles.tableRow, ...(selectedUserIds.includes(p.id) ? { background: 'rgba(237,43,59,0.04)' } : {}) }}>
+                        <td style={styles.td}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${p.email}`}
+                            checked={selectedUserIds.includes(p.id)}
+                            onChange={() => toggleUserSelected(p.id)}
+                            disabled={p.id === adminProfile?.id}
+                            title={p.id === adminProfile?.id ? 'You cannot delete your own account' : undefined}
+                            style={{ width: 16, height: 16, cursor: p.id === adminProfile?.id ? 'not-allowed' : 'pointer', accentColor: '#ED2B3B' }}
+                          />
+                        </td>
                         <td style={styles.td}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <div style={{
@@ -918,6 +991,36 @@ export default function AdminPanel() {
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setShowDeleteUserModal(false)} style={{ ...styles.btnSecondary, flex: 1 }}>Cancel</button>
                 <button onClick={submitDeleteUser} style={{ ...styles.btnPrimary, background: '#ef4444', flex: 1 }}>Confirm Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal Dialog: Bulk Delete Users ────────────────────────────────── */}
+      {showBulkDeleteModal && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalCard, maxWidth: 440 }}>
+            <div style={styles.modalHeader}>
+              <h3 style={{ ...styles.modalTitle, color: '#ef4444' }}>Delete {selectedProfiles.length} Accounts</h3>
+              <button onClick={() => setShowBulkDeleteModal(false)} style={styles.modalCloseBtn}><i className="fas fa-times" /></button>
+            </div>
+            <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+              <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444', fontSize: 42, marginBottom: 16 }} />
+              <p style={{ color: '#334155', fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>Confirm deletion</p>
+              <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>
+                The following accounts will be permanently deleted. This action cannot be undone.
+              </p>
+              <div style={{ maxHeight: 160, overflowY: 'auto', textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', marginBottom: 20 }}>
+                {selectedProfiles.map(p => (
+                  <div key={p.id} style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, padding: '3px 0' }}>
+                    {p.full_name || p.email.split('@')[0]} <span style={{ color: '#64748b', fontWeight: 500 }}>· {p.email}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setShowBulkDeleteModal(false)} style={{ ...styles.btnSecondary, flex: 1 }}>Cancel</button>
+                <button onClick={submitBulkDeleteUsers} style={{ ...styles.btnPrimary, background: '#ef4444', flex: 1 }}>Delete {selectedProfiles.length} Accounts</button>
               </div>
             </div>
           </div>
