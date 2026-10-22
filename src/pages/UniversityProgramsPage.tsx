@@ -358,7 +358,7 @@ export default function UniversityProgramsPage() {
             <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2">
               <i className="fas fa-calendar-alt text-brand-700 text-xs" />
               <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
           </div>
