@@ -4,6 +4,7 @@ import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
 import { UNIVERSITIES } from '../../lib/universities';
 import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
+import DateBadge from '../../components/DateBadge';
 
 function StatSkeleton() {
   return <div className="h-8 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />;
@@ -123,10 +124,7 @@ export default function LexDashboardHome() {
           <p className="text-slate-600 text-base font-medium opacity-80">Enterprise operational intelligence & analytics.</p>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center">
-            <i className="fas fa-calendar-alt text-brand-700 mr-2 text-xs" />
-            <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
+          <DateBadge />
         </div>
       </div>
 

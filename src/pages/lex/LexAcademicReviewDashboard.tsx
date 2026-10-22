@@ -1,9 +1,14 @@
+import DateBadge from '../../components/DateBadge';
+
 export default function LexAcademicReviewDashboard() {
   return (
     <div className="max-w-4xl mx-auto py-2">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Academic Review <span className="text-emerald-700">Dashboard</span></h1>
-        <p className="text-slate-600 text-base font-medium opacity-80">Cross-program performance and grades overview.</p>
+      <div className="flex items-center justify-between mb-8 gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Academic Review <span className="text-emerald-700">Dashboard</span></h1>
+          <p className="text-slate-600 text-base font-medium opacity-80">Cross-program performance and grades overview.</p>
+        </div>
+        <DateBadge />
       </div>
 
       <div className="relative overflow-hidden bg-white rounded-[2rem] border border-slate-100 shadow-sm p-12 text-center flex flex-col items-center justify-center min-h-[400px]">

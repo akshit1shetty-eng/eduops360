@@ -3,6 +3,7 @@ import { useNavigate, useParams, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { UNIVERSITIES } from '../lib/universities';
 import GGUOverallOverviewDashboard from '../components/GGUOverallOverviewDashboard';
+import DateBadge from '../components/DateBadge';
 
 export default function UniversityOverviewPage() {
   const { uniId } = useParams<{ uniId: string }>();
@@ -176,6 +177,7 @@ export default function UniversityOverviewPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <DateBadge />
             <button
               onClick={() => navigate(`/programs/${uni.id}`)}
               style={{

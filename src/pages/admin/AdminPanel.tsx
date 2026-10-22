@@ -4,6 +4,7 @@ import { authService, HARDCODED_SYSTEM_ROLES } from '../../lib/authService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Profile, Role } from '../../lib/authService';
 import { UNIVERSITIES } from '../../lib/universities';
+import DateBadge from '../../components/DateBadge';
 
 const PAGES_PERMISSIONS = [
   { key: 'page_home', name: 'Dashboard Home', desc: 'Allows viewing /lex/home' },
@@ -679,7 +680,8 @@ export default function AdminPanel() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <DateBadge />
             {activeTab === 'users' ? (
               <>
                 <button onClick={() => {

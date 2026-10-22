@@ -4,6 +4,7 @@ import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
 import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
 import FilterDropdown from '../../components/FilterDropdown';
+import DateBadge from '../../components/DateBadge';
 
 function StatSkeleton() {
   return <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />;
@@ -371,11 +372,12 @@ export default function LexLearnerDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto py-2">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
+      <div className="flex items-center justify-between mb-8 gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Learner <span className="text-brand-700">Dashboard</span></h1>
           <p className="text-slate-600 text-base font-medium opacity-80">Cross-program learner analytics and student lifecycle tracking.</p>
         </div>
+        <DateBadge />
       </div>
 
       {/* Top Metrics Cards - 5 Cards */}

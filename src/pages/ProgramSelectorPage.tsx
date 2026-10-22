@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import TopbarGreeting from '../components/TopbarGreeting';
 import { UNIVERSITIES, hasUniversityAccess, hasProgramAccess, type University } from '../lib/universities';
 import { useUniversityLearnerStats } from '../hooks/useUniversityLearnerStats';
+import DateBadge from '../components/DateBadge';
 
 function StatSkeleton() {
   return <span className="inline-block h-3.5 w-8 bg-slate-200 rounded animate-pulse" />;
@@ -350,7 +351,9 @@ export default function UniversitySelectorPage() {
               </div>
 
               {/* Summary Stats Badges */}
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-col items-end gap-3 shrink-0">
+                <DateBadge />
+                <div className="flex items-center gap-3">
                 <div className="px-4 py-2.5 bg-white border border-slate-200/80 rounded-2xl shadow-sm text-center">
                   <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Universities</div>
                   <div className="text-xl font-black text-slate-900">{filteredUnis.length}</div>
@@ -360,6 +363,7 @@ export default function UniversitySelectorPage() {
                   <div className="text-xl font-black text-emerald-600">
                     {filteredUnis.reduce((a, u) => a + u.programs.filter(p => p.available).length, 0)}
                   </div>
+                </div>
                 </div>
               </div>
             </div>
