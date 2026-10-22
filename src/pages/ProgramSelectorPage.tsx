@@ -231,6 +231,7 @@ export default function UniversitySelectorPage() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 relative overflow-hidden">
+      <div className="app-canvas" />
       <style>{`
         .sidebar-nav-item { transition: all 0.2s ease-in-out; }
         .sidebar-nav-item:hover { color: white !important; background-color: rgba(255,255,255,0.05) !important; }
@@ -343,7 +344,7 @@ export default function UniversitySelectorPage() {
         </header>
 
         {/* Content */}
-        <div className="flex-1 px-8 pt-8 pb-16">
+        <div className="flex-1 px-8 pt-8 pb-16 page-enter">
           <div className="max-w-6xl mx-auto">
 
             {/* Page Header */}
@@ -405,6 +406,6 @@ const styles: Record<string, React.CSSProperties> = {
   navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
-  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
+  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #ED2B3B, #0C2340)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
   signOutBtn: { width: 32, height: 32, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: 'rgba(252,165,165,0.8)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: 13 },
 };

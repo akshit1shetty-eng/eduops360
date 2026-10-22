@@ -570,6 +570,7 @@ export default function AdminPanel() {
         }}>
           <button
             onClick={() => setActiveTab('users')}
+            aria-current={activeTab === 'users' ? 'page' : undefined}
             style={{
               ...(activeTab === 'users' ? styles.navItemActive : styles.navItem),
               padding: collapsed ? '10px 0' : '10px 12px',
@@ -583,6 +584,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab('roles')}
+            aria-current={activeTab === 'roles' ? 'page' : undefined}
             style={{
               ...(activeTab === 'roles' ? styles.navItemActive : styles.navItem),
               padding: collapsed ? '10px 0' : '10px 12px',
@@ -1649,7 +1651,7 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarAvatar: {
     width: 34, height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: 'white', fontWeight: 900, fontSize: 14,
     flexShrink: 0,

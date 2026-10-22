@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LexFilterProvider, useLexFilter } from '../../hooks/useLexFilter';
 import { UNIVERSITIES, getAssignedUniversityId, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
 import { useAuth } from '../../hooks/useAuth';
@@ -55,6 +55,17 @@ function LexLayoutContent() {
   const [isUniOpen, setIsUniOpen] = useState(false);
   const selectedUni = UNIVERSITIES.find(u => u.id === selectedUniversityId);
 
+  // Header: time-of-day greeting + breadcrumb for the current section
+  const location = useLocation();
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = (profile?.full_name || profile?.email?.split('@')[0] || '').split(' ')[0];
+  const sectionName = location.pathname.startsWith('/lex/learners')
+    ? 'Learners'
+    : location.pathname.startsWith('/lex/budget')
+      ? 'Budget'
+      : 'Home';
+
   return (
     <div className="min-h-screen flex bg-slate-50 transition-colors duration-300 relative overflow-hidden">
       <style>{`
@@ -71,11 +82,8 @@ function LexLayoutContent() {
         }
       `}</style>
 
-      {/* Decorative Background for Light Mode */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px]" />
-      </div>
+      {/* Decorative canvas: dot grid with a soft crimson/navy glow */}
+      <div className="app-canvas" />
 
       {/* Sidebar */}
       <aside
@@ -240,10 +248,15 @@ function LexLayoutContent() {
         }}
       >
         {/* Header */}
-        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-black text-brand-700 uppercase tracking-[0.25em] mb-1">Operational Intel</span>
-            <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">Overall Dashboard</h2>
+        <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 flex items-center justify-between px-8">
+          <div className="topbar-greeting">
+            <span className="topbar-greeting-crumb">
+              <span className="live-dot" title="Live data" />
+              Overall Dashboard <i className="fas fa-chevron-right" style={{ fontSize: 7, opacity: 0.6 }} /> <b>{sectionName}</b>
+            </span>
+            <span className="topbar-greeting-title">
+              {greeting}{firstName ? `, ${firstName}` : ''}
+            </span>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -339,7 +352,7 @@ function LexLayoutContent() {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 p-8">
+        <div key={location.pathname} className="flex-1 p-8 page-enter">
           <Outlet />
         </div>
       </main>
@@ -437,7 +450,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
+    boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 4px 12px rgba(237,43,59,0.3)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

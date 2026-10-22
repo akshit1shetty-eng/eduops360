@@ -132,17 +132,46 @@ export default function LoginPage() {
 
   // ─── Render: Standard Email/OTP Auth Flow ──────────────────────────────────
   return (
-    <div style={styles.fullPage}>
-      {/* Animated background orbs */}
-      <div style={styles.orbContainer}>
-        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)', top: '-15%', left: '-8%', width: 700, height: 700, animationName: 'float1', animationDuration: '9s' }} />
-        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)', bottom: '-20%', right: '-10%', width: 550, height: 550, animationName: 'float2', animationDuration: '11s' }} />
-      </div>
+    <div className="login-split">
+      {/* Brand panel (hidden on small screens) */}
+      <aside className="login-hero" aria-hidden="true">
+        <div className="login-hero-aurora" />
+        <div className="login-hero-grid" />
+        <div className="login-hero-inner">
+          <div className="login-hero-brand">
+            <div className="login-hero-logo"><i className="fas fa-graduation-cap" /></div>
+            <span>EduOps<b>360</b></span>
+          </div>
 
-      {/* Card */}
+          <div>
+            <p className="login-hero-kicker">Operations Intelligence Platform</p>
+            <h2 className="login-hero-title">
+              Every learner journey,<br />
+              <em>one clear view.</em>
+            </h2>
+            <p className="login-hero-copy">
+              Live enrolment, academic progress, sessions and budgets across every partner university — in a single console.
+            </p>
+
+            <ul className="login-hero-features">
+              <li><i className="fas fa-chart-line" /><div><b>Live dashboards</b><span>Synced from programme trackers</span></div></li>
+              <li><i className="fas fa-university" /><div><b>Multi-university</b><span>GGU, PSB, ESGCI, Edgewood</span></div></li>
+              <li><i className="fas fa-shield-alt" /><div><b>Role-based access</b><span>Everyone sees exactly what they need</span></div></li>
+            </ul>
+          </div>
+
+          <div className="login-hero-foot">
+            <span className="live-dot" /> All systems operational
+            <span style={{ opacity: 0.4 }}>·</span> Powered by upGrad
+          </div>
+        </div>
+      </aside>
+
+      {/* Sign-in pane */}
+      <section className="login-pane">
       <div style={styles.card}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div className="login-card-brand" style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={styles.logoBox}>
             <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: 28 }} />
           </div>
@@ -290,11 +319,12 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div style={styles.footer}>
-          <span>🔐 Local Virtual DB Auth</span>
+          <span><i className="fas fa-lock" style={{ marginRight: 6 }} />Secure one-time code sign-in</span>
           <span style={{ opacity: 0.4 }}>·</span>
           <span>EduOps360 v2.2</span>
         </div>
       </div>
+      </section>
 
       <style>{animations}</style>
     </div>
@@ -331,17 +361,15 @@ const styles: Record<string, React.CSSProperties> = {
     animationIterationCount: 'infinite',
   },
   card: {
-    background: 'rgba(255, 255, 255, 0.82)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.7)',
+    background: '#ffffff',
+    border: '1px solid rgba(15, 23, 42, 0.06)',
     borderRadius: 28,
     padding: '48px 44px',
     width: '100%',
     maxWidth: 430,
     position: 'relative',
     zIndex: 10,
-    boxShadow: '0 24px 70px -12px rgba(15, 23, 42, 0.25), 0 0 1px 0 rgba(217, 30, 47, 0.1)',
+    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 30px 60px -24px rgba(15, 23, 42, 0.18)',
   },
   logoBox: {
     width: 68, height: 68,
