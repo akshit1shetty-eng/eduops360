@@ -166,40 +166,30 @@ function notifyListeners(session: Session | null) {
 
 export const authService = {
   /**
-   * Generates a 6-digit OTP code for the email via Express/SQLite API or Virtual Auth fallback.
+   * Generates a 6-digit OTP code for the email via the Express/Turso API.
    */
   async sendOtp(email: string): Promise<void> {
     const normalized = email.trim().toLowerCase();
+    let response: Response;
     try {
-      const response = await fetch(`${API_URL}/auth/send-otp`, {
+      response = await fetch(`${API_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalized })
       });
+    } catch {
+      throw new Error('Unable to reach the server. Please check your connection and try again.');
+    }
 
-      if (!response.ok) {
-        const errRes = (await response.json().catch(() => ({}))) as { error?: { message?: string } | string };
-        const msg = typeof errRes.error === 'string' ? errRes.error : errRes.error?.message;
-        throw new Error(msg || 'Failed to send verification code');
-      }
-    } catch (err: unknown) {
-      const isNetworkErr = err instanceof TypeError || (err instanceof Error && err.message.toLowerCase().includes('failed to fetch'));
-      if (isNetworkErr) {
-        console.warn('Backend API fetch failed, falling back to Local Virtual DB Auth for:', normalized);
-        const found = FALLBACK_PROFILES.find(p => p.email.toLowerCase() === normalized);
-        if (!found) {
-          throw new Error('This email is not registered in the system');
-        }
-        sessionStorage.setItem(`virtual_otp_${normalized}`, '123456');
-        console.log(`[Local Virtual Auth] Verification code for ${normalized} is 123456`);
-        return;
-      }
-      throw err;
+    if (!response.ok) {
+      const errRes = (await response.json().catch(() => ({}))) as { error?: { message?: string } | string };
+      const msg = typeof errRes.error === 'string' ? errRes.error : errRes.error?.message;
+      throw new Error(msg || 'Failed to send verification code');
     }
   },
 
   /**
-   * Verifies the OTP code via Express/SQLite API or Virtual Auth fallback.
+   * Verifies the OTP code via the Express/Turso API.
    */
   async verifyOtp(email: string, token: string): Promise<{ session: Session | null; error: { message: string } | null }> {
     const normalized = email.trim().toLowerCase();
@@ -219,29 +209,12 @@ export const authService = {
         return result;
       }
     } catch (e) {
-      console.warn('Backend verify-otp fetch failed, using virtual auth fallback:', e);
-    }
-
-    // Virtual Auth Fallback
-    const storedOtp = sessionStorage.getItem(`virtual_otp_${normalized}`);
-    const isMasterOtp = token === '123456';
-    const found = FALLBACK_PROFILES.find(p => p.email.toLowerCase() === normalized);
-
-    if (found && (isMasterOtp || token === storedOtp || token.length === 6)) {
-      const session: Session = {
-        user: {
-          id: found.id,
-          email: found.email
-        }
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      notifyListeners(session);
-      return { session, error: null };
+      console.warn('Backend verify-otp fetch failed:', e);
     }
 
     return {
       session: null,
-      error: { message: 'Invalid or expired code. Please try again.' }
+      error: { message: 'Unable to verify the code right now. Please try again.' }
     };
   },
 
