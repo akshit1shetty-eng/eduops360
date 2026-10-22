@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LexFilterProvider, useLexFilter } from '../../hooks/useLexFilter';
 import { UNIVERSITIES, getAssignedUniversityId, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
 import { useAuth } from '../../hooks/useAuth';
+import TopbarGreeting from '../../components/TopbarGreeting';
 
 export default function LexLayout() {
   return (
@@ -55,11 +56,8 @@ function LexLayoutContent() {
   const [isUniOpen, setIsUniOpen] = useState(false);
   const selectedUni = UNIVERSITIES.find(u => u.id === selectedUniversityId);
 
-  // Header: time-of-day greeting + breadcrumb for the current section
+  // Keyed on the path so each page replays its entrance animation
   const location = useLocation();
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const firstName = (profile?.full_name || profile?.email?.split('@')[0] || '').split(' ')[0];
 
   return (
     <div className="min-h-screen flex bg-slate-50 transition-colors duration-300 relative overflow-hidden">
@@ -244,12 +242,7 @@ function LexLayoutContent() {
       >
         {/* Header */}
         <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 flex items-center justify-between px-8">
-          <div className="topbar-greeting" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <span className="live-dot" title="Live data" />
-            <span className="topbar-greeting-title" style={{ marginTop: 0 }}>
-              {greeting}{firstName ? `, ${firstName}` : ''}
-            </span>
-          </div>
+          <TopbarGreeting />
 
           <div className="flex items-center space-x-4">
             {/* Global University Filter - Modern Custom Dropdown */}

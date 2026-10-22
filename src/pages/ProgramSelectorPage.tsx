@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import TopbarGreeting from '../components/TopbarGreeting';
 import { UNIVERSITIES, hasUniversityAccess, hasProgramAccess, type University } from '../lib/universities';
 import { useUniversityLearnerStats } from '../hooks/useUniversityLearnerStats';
 
@@ -329,25 +330,7 @@ export default function UniversitySelectorPage() {
 
         {/* Sticky header */}
         <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
-          <div className="topbar-greeting" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <span className="live-dot" title="Live data" />
-            <span className="topbar-greeting-title" style={{ marginTop: 0 }}>
-              {(() => {
-                const hour = new Date().getHours();
-                const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-                const firstName = (profile?.full_name || profile?.email?.split('@')[0] || '').split(' ')[0];
-                return `${greeting}${firstName ? `, ${firstName}` : ''}`;
-              })()}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2">
-              <i className="fas fa-calendar-alt text-brand-700 text-xs" />
-              <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-            </div>
-          </div>
+          <TopbarGreeting />
         </header>
 
         {/* Content */}
