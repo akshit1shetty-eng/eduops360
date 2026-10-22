@@ -134,12 +134,17 @@ async function initDb() {
     ['user-esgci-id', 'esgci.user@upgrad.com', 'esgci viewer', 'ESGCI Manager'],
   ];
 
+  // Demo accounts are only seeded into an empty database, so users deleted in the Admin Panel stay deleted.
+  // The primary super admin is always ensured so the Admin Panel can't be locked out.
+  const [{ count: profileCount }] = await query('SELECT COUNT(*) AS count FROM profiles');
+  const profilesToSeed = Number(profileCount) === 0 ? seedProfiles : seedProfiles.slice(0, 1);
+
   await db.batch([
     ...systemRoles.map(([name, description, perms]) => ({
       sql: 'INSERT OR REPLACE INTO roles (name, description, permissions, is_system) VALUES (?, ?, ?, 1)',
       args: [name, description, JSON.stringify(perms)],
     })),
-    ...seedProfiles.map(([id, email, role, fullName]) => ({
+    ...profilesToSeed.map(([id, email, role, fullName]) => ({
       sql: 'INSERT OR IGNORE INTO profiles (id, email, role, full_name, created_at) VALUES (?, ?, ?, ?, ?)',
       args: [id, email, role, fullName, now],
     })),

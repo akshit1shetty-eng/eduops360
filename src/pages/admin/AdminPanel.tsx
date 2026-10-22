@@ -25,6 +25,34 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// "Today", "Yesterday", "5 days ago", then the full date
+function formatRelativeDate(iso: string) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days} days ago`;
+  return formatDate(iso);
+}
+
+// Colour + icon per role, so roles are recognisable at a glance (badges, avatars, filter chips)
+const ROLE_STYLES: Record<string, { color: string; icon: string }> = {
+  'super admin': { color: '#D91E2F', icon: 'fa-crown' },
+  'admin': { color: '#7c3aed', icon: 'fa-shield-alt' },
+  'ggu viewer': { color: '#0C2340', icon: 'fa-university' },
+  'psb viewer': { color: '#d97706', icon: 'fa-graduation-cap' },
+  'esgci viewer': { color: '#059669', icon: 'fa-globe-europe' },
+  'edgewood viewer': { color: '#0d9488', icon: 'fa-tree' },
+  'user': { color: '#475569', icon: 'fa-user' },
+};
+const CUSTOM_ROLE_COLORS = ['#2563eb', '#db2777', '#0891b2', '#65a30d', '#c2410c', '#4f46e5'];
+
+function roleStyle(role: string) {
+  const known = ROLE_STYLES[role];
+  if (known) return known;
+  const hash = [...role].reduce((h, c) => h + c.charCodeAt(0), 0);
+  return { color: CUSTOM_ROLE_COLORS[hash % CUSTOM_ROLE_COLORS.length], icon: 'fa-user-tag' };
+}
+
 export default function AdminPanel() {
   const navigate = useNavigate();
   const { profile: adminProfile, signOut } = useAuth();
@@ -51,6 +79,11 @@ export default function AdminPanel() {
   const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // User list filtering & sorting: a role name, or the 'admins' / 'recent' quick filters
+  const [userFilter, setUserFilter] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<'name' | 'role' | 'created'>('created');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showCreateRoleModal, setShowCreateRoleModal] = useState(false);
 
@@ -433,11 +466,55 @@ export default function AdminPanel() {
 
   // ─── Rendering Filters ───────────────────────────────────────────────────────
 
-  const filteredProfiles = profiles.filter(p =>
-    p.email.toLowerCase().includes(search.toLowerCase()) ||
-    (p.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    p.role.toLowerCase().includes(search.toLowerCase())
-  );
+  const RECENT_MS = 30 * 24 * 60 * 60 * 1000;
+  const isAdminRole = (role: string) => role === 'admin' || role === 'super admin';
+  const isRecent = (p: Profile) => Date.now() - new Date(p.created_at).getTime() <= RECENT_MS;
+  const displayName = (p: Profile) => p.full_name || p.email.split('@')[0];
+
+  const filteredProfiles = profiles
+    .filter(p =>
+      p.email.toLowerCase().includes(search.toLowerCase()) ||
+      (p.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      p.role.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter(p => {
+      if (!userFilter) return true;
+      if (userFilter === 'admins') return isAdminRole(p.role);
+      if (userFilter === 'recent') return isRecent(p);
+      return p.role === userFilter;
+    })
+    .sort((a, b) => {
+      const cmp = sortKey === 'name'
+        ? displayName(a).localeCompare(displayName(b))
+        : sortKey === 'role'
+          ? a.role.localeCompare(b.role) || displayName(a).localeCompare(displayName(b))
+          : new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+  const toggleSort = (key: 'name' | 'role' | 'created') => {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'created' ? 'desc' : 'asc');
+    }
+  };
+
+  const copyEmail = async (email: string) => {
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(c => (c === email ? null : c)), 1500);
+    } catch {
+      triggerToast('❌ Could not copy email');
+    }
+  };
+
+  // Users per role, most common first — drives the filter chips and "Roles in Use"
+  const roleCounts = Object.entries(
+    profiles.reduce<Record<string, number>>((acc, p) => ({ ...acc, [p.role]: (acc[p.role] || 0) + 1 }), {})
+  ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
   // The signed-in admin can't select (and so can't bulk-delete) their own account
   const selectableProfiles = filteredProfiles.filter(p => p.id !== adminProfile?.id);
@@ -452,8 +529,10 @@ export default function AdminPanel() {
   const selectedProfiles = profiles.filter(p => selectedUserIds.includes(p.id));
 
   const totalUsersCount = profiles.length;
-  const adminUsersCount = profiles.filter(p => p.role === 'admin').length;
-  const activeRolesCount = roles.length;
+  const adminUsersCount = profiles.filter(p => isAdminRole(p.role)).length;
+  const rolesInUseCount = roleCounts.length;
+  const definedRolesCount = roles.length;
+  const recentUsersCount = profiles.filter(isRecent).length;
 
   return (
     <div style={styles.page}>
@@ -626,34 +705,56 @@ export default function AdminPanel() {
         </div>
 
         {/* Stats */}
+        <style>{`
+          .admin-stat-card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+          .admin-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.08) !important; }
+          .admin-user-row:hover { background: #f8fafc; }
+          .admin-user-row .admin-copy-btn { opacity: 0; transition: opacity 0.15s; }
+          .admin-user-row:hover .admin-copy-btn { opacity: 1; }
+          .admin-sort-th { cursor: pointer; user-select: none; transition: color 0.15s; }
+          .admin-sort-th:hover { color: #475569 !important; }
+          .admin-chip { transition: all 0.15s; }
+          .admin-chip:hover { border-color: #ED2B3B !important; color: #D91E2F !important; }
+          .admin-role-badge { cursor: pointer; transition: filter 0.15s; }
+          .admin-role-badge:hover { filter: brightness(0.95); }
+        `}</style>
         <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statCardIcon, background: 'rgba(99,102,241,0.12)', color: '#6366f1' }}>
-              <i className="fas fa-users" />
-            </div>
-            <div>
-              <div style={styles.statCardValue}>{totalUsersCount}</div>
-              <div style={styles.statCardLabel}>Total Users</div>
-            </div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statCardIcon, background: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}>
-              <i className="fas fa-shield-alt" />
-            </div>
-            <div>
-              <div style={styles.statCardValue}>{adminUsersCount}</div>
-              <div style={styles.statCardLabel}>Admins</div>
-            </div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statCardIcon, background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>
-              <i className="fas fa-user-tag" />
-            </div>
-            <div>
-              <div style={styles.statCardValue}>{activeRolesCount}</div>
-              <div style={styles.statCardLabel}>Active Roles</div>
-            </div>
-          </div>
+          {[
+            { key: null, icon: 'fa-users', color: '#6366f1', bg: 'rgba(99,102,241,0.12)', value: totalUsersCount, label: 'Total Users', hint: 'Show all users' },
+            { key: 'admins', icon: 'fa-shield-alt', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', value: adminUsersCount, label: 'Admins', hint: 'Super admins & admins' },
+            { key: 'roles', icon: 'fa-user-tag', color: '#10b981', bg: 'rgba(16,185,129,0.12)', value: rolesInUseCount, label: 'Roles in Use', hint: `of ${definedRolesCount} defined · view roles` },
+            { key: 'recent', icon: 'fa-user-clock', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', value: recentUsersCount, label: 'Added (30 days)', hint: 'Recently added users' },
+          ].map(card => {
+            const isActive = activeTab === 'users' && card.key !== 'roles' && userFilter === card.key;
+            return (
+              <button
+                key={card.label}
+                type="button"
+                className="admin-stat-card"
+                title={card.hint}
+                onClick={() => {
+                  if (card.key === 'roles') { setActiveTab('roles'); return; }
+                  setActiveTab('users');
+                  setUserFilter(card.key);
+                }}
+                style={{
+                  ...styles.statCard,
+                  cursor: 'pointer', textAlign: 'left', font: 'inherit', width: '100%',
+                  border: `1px solid ${isActive ? '#ED2B3B' : 'rgba(15,23,42,0.07)'}`,
+                  boxShadow: isActive ? '0 0 0 3px rgba(237,43,59,0.12)' : styles.statCard.boxShadow,
+                }}
+              >
+                <div style={{ ...styles.statCardIcon, background: card.bg, color: card.color }}>
+                  <i className={`fas ${card.icon}`} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={styles.statCardValue}>{card.value}</div>
+                  <div style={styles.statCardLabel}>{card.label}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.hint}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {error && (
@@ -665,13 +766,23 @@ export default function AdminPanel() {
         {/* ─── Render: Users Tab ──────────────────────────────────────────────── */}
         {activeTab === 'users' && (
           <div style={styles.tableCard}>
-            <div style={styles.tableHeader}>
+            <div style={{ ...styles.tableHeader, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <h2 style={styles.tableTitle}>All Users</h2>
-                <p style={styles.tableSub}>{filteredProfiles.length} of {totalUsersCount} users</p>
+                <p style={styles.tableSub}>
+                  Showing {filteredProfiles.length} of {totalUsersCount} users
+                  {(userFilter || search) && (
+                    <button
+                      onClick={() => { setUserFilter(null); setSearch(''); }}
+                      style={{ marginLeft: 8, background: 'none', border: 'none', color: '#D91E2F', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    >
+                      Reset filters
+                    </button>
+                  )}
+                </p>
               </div>
               {selectedUserIds.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', marginRight: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
                   <button onClick={() => setSelectedUserIds([])} style={{ ...styles.btnSecondary, padding: '8px 14px', fontSize: 12 }}>
                     Clear
                   </button>
@@ -684,17 +795,56 @@ export default function AdminPanel() {
                   </button>
                 </div>
               )}
-              <div style={styles.searchWrapper}>
+              <div style={{ ...styles.searchWrapper, marginLeft: selectedUserIds.length > 0 ? 0 : 'auto' }}>
                 <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13 }} />
                 <input
                   type="text"
                   placeholder="Search by email, name or role…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={styles.searchInput}
+                  onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
+                  style={{ ...styles.searchInput, paddingRight: 34 }}
                 />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    title="Clear search"
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e2e8f0', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', fontSize: 9 }}
+                  >
+                    <i className="fas fa-times" />
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Role filter chips */}
+            {roleCounts.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '12px 24px', borderBottom: '1px solid #f1f5f9' }}>
+                {[{ role: null as string | null, count: totalUsersCount }, ...roleCounts.map(([role, count]) => ({ role, count }))].map(({ role, count }) => {
+                  const active = userFilter === role;
+                  const rs = role ? roleStyle(role) : null;
+                  return (
+                    <button
+                      key={role ?? 'all'}
+                      className="admin-chip"
+                      onClick={() => setUserFilter(active && role ? null : role)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700, textTransform: 'capitalize',
+                        background: active ? '#ED2B3B' : 'white',
+                        color: active ? 'white' : '#475569',
+                        border: `1px solid ${active ? '#ED2B3B' : '#e2e8f0'}`,
+                      }}
+                    >
+                      {rs && <i className={`fas ${rs.icon}`} style={{ fontSize: 9, color: active ? 'white' : rs.color }} />}
+                      {role ?? 'All users'}
+                      <span style={{ background: active ? 'rgba(255,255,255,0.25)' : '#f1f5f9', borderRadius: 10, padding: '0 6px', fontSize: 10 }}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div style={{ overflowX: 'auto' }}>
               <table style={styles.table}>
@@ -711,9 +861,25 @@ export default function AdminPanel() {
                         style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#ED2B3B' }}
                       />
                     </th>
-                    <th style={{ ...styles.th, width: '38%' }}>User</th>
-                    <th style={{ ...styles.th, width: '20%' }}>Role</th>
-                    <th style={{ ...styles.th, width: '25%' }}>Created At</th>
+                    {([
+                      { key: 'name', label: 'User', width: '38%' },
+                      { key: 'role', label: 'Role', width: '20%' },
+                      { key: 'created', label: 'Created', width: '25%' },
+                    ] as const).map(col => (
+                      <th
+                        key={col.key}
+                        className="admin-sort-th"
+                        onClick={() => toggleSort(col.key)}
+                        style={{ ...styles.th, width: col.width, color: sortKey === col.key ? '#0f172a' : styles.th.color }}
+                        aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                      >
+                        {col.label}
+                        <i
+                          className={`fas ${sortKey === col.key ? (sortDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}`}
+                          style={{ marginLeft: 6, fontSize: 10, opacity: sortKey === col.key ? 1 : 0.35, color: sortKey === col.key ? '#ED2B3B' : undefined }}
+                        />
+                      </th>
+                    ))}
                     <th style={{ ...styles.th, width: '15%', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -728,74 +894,105 @@ export default function AdminPanel() {
                     ))
                   ) : filteredProfiles.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '40px 24px', color: '#94a3b8', fontWeight: 600 }}>
-                        <i className="fas fa-search" style={{ fontSize: 24, marginBottom: 8, display: 'block', opacity: 0.4 }} />
-                        No users found
+                      <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '48px 24px', color: '#94a3b8', fontWeight: 600 }}>
+                        <i className="fas fa-user-slash" style={{ fontSize: 26, marginBottom: 10, display: 'block', opacity: 0.4 }} />
+                        No users match {search ? <>“<strong style={{ color: '#475569' }}>{search}</strong>”</> : 'this filter'}
+                        <div style={{ marginTop: 12 }}>
+                          <button onClick={() => { setUserFilter(null); setSearch(''); }} style={{ ...styles.btnSecondary, padding: '7px 14px', fontSize: 12 }}>
+                            Reset filters
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ) : (
-                    filteredProfiles.map(p => (
-                      <tr key={p.id} style={{ ...styles.tableRow, ...(selectedUserIds.includes(p.id) ? { background: 'rgba(237,43,59,0.04)' } : {}) }}>
-                        <td style={styles.td}>
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${p.email}`}
-                            checked={selectedUserIds.includes(p.id)}
-                            onChange={() => toggleUserSelected(p.id)}
-                            disabled={p.id === adminProfile?.id}
-                            title={p.id === adminProfile?.id ? 'You cannot delete your own account' : undefined}
-                            style={{ width: 16, height: 16, cursor: p.id === adminProfile?.id ? 'not-allowed' : 'pointer', accentColor: '#ED2B3B' }}
-                          />
-                        </td>
-                        <td style={styles.td}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <div style={{
-                              width: 36, height: 36,
-                              borderRadius: 10,
-                              background: p.role === 'admin' ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'linear-gradient(135deg, #D91E2F, #ED2B3B)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: 'white', fontWeight: 900, fontSize: 14,
-                            }}>
-                              {p.email[0].toUpperCase()}
+                    filteredProfiles.map(p => {
+                      const rs = roleStyle(p.role);
+                      const isSelf = p.id === adminProfile?.id;
+                      const isSelected = selectedUserIds.includes(p.id);
+                      return (
+                        <tr
+                          key={p.id}
+                          className="admin-user-row"
+                          style={{ ...styles.tableRow, ...(isSelected ? { background: 'rgba(237,43,59,0.05)' } : {}) }}
+                        >
+                          <td style={styles.td}>
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${p.email}`}
+                              checked={isSelected}
+                              onChange={() => toggleUserSelected(p.id)}
+                              disabled={isSelf}
+                              title={isSelf ? 'You cannot delete your own account' : undefined}
+                              style={{ width: 16, height: 16, cursor: isSelf ? 'not-allowed' : 'pointer', accentColor: '#ED2B3B' }}
+                            />
+                          </td>
+                          <td style={styles.td}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <div style={{
+                                width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                                background: `linear-gradient(135deg, ${rs.color}, ${rs.color}cc)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', fontWeight: 900, fontSize: 15,
+                                boxShadow: `0 3px 10px ${rs.color}33`,
+                              }}>
+                                {displayName(p)[0].toUpperCase()}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
+                                  {displayName(p)}
+                                  {isSelf && <span style={{ fontSize: 9, fontWeight: 800, color: '#D91E2F', background: '#FDE4E6', borderRadius: 6, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>You</span>}
+                                  {isRecent(p) && !isSelf && <span style={{ fontSize: 9, fontWeight: 800, color: '#b45309', background: '#fef3c7', borderRadius: 6, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>New</span>}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', fontWeight: 500 }}>
+                                  {p.email}
+                                  <button
+                                    className="admin-copy-btn"
+                                    onClick={() => void copyEmail(p.email)}
+                                    title="Copy email"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: copiedEmail === p.email ? '#059669' : '#94a3b8' }}
+                                  >
+                                    <i className={`fas ${copiedEmail === p.email ? 'fa-check' : 'fa-copy'}`} />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{p.full_name || p.email.split('@')[0]}</div>
-                              <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{p.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={styles.td}>
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 5,
-                            padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                            textTransform: 'uppercase', letterSpacing: '0.08em',
-                            background: p.role === 'admin' ? 'rgba(139,92,246,0.1)' : 'rgba(217, 30, 47,0.08)',
-                            color: p.role === 'admin' ? '#7c3aed' : '#D91E2F',
-                            border: `1px solid ${p.role === 'admin' ? 'rgba(139,92,246,0.2)' : 'rgba(217, 30, 47,0.15)'}`
-                          }}>
-                            <i className={`fas ${p.role === 'admin' ? 'fa-shield-alt' : 'fa-user'}`} style={{ fontSize: 9 }} />
-                            {p.role}
-                          </span>
-                        </td>
-                        <td style={{ ...styles.td, color: '#64748b', fontSize: 13, fontWeight: 600 }}>
-                          {formatDate(p.created_at)}
-                        </td>
-                        <td style={{ ...styles.td, textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                            <button onClick={() => openEditUser(p)} style={styles.actionBtnEdit} title="Edit User">
-                              <i className="fas fa-edit" />
-                            </button>
-                            {p.id !== adminProfile?.id ? (
-                              <button onClick={() => openDeleteUser(p)} style={styles.actionBtnDelete} title="Delete User">
-                                <i className="fas fa-trash-alt" />
+                          </td>
+                          <td style={styles.td}>
+                            <span
+                              className="admin-role-badge"
+                              onClick={() => setUserFilter(userFilter === p.role ? null : p.role)}
+                              title={`Show only ${p.role} users`}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                                textTransform: 'uppercase', letterSpacing: '0.08em',
+                                background: `${rs.color}14`,
+                                color: rs.color,
+                                border: `1px solid ${rs.color}33`,
+                              }}
+                            >
+                              <i className={`fas ${rs.icon}`} style={{ fontSize: 9 }} />
+                              {p.role}
+                            </span>
+                          </td>
+                          <td style={{ ...styles.td, color: '#64748b', fontSize: 13, fontWeight: 600 }} title={formatDate(p.created_at)}>
+                            {formatRelativeDate(p.created_at)}
+                          </td>
+                          <td style={{ ...styles.td, textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                              <button onClick={() => openEditUser(p)} style={styles.actionBtnEdit} title="Edit User">
+                                <i className="fas fa-edit" />
                               </button>
-                            ) : (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', padding: '0 8px' }}>You</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {!isSelf && (
+                                <button onClick={() => openDeleteUser(p)} style={styles.actionBtnDelete} title="Delete User">
+                                  <i className="fas fa-trash-alt" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -1520,7 +1717,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
     gap: 16,
     marginBottom: 24,
   },
