@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { Profile, Role } from '../../lib/authService';
 import { UNIVERSITIES } from '../../lib/universities';
 import DateBadge from '../../components/DateBadge';
+import TopbarGreeting from '../../components/TopbarGreeting';
 
 const PAGES_PERMISSIONS = [
   { key: 'page_home', name: 'Dashboard Home', desc: 'Allows viewing /lex/home' },
@@ -666,6 +667,11 @@ export default function AdminPanel() {
 
       {/* Main content */}
       <main style={styles.main}>
+        {/* Top bar */}
+        <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 flex items-center px-8" style={{ margin: '-32px -36px 28px' }}>
+          <TopbarGreeting />
+        </header>
+
         {/* Header */}
         <div style={styles.header}>
           <div>
