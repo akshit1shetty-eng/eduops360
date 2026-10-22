@@ -585,7 +585,7 @@ export default function LexBudgetDashboard() {
           <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center">
             <i className="fas fa-calendar-alt text-indigo-700 mr-2 text-xs" />
             <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
-              {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
         </div>

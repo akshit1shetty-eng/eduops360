@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import TopbarGreeting from '../components/TopbarGreeting';
 import { UNIVERSITIES, hasUniversityAccess, hasProgramAccess, type University } from '../lib/universities';
 import { useUniversityLearnerStats } from '../hooks/useUniversityLearnerStats';
+import DateBadge from '../components/DateBadge';
 
 function StatSkeleton() {
   return <span className="inline-block h-3.5 w-8 bg-slate-200 rounded animate-pulse" />;
@@ -231,6 +233,7 @@ export default function UniversitySelectorPage() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 relative overflow-hidden">
+      <div className="app-canvas" />
       <style>{`
         .sidebar-nav-item { transition: all 0.2s ease-in-out; }
         .sidebar-nav-item:hover { color: white !important; background-color: rgba(255,255,255,0.05) !important; }
@@ -328,22 +331,11 @@ export default function UniversitySelectorPage() {
 
         {/* Sticky header */}
         <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-black text-brand-700 uppercase tracking-[0.25em] mb-1">EduOps360</span>
-            <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">University Network</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2">
-              <i className="fas fa-calendar-alt text-brand-700 text-xs" />
-              <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
-                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-            </div>
-          </div>
+          <TopbarGreeting />
         </header>
 
         {/* Content */}
-        <div className="flex-1 px-8 pt-8 pb-16">
+        <div className="flex-1 px-8 pt-8 pb-16 page-enter">
           <div className="max-w-6xl mx-auto">
 
             {/* Page Header */}
@@ -359,7 +351,9 @@ export default function UniversitySelectorPage() {
               </div>
 
               {/* Summary Stats Badges */}
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-col items-end gap-3 shrink-0">
+                <DateBadge />
+                <div className="flex items-center gap-3">
                 <div className="px-4 py-2.5 bg-white border border-slate-200/80 rounded-2xl shadow-sm text-center">
                   <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Universities</div>
                   <div className="text-xl font-black text-slate-900">{filteredUnis.length}</div>
@@ -369,6 +363,7 @@ export default function UniversitySelectorPage() {
                   <div className="text-xl font-black text-emerald-600">
                     {filteredUnis.reduce((a, u) => a + u.programs.filter(p => p.available).length, 0)}
                   </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -405,6 +400,6 @@ const styles: Record<string, React.CSSProperties> = {
   navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
-  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
+  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #ED2B3B, #0C2340)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
   signOutBtn: { width: 32, height: 32, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: 'rgba(252,165,165,0.8)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: 13 },
 };

@@ -317,7 +317,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="page-content">
+        <main key={location.pathname} className="page-content page-enter">
           <Outlet />
         </main>
       </div>
@@ -369,7 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

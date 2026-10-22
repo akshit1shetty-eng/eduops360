@@ -4,6 +4,7 @@ import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
 import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
 import FilterDropdown from '../../components/FilterDropdown';
+import DateBadge from '../../components/DateBadge';
 
 function StatSkeleton() {
   return <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />;
@@ -12,7 +13,7 @@ function StatSkeleton() {
 function TableRowSkeleton() {
   return (
     <tr className="animate-pulse">
-      <td className="px-8 py-4"><div className="h-10 bg-slate-100 rounded-xl w-48" /></td>
+      <td className="pl-6 pr-4 py-3.5"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-slate-100" /><div className="h-8 bg-slate-100 rounded-lg w-40" /></div></td>
       <td className="px-8 py-4"><div className="h-10 bg-slate-50 rounded-lg w-32 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-full w-24 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-lg w-20 mx-auto" /></td>
@@ -28,6 +29,37 @@ function statusClass(status: string): string {
   if (s.includes('defer') || s.includes('ipd')) return 'bg-amber-50 text-amber-700 border-amber-100';
   if (s.includes('withdrawn') || s.includes('dropout')) return 'bg-rose-50 text-rose-700 border-rose-100';
   return 'bg-slate-50 text-slate-700 border-slate-100';
+}
+
+// Dot colour matching statusClass, shown inside the status pill
+function statusDot(status: string): string {
+  const s = (status || '').trim().toLowerCase();
+  if (s.includes('active')) return 'bg-emerald-500';
+  if (s.includes('completed') || s.includes('graduated')) return 'bg-purple-500';
+  if (s.includes('defer') || s.includes('ipd')) return 'bg-amber-500';
+  if (s.includes('withdrawn') || s.includes('dropout')) return 'bg-rose-500';
+  return 'bg-slate-400';
+}
+
+// Two-letter initials and a stable soft colour per learner for the avatar
+const AVATAR_TONES = [
+  'bg-sky-100 text-sky-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-800',
+  'bg-rose-100 text-rose-700',
+  'bg-teal-100 text-teal-700',
+  'bg-indigo-100 text-indigo-700',
+  'bg-slate-200 text-slate-700',
+];
+function initials(name: string): string {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+function avatarTone(key: string): string {
+  const hash = [...(key || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
 }
 
 function SubStatSkeleton() {
@@ -340,11 +372,12 @@ export default function LexLearnerDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto py-2">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
+      <div className="flex items-center justify-between mb-8 gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Learner <span className="text-brand-700">Dashboard</span></h1>
           <p className="text-slate-600 text-base font-medium opacity-80">Cross-program learner analytics and student lifecycle tracking.</p>
         </div>
+        <DateBadge />
       </div>
 
       {/* Top Metrics Cards - 5 Cards */}
@@ -789,13 +822,27 @@ export default function LexLearnerDashboard() {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-lg overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+      <div className="bg-white rounded-[2rem] border border-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-16px_rgba(15,23,42,0.12)] overflow-hidden flex flex-col">
+        <div className="px-6 py-5 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
           <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Learners:</span>
-            <span className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-[10px] font-black text-brand-700 shadow-sm">
-              {filteredRows.length.toLocaleString()}
-            </span>
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+              <i className="fas fa-address-book text-sm" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Learner Directory</h3>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 tabular-nums">
+                  {filteredRows.length.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {loading
+                  ? 'Loading learners…'
+                  : filteredRows.length === 0
+                    ? 'No learners match the current filters'
+                    : `Showing ${((safePage - 1) * perPage + 1).toLocaleString()}–${Math.min(safePage * perPage, filteredRows.length).toLocaleString()} of ${filteredRows.length.toLocaleString()}`}
+              </p>
+            </div>
           </div>
           <div className="flex justify-end">
             {!loading && filteredRows.length > 0 && (
@@ -815,10 +862,10 @@ export default function LexLearnerDashboard() {
                   }
                   setShowExportModal(true);
                 }}
-                className="bg-white border border-slate-200 px-5 py-2 rounded-xl shadow-sm text-slate-600 hover:text-brand-600 hover:border-brand-200 transition-all flex items-center gap-2 text-xs font-bold"
+                className="bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm text-slate-700 hover:text-brand-600 hover:border-brand-200 hover:shadow transition-all flex items-center gap-2 text-xs font-bold"
               >
                 <i className="fas fa-file-export" />
-                Export
+                Export CSV
               </button>
             )}
           </div>
@@ -826,69 +873,70 @@ export default function LexLearnerDashboard() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-slate-50/80 backdrop-blur border-b border-slate-200 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Learner Profile</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Academic Path</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Classification</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Launch Month</th>
+                <th className="pl-6 pr-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Learner</th>
+                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Program &amp; Cohort</th>
+                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Residency</th>
+                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="pl-4 pr-6 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Launch</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 10 }).map((_, i) => <TableRowSkeleton key={i} />)
               ) : paginatedRows.length > 0 ? (
                 paginatedRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-brand-50 border border-brand-100 rounded-full flex items-center justify-center text-brand-700 font-black text-sm shadow-sm">
-                          {row.name ? row.name.charAt(0) : '?'}
+                  <tr key={idx} className="group hover:bg-slate-50/80 transition-colors">
+                    <td className="pl-6 pr-4 py-3.5 whitespace-nowrap relative">
+                      <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2 ring-white ${avatarTone(row.email || row.name)}`}>
+                          {initials(row.name)}
                         </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-semibold text-gray-800">{row.name || 'N/A'}</p>
-                          <p className="text-xs text-slate-500 mb-0.5">{row.email}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 leading-tight">{row.name || 'N/A'}</p>
+                          <p className="text-xs text-slate-500 leading-tight mt-0.5">{row.email}</p>
                           {row.userId && (
-                            <p className="text-[10px] text-slate-400 font-medium font-mono leading-none">
-                              ID: {row.userId}
-                            </p>
+                            <span className="inline-block mt-1 px-1.5 py-px rounded bg-slate-100 text-[10px] text-slate-500 font-mono leading-tight">
+                              {row.userId}
+                            </span>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <p className="text-sm font-medium text-gray-800 mb-0.5">{row.program}</p>
-                      <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] font-bold text-brand-500 uppercase tracking-wider leading-none">{row.cohort}</span>
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <p className="text-sm font-medium text-slate-800 leading-tight">{row.program}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {row.cohort && (
+                          <span className="px-1.5 py-px rounded-md bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-600">{row.cohort}</span>
+                        )}
                         {row.term && (
-                          <>
-                            <span className="text-[10px] text-slate-300 select-none leading-none">•</span>
-                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">{row.term}</span>
-                          </>
+                          <span className="text-[10px] font-medium text-slate-400">{row.term}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm ${row.learnerType === 'International'
-                        ? 'bg-brand-50 text-brand-700 border-brand-100'
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${row.learnerType === 'International'
+                        ? 'bg-sky-50 text-sky-700 border-sky-100'
                         : 'bg-emerald-50 text-emerald-700 border-emerald-100'
                         }`}>
-                        <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-home'} mr-2`} />
+                        <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-home'} text-[9px]`} />
                         {row.learnerType}
                       </span>
                       {(row.country || row.region) && (
-                        <p className="text-[9.5px] text-slate-500 font-semibold mt-1 uppercase tracking-wider leading-none">
-                          {[row.country, row.region].filter(Boolean).join(' • ')}
+                        <p className="text-[11px] text-slate-500 mt-1 leading-tight">
+                          {[row.country, row.region].filter(Boolean).join(' · ')}
                         </p>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`inline-block px-4 py-1.5 text-xs font-medium rounded-full border min-w-[120px] ${statusClass(row.status)}`}>
-                        {row.status || '-'}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${statusClass(row.status)}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(row.status)}`} />
+                        {row.status || '—'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-xs font-medium text-gray-500">
+                    <td className="pl-4 pr-6 py-3.5 whitespace-nowrap text-right text-xs font-medium text-slate-600 tabular-nums">
                       {formatLaunchMonth(row.launchMonth)}
                     </td>
                   </tr>
@@ -897,10 +945,11 @@ export default function LexLearnerDashboard() {
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 text-3xl mb-6 shadow-inner">
-                        <i className="fas fa-fingerprint" />
+                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-300 text-2xl mb-4">
+                        <i className="fas fa-user-slash" />
                       </div>
-                      <p className="text-slate-400 font-black text-xs uppercase tracking-[0.2em]">Zero Match Correlation</p>
+                      <p className="text-slate-700 font-semibold text-sm">No learners match your filters</p>
+                      <p className="text-slate-400 text-xs mt-1">Try a different search or clear the filters.</p>
                       <button onClick={() => {
                         setSelectedCountries([]);
                         setSelectedStatuses([]);
@@ -908,7 +957,9 @@ export default function LexLearnerDashboard() {
                         setSelectedResidencies([]);
                         setSelectedLaunchMonths([]);
                         setSearch('');
-                      }} className="mt-4 text-brand-700 font-black text-[10px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Reset Search Matrix</button>
+                      }} className="mt-4 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:text-brand-600 text-xs font-bold shadow-sm transition-all">
+                        <i className="fas fa-rotate-left mr-1.5" />Reset filters
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -918,7 +969,7 @@ export default function LexLearnerDashboard() {
         </div>
 
         {/* Pagination Matrix */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="px-6 py-3.5 bg-white border-t border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Show</span>
             <select
@@ -959,7 +1010,7 @@ export default function LexLearnerDashboard() {
               p === 'ellipsis' ? (
                 <span key={`e-${idx}`} className="px-2 py-1 text-gray-500">...</span>
               ) : p === safePage ? (
-                <button key={p} className="px-3 py-1 bg-brand-600 text-white rounded-lg font-bold shadow-md shadow-brand-100">{p}</button>
+                <button key={p} aria-current="page" className="min-w-[32px] h-8 px-2 bg-slate-900 text-white rounded-lg text-sm font-semibold shadow-sm">{p}</button>
               ) : (
                 <button
                   key={p}

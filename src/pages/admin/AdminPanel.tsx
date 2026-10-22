@@ -4,6 +4,8 @@ import { authService, HARDCODED_SYSTEM_ROLES } from '../../lib/authService';
 import { useAuth } from '../../hooks/useAuth';
 import type { Profile, Role } from '../../lib/authService';
 import { UNIVERSITIES } from '../../lib/universities';
+import DateBadge from '../../components/DateBadge';
+import TopbarGreeting from '../../components/TopbarGreeting';
 
 const PAGES_PERMISSIONS = [
   { key: 'page_home', name: 'Dashboard Home', desc: 'Allows viewing /lex/home' },
@@ -570,6 +572,7 @@ export default function AdminPanel() {
         }}>
           <button
             onClick={() => setActiveTab('users')}
+            aria-current={activeTab === 'users' ? 'page' : undefined}
             style={{
               ...(activeTab === 'users' ? styles.navItemActive : styles.navItem),
               padding: collapsed ? '10px 0' : '10px 12px',
@@ -583,6 +586,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab('roles')}
+            aria-current={activeTab === 'roles' ? 'page' : undefined}
             style={{
               ...(activeTab === 'roles' ? styles.navItemActive : styles.navItem),
               padding: collapsed ? '10px 0' : '10px 12px',
@@ -663,6 +667,11 @@ export default function AdminPanel() {
 
       {/* Main content */}
       <main style={styles.main}>
+        {/* Top bar */}
+        <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky z-40 flex items-center px-8" style={{ top: -32, margin: '-32px -36px 28px' }}>
+          <TopbarGreeting />
+        </header>
+
         {/* Header */}
         <div style={styles.header}>
           <div>
@@ -677,7 +686,8 @@ export default function AdminPanel() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <DateBadge />
             {activeTab === 'users' ? (
               <>
                 <button onClick={() => {
@@ -1649,7 +1659,7 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarAvatar: {
     width: 34, height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: 'white', fontWeight: 900, fontSize: 14,
     flexShrink: 0,
