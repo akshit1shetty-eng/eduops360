@@ -26,12 +26,12 @@ export default function ErrorPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
             <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 text-center relative overflow-hidden">
                 {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 opacity-50" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-50 rounded-full -ml-16 -mb-16 opacity-50" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-full -mr-16 -mt-16 opacity-50" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-50 rounded-full -ml-16 -mb-16 opacity-50" />
 
                 <div className="relative z-10">
-                    <div className="w-20 h-20 bg-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                        <i className={`fas ${isRouteErrorResponse(error) && error.status === 404 ? 'fa-search' : 'fa-exclamation-triangle'} text-3xl text-indigo-600`} />
+                    <div className="w-20 h-20 bg-brand-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <i className={`fas ${isRouteErrorResponse(error) && error.status === 404 ? 'fa-search' : 'fa-exclamation-triangle'} text-3xl text-brand-600`} />
                     </div>
 
                     <h1 className="text-3xl font-black text-gray-800 mb-3 tracking-tight">
@@ -58,7 +58,7 @@ export default function ErrorPage() {
                         </button>
                         <Link
                             to="/"
-                            className="w-full py-4 bg-white border-2 border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-white border-2 border-gray-100 hover:border-brand-200 hover:bg-brand-50 text-gray-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
                         >
                             <i className="fas fa-home" />
                             Return to Safety

@@ -40,19 +40,19 @@ const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
             <div className="relative w-20 h-20 mb-8 flex items-center justify-center">
               {/* Ripple 1 */}
               <motion.div 
-                className="absolute inset-0 border-2 border-indigo-400 rounded-full"
+                className="absolute inset-0 border-2 border-brand-400 rounded-full"
                 animate={{ scale: [1, 2.5], opacity: [0.5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
               />
               {/* Ripple 2 */}
               <motion.div 
-                className="absolute inset-0 border-2 border-indigo-400 rounded-full"
+                className="absolute inset-0 border-2 border-brand-400 rounded-full"
                 animate={{ scale: [1, 2.5], opacity: [0.5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.75 }}
               />
               
               <motion.div 
-                className="absolute inset-0 bg-indigo-600 shadow-xl shadow-indigo-300 dark:shadow-indigo-900/40"
+                className="absolute inset-0 bg-brand-600 shadow-xl shadow-brand-300 dark:shadow-brand-900/40"
                 animate={{
                   borderRadius: ["30%", "50%", "30%"],
                   rotate: [0, 90, 180],
@@ -80,7 +80,7 @@ const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
             <motion.h1 
               className="text-3xl font-black tracking-tight mb-5 text-slate-900 dark:text-white"
             >
-              EDUOPS <span className="text-indigo-600">360</span>
+              EDUOPS <span className="text-brand-600">360</span>
             </motion.h1>
 
             {/* Premium Dots */}
@@ -88,7 +88,7 @@ const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-indigo-500"
+                  className="w-1.5 h-1.5 rounded-full bg-brand-500"
                   animate={{ scale: [1, 1.8, 1], opacity: [0.3, 1, 0.3] }}
                   transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
                 />
@@ -97,7 +97,7 @@ const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
           </motion.div>
           
           {/* Subtle Background Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/5 dark:bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
         </motion.div>
       )}
     </AnimatePresence>

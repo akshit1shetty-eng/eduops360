@@ -33,11 +33,11 @@ const UNI_META: Record<string, {
       { label: 'Location', value: 'San Francisco, CA' },
     ],
     theme: {
-      banner: 'bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900',
-      accent: '#6366f1',
+      banner: 'bg-gradient-to-br from-[#1B3A63] via-[#0C2340] to-slate-900',
+      accent: '#0C2340',
       badge: 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300',
       badgeText: 'text-emerald-300',
-      iconColor: 'text-indigo-400',
+      iconColor: 'text-[#8FA9CF]',
     },
   },
   psb: {
@@ -105,7 +105,7 @@ function UniversityCard({ uni, onClick }: { uni: University; onClick: () => void
     facts: [],
     theme: {
       banner: 'bg-gradient-to-br from-slate-800 to-slate-900',
-      accent: '#6366f1',
+      accent: '#ED2B3B',
       badge: 'bg-slate-700 border-slate-600 text-slate-300',
       badgeText: 'text-slate-300',
       iconColor: 'text-indigo-400',
@@ -150,7 +150,7 @@ function UniversityCard({ uni, onClick }: { uni: University; onClick: () => void
             <i className="fas fa-map-marker-alt text-[9px] mr-1" />
             {uni.location}
           </span>
-          <h3 className="text-2xl font-black text-white leading-tight mb-1 group-hover:text-indigo-200 transition-colors">
+          <h3 className="text-2xl font-black text-white leading-tight mb-1 group-hover:text-brand-200 transition-colors">
             {uni.fullName}
           </h3>
           <p className="text-xs font-semibold text-slate-200/80 line-clamp-1">
@@ -195,7 +195,7 @@ function UniversityCard({ uni, onClick }: { uni: University; onClick: () => void
             <span>{uni.programs.length} Available Program{uni.programs.length !== 1 ? 's' : ''}</span>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 group-hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 group-hover:bg-brand-700 text-white text-xs font-bold transition-colors shadow-sm">
             <span>Explore</span>
             <i className="fas fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform" />
           </div>
@@ -329,12 +329,12 @@ export default function UniversitySelectorPage() {
         {/* Sticky header */}
         <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
           <div className="flex flex-col">
-            <span className="text-[9px] font-black text-indigo-700 uppercase tracking-[0.25em] mb-1">EduOps360</span>
+            <span className="text-[9px] font-black text-brand-700 uppercase tracking-[0.25em] mb-1">EduOps360</span>
             <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">University Network</h2>
           </div>
           <div className="flex items-center gap-3">
             <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2">
-              <i className="fas fa-calendar-alt text-indigo-700 text-xs" />
+              <i className="fas fa-calendar-alt text-brand-700 text-xs" />
               <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
                 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
@@ -349,9 +349,9 @@ export default function UniversitySelectorPage() {
             {/* Page Header */}
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
               <div>
-                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-2 block">Partner Institutions</span>
+                <span className="text-[10px] font-black text-brand-600 uppercase tracking-[0.3em] mb-2 block">Partner Institutions</span>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">
-                  University <span className="text-indigo-700">Network</span>
+                  University <span className="text-brand-700">Network</span>
                 </h1>
                 <p className="text-slate-500 text-sm font-medium max-w-xl leading-relaxed">
                   Select a partner university to view its academic programs, operational metrics, and cohort dashboards.
@@ -397,12 +397,12 @@ export default function UniversitySelectorPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
+  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: 12, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' },
-  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(99,102,241,0.4)', flexShrink: 0 },
+  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #ED2B3B, #B71826)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)', flexShrink: 0 },
   sidebarNav: { flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
   navItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'rgba(148,163,184,0.7)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', width: '100%', transition: 'all 0.2s' },
-  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
+  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
   sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },

@@ -73,8 +73,8 @@ function LexLayoutContent() {
 
       {/* Decorative Background for Light Mode */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px]" />
       </div>
 
       {/* Sidebar */}
@@ -242,7 +242,7 @@ function LexLayoutContent() {
         {/* Header */}
         <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
           <div className="flex flex-col">
-            <span className="text-[9px] font-black text-indigo-700 uppercase tracking-[0.25em] mb-1">Operational Intel</span>
+            <span className="text-[9px] font-black text-brand-700 uppercase tracking-[0.25em] mb-1">Operational Intel</span>
             <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">Overall Dashboard</h2>
           </div>
 
@@ -251,9 +251,9 @@ function LexLayoutContent() {
             <div className="relative">
               <button
                 onClick={() => setIsUniOpen(!isUniOpen)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-300 ${isUniOpen ? 'bg-white border-indigo-200 shadow-lg ring-4 ring-indigo-500/5' : 'bg-slate-50 border-slate-200 hover:border-indigo-200 hover:bg-white'}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-300 ${isUniOpen ? 'bg-white border-brand-200 shadow-lg ring-4 ring-brand-500/5' : 'bg-slate-50 border-slate-200 hover:border-brand-200 hover:bg-white'}`}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${selectedUni ? 'bg-indigo-700 text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${selectedUni ? 'bg-brand-700 text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
                   <i className={`fas ${selectedUni ? 'fa-university' : 'fa-globe-americas'} text-[10px]`} />
                 </div>
                 <div className="flex flex-col items-start min-w-[120px]">
@@ -262,7 +262,7 @@ function LexLayoutContent() {
                     {selectedUni ? selectedUni.name : 'All Universities'}
                   </span>
                 </div>
-                <i className={`fas fa-chevron-down text-[9px] text-slate-300 transition-transform duration-300 ${isUniOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+                <i className={`fas fa-chevron-down text-[9px] text-slate-300 transition-transform duration-300 ${isUniOpen ? 'rotate-180 text-brand-500' : ''}`} />
               </button>
 
               {isUniOpen && (
@@ -287,16 +287,16 @@ function LexLayoutContent() {
                               <>
                                 <button
                                   onClick={() => { setSelectedUniversityId(null); setIsUniOpen(false); }}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${!selectedUniversityId ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${!selectedUniversityId ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
                                 >
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${!selectedUniversityId ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${!selectedUniversityId ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                     <i className="fas fa-globe-americas text-[10px]" />
                                   </div>
                                   <div className="flex flex-col items-start">
                                     <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">All Universities</span>
                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Enterprise View</span>
                                   </div>
-                                  {!selectedUniversityId && <i className="fas fa-check-circle text-indigo-600 ml-auto text-xs" />}
+                                  {!selectedUniversityId && <i className="fas fa-check-circle text-brand-600 ml-auto text-xs" />}
                                 </button>
 
                                 <div className="my-2 border-t border-slate-50 mx-3" />
@@ -311,9 +311,9 @@ function LexLayoutContent() {
                                   key={uni.id}
                                   disabled={!available}
                                   onClick={() => { setSelectedUniversityId(uni.id); setIsUniOpen(false); }}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left mb-1 ${isSelected ? 'bg-indigo-50' : available ? 'hover:bg-slate-50' : 'opacity-40 cursor-not-allowed'}`}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left mb-1 ${isSelected ? 'bg-brand-50' : available ? 'hover:bg-slate-50' : 'opacity-40 cursor-not-allowed'}`}
                                 >
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                     <i className="fas fa-university text-[10px]" />
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -323,7 +323,7 @@ function LexLayoutContent() {
                                     </div>
                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{uni.programs.length} Programs Registered</span>
                                   </div>
-                                  {isSelected && <i className="fas fa-check-circle text-indigo-600 ml-auto text-xs" />}
+                                  {isSelected && <i className="fas fa-check-circle text-brand-600 ml-auto text-xs" />}
                                 </button>
                               );
                             })}
@@ -355,7 +355,7 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     zIndex: 50,
     width: 240,
-    background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)',
+    background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
     display: 'flex',
     flexDirection: 'column',
     padding: '0',
@@ -372,12 +372,12 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarLogoIcon: {
     width: 40,
     height: 40,
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+    background: 'linear-gradient(135deg, #ED2B3B, #B71826)',
     borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+    boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
     flexShrink: 0,
   },
   sidebarNav: {
@@ -412,8 +412,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'white',
     fontSize: 13,
     fontWeight: 700,
-    background: 'rgba(99,102,241,0.2)',
-    border: '1px solid rgba(99,102,241,0.25)',
+    background: 'rgba(237, 43, 59,0.2)',
+    border: '1px solid rgba(237, 43, 59,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',

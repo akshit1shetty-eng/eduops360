@@ -27,7 +27,7 @@ const UNI_META: Record<string, {
       { label: 'Founded', value: '1901' },
       { label: 'Location', value: 'San Francisco, CA' },
     ],
-    gradient: 'bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950',
+    gradient: 'bg-gradient-to-r from-[#0C2340] via-slate-900 to-[#081A30]',
   },
   psb: {
     code: 'PSB',
@@ -91,7 +91,7 @@ function ProgramCard({ p, onNavigate }: {
     <div
       onClick={() => onNavigate(p.id, p.available)}
       className={`group bg-white rounded-2xl border border-slate-200/90 p-6 transition-all duration-300 shadow-sm flex flex-col justify-between ${p.available
-          ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200 active:scale-[0.98]'
+          ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-brand-200 active:scale-[0.98]'
           : 'opacity-60 cursor-default'
         }`}
     >
@@ -116,7 +116,7 @@ function ProgramCard({ p, onNavigate }: {
         </div>
 
         {/* Name + description */}
-        <h4 className={`text-base font-black text-slate-900 mb-2 leading-snug transition-colors ${p.available ? 'group-hover:text-indigo-600' : ''}`}>
+        <h4 className={`text-base font-black text-slate-900 mb-2 leading-snug transition-colors ${p.available ? 'group-hover:text-brand-600' : ''}`}>
           {p.name}
         </h4>
         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">{p.description}</p>
@@ -142,7 +142,7 @@ function ProgramCard({ p, onNavigate }: {
         )}
 
         {p.available && (
-          <div className="pt-2 flex items-center justify-between text-xs font-bold text-indigo-600 uppercase tracking-wider group-hover:text-indigo-700">
+          <div className="pt-2 flex items-center justify-between text-xs font-bold text-brand-600 uppercase tracking-wider group-hover:text-brand-700">
             <span>Open Dashboard</span>
             <i className="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform" />
           </div>
@@ -246,7 +246,7 @@ export default function UniversityProgramsPage() {
         <div className="text-center">
           <i className="fas fa-exclamation-triangle text-4xl text-slate-300 mb-4" />
           <p className="text-slate-500 font-bold">University not found.</p>
-          <button onClick={() => navigate('/programs')} className="mt-4 text-indigo-600 font-black text-sm hover:underline">
+          <button onClick={() => navigate('/programs')} className="mt-4 text-brand-600 font-black text-sm hover:underline">
             ← Back to Universities
           </button>
         </div>
@@ -349,13 +349,13 @@ export default function UniversityProgramsPage() {
               <i className="fas fa-chevron-left text-xs" />
             </button>
             <div className="flex flex-col">
-              <span className="text-[9px] font-black text-indigo-700 uppercase tracking-[0.25em] mb-0.5">Partner Institution</span>
+              <span className="text-[9px] font-black text-brand-700 uppercase tracking-[0.25em] mb-0.5">Partner Institution</span>
               <h2 className="text-[11px] font-black text-slate-900 tracking-widest uppercase">{uni.name}</h2>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2">
-              <i className="fas fa-calendar-alt text-indigo-700 text-xs" />
+              <i className="fas fa-calendar-alt text-brand-700 text-xs" />
               <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
                 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
@@ -413,7 +413,7 @@ export default function UniversityProgramsPage() {
           <div className="px-8 pt-8 max-w-6xl mx-auto w-full">
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-4 rounded-full bg-indigo-600" />
+                <div className="w-1 h-4 rounded-full bg-brand-600" />
                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">About the University</h3>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">{meta.about}</p>
@@ -426,16 +426,16 @@ export default function UniversityProgramsPage() {
           <div className="px-8 pt-6 max-w-6xl mx-auto w-full">
             <div
               onClick={() => navigate(`/programs/${uni.id}/overview`)}
-              className="group bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md p-6 flex flex-col gap-5 cursor-pointer transition-all duration-300 hover:border-indigo-200"
+              className="group bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md p-6 flex flex-col gap-5 cursor-pointer transition-all duration-300 hover:border-brand-200"
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-1.5 h-4.5 rounded-full bg-indigo-600" />
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">
+                    <div className="w-1.5 h-4.5 rounded-full bg-brand-600" />
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider group-hover:text-brand-600 transition-colors">
                       Overall Operational Overview
                     </h3>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full ml-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-700 bg-brand-50 border border-brand-100 px-2.5 py-0.5 rounded-full ml-2">
                       Operational Analytics
                     </span>
                   </div>
@@ -449,7 +449,7 @@ export default function UniversityProgramsPage() {
                     e.stopPropagation();
                     navigate(`/programs/${uni.id}/overview`);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
                 >
                   <span>Explore Overall Overview</span>
                   <i className="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform" />
@@ -509,7 +509,7 @@ export default function UniversityProgramsPage() {
             <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-sm mb-10">
               <div className="mb-6 pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-3.5 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 shadow-sm shrink-0">
                     <i className="fas fa-graduation-cap text-xl" />
                   </div>
                   <div>
@@ -525,18 +525,18 @@ export default function UniversityProgramsPage() {
                 {/* Inner Sub-card 1: Taught Phase */}
                 <div
                   onClick={() => handleProgramClick('dba-taught', true)}
-                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
+                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-brand-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-full">
                         Phase 1 · Taught Phase
                       </span>
-                      <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      <span className="text-xs font-bold text-brand-600 group-hover:text-brand-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                         Open Dashboard <i className="fas fa-arrow-right text-[10px]" />
                       </span>
                     </div>
-                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-brand-600 transition-colors">
                       Taught Phase
                     </h4>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
@@ -548,18 +548,18 @@ export default function UniversityProgramsPage() {
                 {/* Inner Sub-card 2: Dissertation Phase */}
                 <div
                   onClick={() => navigate('/dba-dissertation/dissertation?program=overall')}
-                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
+                  className="group bg-slate-50/80 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-brand-300 transition-all duration-300 shadow-sm hover:shadow-lg cursor-pointer flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[9px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-1 rounded-full">
                         Phase 2 · Dissertation Phase
                       </span>
-                      <span className="text-xs font-bold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      <span className="text-xs font-bold text-brand-600 group-hover:text-brand-700 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                         Open Dashboard <i className="fas fa-arrow-right text-[10px]" />
                       </span>
                     </div>
-                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                    <h4 className="text-base font-black text-slate-900 mb-2 group-hover:text-brand-600 transition-colors">
                       Dissertation Phase
                     </h4>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
@@ -573,7 +573,7 @@ export default function UniversityProgramsPage() {
 
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <div className="w-1 h-4 rounded-full bg-indigo-600" />
+              <div className="w-1 h-4 rounded-full bg-brand-600" />
               <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
                 {uni.id === 'ggu' ? 'Other Academic Programs' : 'Academic Programs'}
               </h3>
@@ -606,12 +606,12 @@ export default function UniversityProgramsPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
+  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: 12, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' },
-  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(99,102,241,0.4)', flexShrink: 0 },
+  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #ED2B3B, #B71826)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)', flexShrink: 0 },
   sidebarNav: { flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
   navItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'rgba(148,163,184,0.7)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', width: '100%', transition: 'all 0.2s' },
-  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
+  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
   sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },

@@ -342,7 +342,7 @@ export default function LexLearnerDashboard() {
     <div className="max-w-6xl mx-auto py-2">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Learner <span className="text-indigo-700">Dashboard</span></h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Learner <span className="text-brand-700">Dashboard</span></h1>
           <p className="text-slate-600 text-base font-medium opacity-80">Cross-program learner analytics and student lifecycle tracking.</p>
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function LexLearnerDashboard() {
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
+                  className="bg-brand-600 h-full transition-all duration-500"
                   style={{ width: `${(stats.international / (stats.total || 1)) * 100}%` }}
                 />
                 <div
@@ -386,7 +386,7 @@ export default function LexLearnerDashboard() {
               <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
                 <div>
                   <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
+                  <div className="text-[13px] font-black text-brand-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
                         {stats.international.toLocaleString()}
@@ -440,7 +440,7 @@ export default function LexLearnerDashboard() {
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
+                  className="bg-brand-600 h-full transition-all duration-500"
                   style={{ width: `${(stats.activeInternational / (stats.active || 1)) * 100}%` }}
                 />
                 <div
@@ -452,7 +452,7 @@ export default function LexLearnerDashboard() {
               <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
                 <div>
                   <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
+                  <div className="text-[13px] font-black text-brand-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
                         {stats.activeInternational.toLocaleString()}
@@ -506,7 +506,7 @@ export default function LexLearnerDashboard() {
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
+                  className="bg-brand-600 h-full transition-all duration-500"
                   style={{ width: `${(stats.graduatedInternational / (stats.graduated || 1)) * 100}%` }}
                 />
                 <div
@@ -518,7 +518,7 @@ export default function LexLearnerDashboard() {
               <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
                 <div>
                   <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
+                  <div className="text-[13px] font-black text-brand-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
                         {stats.graduatedInternational.toLocaleString()}
@@ -572,7 +572,7 @@ export default function LexLearnerDashboard() {
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
+                  className="bg-brand-600 h-full transition-all duration-500"
                   style={{ width: `${(stats.loaInternational / (stats.loa || 1)) * 100}%` }}
                 />
                 <div
@@ -584,7 +584,7 @@ export default function LexLearnerDashboard() {
               <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
                 <div>
                   <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
+                  <div className="text-[13px] font-black text-brand-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
                         {stats.loaInternational.toLocaleString()}
@@ -638,7 +638,7 @@ export default function LexLearnerDashboard() {
               {/* Progress split bar */}
               <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
                 <div
-                  className="bg-indigo-600 h-full transition-all duration-500"
+                  className="bg-brand-600 h-full transition-all duration-500"
                   style={{ width: `${(stats.exitInternational / (stats.exit || 1)) * 100}%` }}
                 />
                 <div
@@ -650,7 +650,7 @@ export default function LexLearnerDashboard() {
               <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
                 <div>
                   <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-indigo-600 leading-none">
+                  <div className="text-[13px] font-black text-brand-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
                         {stats.exitInternational.toLocaleString()}
@@ -684,11 +684,11 @@ export default function LexLearnerDashboard() {
       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 mb-8">
         <div className="flex items-center gap-4 mb-8">
           <div className="relative group/search flex-1">
-            <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-indigo-500 transition-colors" />
+            <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
             <input
               type="text"
               placeholder="Search by name, email, or program..."
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium text-slate-700 shadow-inner"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm font-medium text-slate-700 shadow-inner"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -761,7 +761,7 @@ export default function LexLearnerDashboard() {
           <div className="flex flex-wrap gap-2 items-center min-w-0">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Active Tuning:</span>
             {(selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || search) ? (
-              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider animate-in fade-in zoom-in duration-300">
+              <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-wider animate-in fade-in zoom-in duration-300">
                 {([search, ...selectedCountries, ...selectedStatuses, ...selectedPrograms, ...selectedResidencies, ...selectedLaunchMonths].filter(Boolean).length)} Parameters Active
               </span>
             ) : (
@@ -779,7 +779,7 @@ export default function LexLearnerDashboard() {
                 setSelectedLaunchMonths([]);
                 setSearch('');
               }}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-200 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 whitespace-nowrap animate-in slide-in-from-right-4 duration-300"
+              className="px-8 py-3 bg-brand-600 text-white rounded-2xl hover:bg-brand-700 hover:shadow-xl hover:shadow-brand-200 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 whitespace-nowrap animate-in slide-in-from-right-4 duration-300"
             >
               <i className="fas fa-sync-alt" />
               Reset
@@ -793,7 +793,7 @@ export default function LexLearnerDashboard() {
         <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Learners:</span>
-            <span className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-[10px] font-black text-indigo-700 shadow-sm">
+            <span className="px-3 py-1 bg-white border border-slate-100 rounded-lg text-[10px] font-black text-brand-700 shadow-sm">
               {filteredRows.length.toLocaleString()}
             </span>
           </div>
@@ -815,7 +815,7 @@ export default function LexLearnerDashboard() {
                   }
                   setShowExportModal(true);
                 }}
-                className="bg-white border border-slate-200 px-5 py-2 rounded-xl shadow-sm text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center gap-2 text-xs font-bold"
+                className="bg-white border border-slate-200 px-5 py-2 rounded-xl shadow-sm text-slate-600 hover:text-brand-600 hover:border-brand-200 transition-all flex items-center gap-2 text-xs font-bold"
               >
                 <i className="fas fa-file-export" />
                 Export
@@ -843,7 +843,7 @@ export default function LexLearnerDashboard() {
                   <tr key={idx} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-blue-700 font-black text-sm shadow-sm">
+                        <div className="w-10 h-10 bg-brand-50 border border-brand-100 rounded-full flex items-center justify-center text-brand-700 font-black text-sm shadow-sm">
                           {row.name ? row.name.charAt(0) : '?'}
                         </div>
                         <div className="ml-3">
@@ -860,7 +860,7 @@ export default function LexLearnerDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <p className="text-sm font-medium text-gray-800 mb-0.5">{row.program}</p>
                       <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider leading-none">{row.cohort}</span>
+                        <span className="text-[10px] font-bold text-brand-500 uppercase tracking-wider leading-none">{row.cohort}</span>
                         {row.term && (
                           <>
                             <span className="text-[10px] text-slate-300 select-none leading-none">•</span>
@@ -871,7 +871,7 @@ export default function LexLearnerDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm ${row.learnerType === 'International'
-                        ? 'bg-indigo-50 text-indigo-700 border-indigo-100'
+                        ? 'bg-brand-50 text-brand-700 border-brand-100'
                         : 'bg-emerald-50 text-emerald-700 border-emerald-100'
                         }`}>
                         <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-home'} mr-2`} />
@@ -908,7 +908,7 @@ export default function LexLearnerDashboard() {
                         setSelectedResidencies([]);
                         setSelectedLaunchMonths([]);
                         setSearch('');
-                      }} className="mt-4 text-indigo-700 font-black text-[10px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Reset Search Matrix</button>
+                      }} className="mt-4 text-brand-700 font-black text-[10px] uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Reset Search Matrix</button>
                     </div>
                   </td>
                 </tr>
@@ -927,7 +927,7 @@ export default function LexLearnerDashboard() {
                 setPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-700"
+              className="px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-700"
             >
               <option value={10}>10</option>
               <option value={15}>15</option>
@@ -959,7 +959,7 @@ export default function LexLearnerDashboard() {
               p === 'ellipsis' ? (
                 <span key={`e-${idx}`} className="px-2 py-1 text-gray-500">...</span>
               ) : p === safePage ? (
-                <button key={p} className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-bold shadow-md shadow-indigo-100">{p}</button>
+                <button key={p} className="px-3 py-1 bg-brand-600 text-white rounded-lg font-bold shadow-md shadow-brand-100">{p}</button>
               ) : (
                 <button
                   key={p}
@@ -1004,7 +1004,7 @@ export default function LexLearnerDashboard() {
               <button
                 type="button"
                 onClick={() => setSelectedExportColumns(EXPORT_COLUMNS)}
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-lg transition-colors border border-indigo-100 dark:border-indigo-900/50"
+                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/50 rounded-lg transition-colors border border-brand-100 dark:border-brand-900/50"
               >
                 Select All
               </button>
@@ -1024,13 +1024,13 @@ export default function LexLearnerDashboard() {
                   <label
                     key={header}
                     className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer group ${selectedExportColumns.includes(header)
-                      ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20'
-                      : 'border-gray-100 dark:border-white/5 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-indigo-500/50'
+                      ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/20'
+                      : 'border-gray-100 dark:border-white/5 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-brand-500/50'
                       }`}
                   >
                     <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${selectedExportColumns.includes(header)
-                      ? 'bg-indigo-600 border-indigo-600'
-                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-white/10 group-hover:border-indigo-400'
+                      ? 'bg-brand-600 border-brand-600'
+                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-white/10 group-hover:border-brand-400'
                       }`}>
                       {selectedExportColumns.includes(header) && <i className="fas fa-check text-[10px] text-white" />}
                     </div>
@@ -1044,7 +1044,7 @@ export default function LexLearnerDashboard() {
                         );
                       }}
                     />
-                    <span className={`text-xs font-medium truncate ${selectedExportColumns.includes(header) ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-400'}`}>
+                    <span className={`text-xs font-medium truncate ${selectedExportColumns.includes(header) ? 'text-brand-700 dark:text-brand-300' : 'text-gray-600 dark:text-gray-400'}`}>
                       {header}
                     </span>
                   </label>
@@ -1055,7 +1055,7 @@ export default function LexLearnerDashboard() {
             {/* Modal Footer */}
             <div className="px-8 py-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">{filteredRows.length}</span> learners will be exported with <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedExportColumns.length}</span> columns.
+                <span className="font-bold text-brand-600 dark:text-brand-400">{filteredRows.length}</span> learners will be exported with <span className="font-bold text-brand-600 dark:text-brand-400">{selectedExportColumns.length}</span> columns.
               </div>
               <div className="flex gap-3">
                 <button
@@ -1069,7 +1069,7 @@ export default function LexLearnerDashboard() {
                   type="button"
                   onClick={handleExportCSV}
                   disabled={selectedExportColumns.length === 0}
-                  className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                  className="px-8 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-200 dark:shadow-none hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <i className="fas fa-download mr-2" />
                   Download CSV

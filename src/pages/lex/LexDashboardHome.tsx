@@ -118,13 +118,13 @@ export default function LexDashboardHome() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">
-            Overall <span className="text-indigo-700">Dashboard</span>
+            Overall <span className="text-brand-700">Dashboard</span>
           </h1>
           <p className="text-slate-600 text-base font-medium opacity-80">Enterprise operational intelligence & analytics.</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center">
-            <i className="fas fa-calendar-alt text-indigo-700 mr-2 text-xs" />
+            <i className="fas fa-calendar-alt text-brand-700 mr-2 text-xs" />
             <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
         </div>
@@ -246,7 +246,7 @@ export default function LexDashboardHome() {
       {/* Global Composition - Quick View */}
       <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-md mb-8">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-1 h-5 bg-indigo-600 rounded-full" />
+          <div className="w-1 h-5 bg-brand-600 rounded-full" />
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Global Composition</h3>
         </div>
 
@@ -264,7 +264,7 @@ export default function LexDashboardHome() {
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Dom: {loading ? '—' : `${((stats.domestic / (stats.total || 1)) * 100).toFixed(1)}%`}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-600 rounded-full" />
+                  <div className="w-2 h-2 bg-brand-600 rounded-full" />
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Intl: {loading ? '—' : `${((stats.international / (stats.total || 1)) * 100).toFixed(1)}%`}</span>
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function LexDashboardHome() {
                   )}
                   {stats.international > 0 && (
                     <div
-                      className="bg-indigo-600 h-full rounded-full transition-all duration-1000 shadow-sm"
+                      className="bg-brand-600 h-full rounded-full transition-all duration-1000 shadow-sm"
                       style={{ width: `${(stats.international / stats.total) * 100}%`, minWidth: '4px' }}
                     />
                   )}
@@ -295,7 +295,7 @@ export default function LexDashboardHome() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Residency Split</span>
+                <span className="text-[10px] font-black text-brand-400 uppercase tracking-widest">Residency Split</span>
                 <span className="text-xs font-black text-slate-900">Active Learners</span>
               </div>
               <div className="flex items-center gap-4">
@@ -304,7 +304,7 @@ export default function LexDashboardHome() {
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Dom: {loading ? '—' : `${((stats.activeDomestic / (stats.active || 1)) * 100).toFixed(1)}%`}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-600 rounded-full" />
+                  <div className="w-2 h-2 bg-brand-600 rounded-full" />
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Intl: {loading ? '—' : `${((stats.activeInternational / (stats.active || 1)) * 100).toFixed(1)}%`}</span>
                 </div>
               </div>
@@ -322,7 +322,7 @@ export default function LexDashboardHome() {
                   )}
                   {stats.activeInternational > 0 && (
                     <div
-                      className="bg-indigo-600 h-full rounded-full transition-all duration-1000 shadow-sm"
+                      className="bg-brand-600 h-full rounded-full transition-all duration-1000 shadow-sm"
                       style={{ width: `${(stats.activeInternational / (stats.active || 1)) * 100}%`, minWidth: '4px' }}
                     />
                   )}
@@ -342,7 +342,7 @@ export default function LexDashboardHome() {
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Program Distribution</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Learner Volume by Program</p>
             </div>
-            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-700">
+            <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-700">
               <i className="fas fa-chart-pie" />
             </div>
           </div>
@@ -357,11 +357,11 @@ export default function LexDashboardHome() {
                 <div key={i} className="group">
                   <div className="flex justify-between items-end mb-2">
                     <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{item.name}</span>
-                    <span className="text-xs font-black text-indigo-700">{item.count.toLocaleString()} <span className="text-indigo-400 font-bold ml-1">({item.pct.toFixed(2)}%)</span></span>
+                    <span className="text-xs font-black text-brand-700">{item.count.toLocaleString()} <span className="text-brand-400 font-bold ml-1">({item.pct.toFixed(2)}%)</span></span>
                   </div>
                   <div className="h-2.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-[2px]">
                     <div
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(79,70,229,0.2)]"
+                      className="h-full bg-brand-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(237,43,59,0.2)]"
                       style={{ width: `${item.pct}%` }}
                     />
                   </div>
@@ -373,42 +373,42 @@ export default function LexDashboardHome() {
 
         {/* Global Footprint Intelligence */}
         <div className="bg-white rounded-[2rem] border border-slate-100 shadow-md p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none text-indigo-900">
+          <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none text-brand-900">
             <i className="fas fa-globe-africa text-8xl transform -rotate-12" />
           </div>
 
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Regional <span className="text-indigo-700">Spread</span></h3>
+              <h3 className="text-xl font-black tracking-tight text-slate-900">Regional <span className="text-brand-700">Spread</span></h3>
               <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
                 <i className="fas fa-map-marker-alt text-xs" />
               </div>
             </div>
 
-            <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[376px] overflow-y-auto pr-2 custom-scrollbar">
               {loading ? (
-                [1, 2, 3, 4, 5].map(i => <div key={i} className="h-10 bg-slate-50 rounded-xl animate-pulse" />)
+                [1, 2, 3, 4, 5, 6, 7].map(i => <div key={i} className="h-10 bg-slate-50 rounded-xl animate-pulse" />)
               ) : stats.countries.length > 0 ? (
                 stats.countries.map((item, i) => (
                   <div key={i} className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
-                      <i className={`fas ${item.name.includes('Others') ? 'fa-globe' : 'fa-flag'} text-[10px] text-slate-400 group-hover:text-indigo-600`} />
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-brand-50 group-hover:border-brand-100 transition-colors">
+                      <i className={`fas ${item.name.includes('Others') ? 'fa-globe' : 'fa-flag'} text-[10px] text-slate-400 group-hover:text-brand-600`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-2 tracking-tight">{item.name}</span>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.name.includes('Others')
                           ? 'text-slate-700 bg-slate-100'
-                          : 'text-indigo-700 bg-indigo-50'
+                          : 'text-brand-700 bg-brand-50'
                           }`}>
-                          {item.count.toLocaleString()} <span className={`${item.name.includes('Others') ? 'text-slate-400' : 'text-indigo-400'} font-bold ml-1`}>({item.pct.toFixed(2)}%)</span>
+                          {item.count.toLocaleString()} <span className={`${item.name.includes('Others') ? 'text-slate-400' : 'text-brand-400'} font-bold ml-1`}>({item.pct.toFixed(2)}%)</span>
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-1000 ${item.name.includes('Others')
                             ? 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.3)]'
-                            : 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.3)]'
+                            : 'bg-brand-600 shadow-[0_0_8px_rgba(237,43,59,0.3)]'
                             }`}
                           style={{ width: `${item.pct}%` }}
                         />

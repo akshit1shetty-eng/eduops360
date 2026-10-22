@@ -68,7 +68,7 @@ export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteP
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
+        background: 'linear-gradient(135deg, #0f172a 0%, #2B0F13 50%, #0f172a 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -81,8 +81,8 @@ export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteP
         }}>
           <div style={{
             width: 48, height: 48,
-            border: '3px solid rgba(99,102,241,0.25)',
-            borderTop: '3px solid #6366f1',
+            border: '3px solid rgba(237, 43, 59,0.25)',
+            borderTop: '3px solid #ED2B3B',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
           }} />
@@ -221,12 +221,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   primaryBtn: {
     flex: 1,
-    background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
     border: 'none', borderRadius: 12,
     padding: '12px 20px',
     color: 'white', fontSize: 13, fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 4px 18px rgba(79,70,229,0.3)',
+    boxShadow: '0 4px 18px rgba(217, 30, 47,0.3)',
     transition: 'all 0.2s',
   },
   secondaryBtn: {

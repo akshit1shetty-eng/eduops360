@@ -62,15 +62,15 @@ export default function Layout() {
           border-radius: 12px !important;
           font-size: 13px !important;
           font-weight: 700 !important;
-          color: #6366f1 !important;
-          background: rgba(99, 102, 241, 0.08) !important;
-          border: 1px solid rgba(99, 102, 241, 0.2) !important;
+          color: #ED2B3B !important;
+          background: rgba(237, 43, 59, 0.08) !important;
+          border: 1px solid rgba(237, 43, 59, 0.2) !important;
           transition: all 0.2s ease-in-out !important;
         }
         .topbar-back-btn:hover {
-          background: rgba(99, 102, 241, 0.15) !important;
-          color: #4f46e5 !important;
-          border-color: rgba(99, 102, 241, 0.3) !important;
+          background: rgba(237, 43, 59, 0.15) !important;
+          color: #D91E2F !important;
+          border-color: rgba(237, 43, 59, 0.3) !important;
           transform: translateX(-2px);
         }
       `}</style>
@@ -82,7 +82,7 @@ export default function Layout() {
       <aside
         className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-mobile-open' : ''}`}
         style={{
-          background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)',
+          background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
           borderRight: '1px solid rgba(255,255,255,0.07)',
           boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
         }}
@@ -110,8 +110,8 @@ export default function Layout() {
             <div 
               className="sidebar-logo-icon" 
               style={{ 
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
-                boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+                background: 'linear-gradient(135deg, #ED2B3B, #B71826)', 
+                boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
                 width: collapsed ? 36 : 40,
                 height: collapsed ? 36 : 40,
                 display: 'flex',
@@ -351,8 +351,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'white',
     fontSize: 13,
     fontWeight: 700,
-    background: 'rgba(99,102,241,0.2)',
-    border: '1px solid rgba(99,102,241,0.25)',
+    background: 'rgba(237, 43, 59,0.2)',
+    border: '1px solid rgba(237, 43, 59,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',

@@ -27,3 +27,5 @@ dist-ssr
 *.sw?
 server/database.db
 
+
+.claude/settings.local.json

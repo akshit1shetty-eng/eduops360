@@ -499,8 +499,8 @@ export default function AdminPanel() {
         }}>
           {collapsed ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
-              <div style={styles.sidebarAvatar} title={adminProfile?.email || 'Admin'}>
-                {adminProfile?.email?.[0]?.toUpperCase() || 'A'}
+              <div style={styles.sidebarAvatar} title={adminProfile?.full_name || adminProfile?.email || 'Admin'}>
+                {(adminProfile?.full_name || adminProfile?.email)?.[0]?.toUpperCase() || 'A'}
               </div>
               <button onClick={handleSignOut} style={styles.signOutBtn} className="sidebar-signout-btn sidebar-nav-item" title="Sign out">
                 <i className="fas fa-sign-out-alt" />
@@ -510,11 +510,11 @@ export default function AdminPanel() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%' }}>
               <div style={styles.sidebarUserInfo}>
                 <div style={styles.sidebarAvatar}>
-                  {adminProfile?.email?.[0]?.toUpperCase() || 'A'}
+                  {(adminProfile?.full_name || adminProfile?.email)?.[0]?.toUpperCase() || 'A'}
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {adminProfile?.email || 'Admin'}
+                    {adminProfile?.full_name || adminProfile?.email?.split('@')[0] || 'Admin'}
                   </div>
                   <div style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Administrator</div>
                 </div>
@@ -679,7 +679,7 @@ export default function AdminPanel() {
                             <div style={{
                               width: 36, height: 36,
                               borderRadius: 10,
-                              background: p.role === 'admin' ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                              background: p.role === 'admin' ? 'linear-gradient(135deg, #7c3aed, #a855f7)' : 'linear-gradient(135deg, #D91E2F, #ED2B3B)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               color: 'white', fontWeight: 900, fontSize: 14,
                             }}>
@@ -696,9 +696,9 @@ export default function AdminPanel() {
                             display: 'inline-flex', alignItems: 'center', gap: 5,
                             padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                             textTransform: 'uppercase', letterSpacing: '0.08em',
-                            background: p.role === 'admin' ? 'rgba(139,92,246,0.1)' : 'rgba(79,70,229,0.08)',
-                            color: p.role === 'admin' ? '#7c3aed' : '#4f46e5',
-                            border: `1px solid ${p.role === 'admin' ? 'rgba(139,92,246,0.2)' : 'rgba(79,70,229,0.15)'}`
+                            background: p.role === 'admin' ? 'rgba(139,92,246,0.1)' : 'rgba(217, 30, 47,0.08)',
+                            color: p.role === 'admin' ? '#7c3aed' : '#D91E2F',
+                            border: `1px solid ${p.role === 'admin' ? 'rgba(139,92,246,0.2)' : 'rgba(217, 30, 47,0.15)'}`
                           }}>
                             <i className={`fas ${p.role === 'admin' ? 'fa-shield-alt' : 'fa-user'}`} style={{ fontSize: 9 }} />
                             {p.role}
@@ -1125,8 +1125,8 @@ export default function AdminPanel() {
                             gap: 10,
                             padding: '8px 10px',
                             borderRadius: 8,
-                            background: isChecked ? 'rgba(99,102,241,0.06)' : 'white',
-                            border: `1px solid ${isChecked ? 'rgba(99,102,241,0.2)' : '#e2e8f0'}`,
+                            background: isChecked ? 'rgba(237, 43, 59,0.06)' : 'white',
+                            border: `1px solid ${isChecked ? 'rgba(237, 43, 59,0.2)' : '#e2e8f0'}`,
                             cursor: 'pointer',
                             transition: 'all 0.15s'
                           }}>
@@ -1137,7 +1137,7 @@ export default function AdminPanel() {
                               style={{ marginTop: 3 }}
                             />
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: isChecked ? '#4f46e5' : '#0f172a' }}>{perm.name}</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isChecked ? '#D91E2F' : '#0f172a' }}>{perm.name}</div>
                               <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{perm.desc}</div>
                             </div>
                           </label>
@@ -1277,12 +1277,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sidebar: {
     width: 240,
-    background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)',
+    background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
     display: 'flex',
     flexDirection: 'column',
     padding: '0',
     flexShrink: 0,
     boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+    // Pin to the viewport so the profile footer stays visible while the page scrolls
+    position: 'sticky',
+    top: 0,
+    height: '100vh',
+    alignSelf: 'flex-start',
+    zIndex: 50,
   },
   sidebarLogo: {
     display: 'flex', alignItems: 'center', gap: 12,
@@ -1291,14 +1297,15 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sidebarLogoIcon: {
     width: 40, height: 40,
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+    background: 'linear-gradient(135deg, #ED2B3B, #B71826)',
     borderRadius: 12,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 16px rgba(99,102,241,0.4)',
+    boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
     flexShrink: 0,
   },
   sidebarNav: {
     flex: 1,
+    overflowY: 'auto',
     padding: '16px 12px',
     display: 'flex',
     flexDirection: 'column',
@@ -1323,8 +1330,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     color: 'white',
     fontSize: 13, fontWeight: 700,
-    background: 'rgba(99,102,241,0.2)',
-    border: '1px solid rgba(99,102,241,0.25)',
+    background: 'rgba(237, 43, 59,0.2)',
+    border: '1px solid rgba(237, 43, 59,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',
@@ -1378,12 +1385,12 @@ const styles: Record<string, React.CSSProperties> = {
   primaryBtnAction: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '10px 18px',
-    background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
     border: 'none',
     borderRadius: 12,
     color: 'white', fontSize: 13, fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
+    boxShadow: '0 4px 14px rgba(217, 30, 47,0.3)',
     transition: 'all 0.2s',
   },
   primaryBtnActionPurple: {
@@ -1507,10 +1514,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   actionBtnEdit: {
     width: 32, height: 32,
-    border: '1px solid rgba(79,70,229,0.2)',
+    border: '1px solid rgba(217, 30, 47,0.2)',
     borderRadius: 8,
-    color: '#4f46e5',
-    background: 'rgba(79,70,229,0.06)',
+    color: '#D91E2F',
+    background: 'rgba(217, 30, 47,0.06)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer', transition: 'all 0.2s',
   },
@@ -1604,10 +1611,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: '1px solid #e2e8f0',
   },
   btnPrimary: {
-    background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
+    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
     border: 'none', borderRadius: 10, padding: '10px 20px',
     color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(79,70,229,0.25)',
+    boxShadow: '0 4px 10px rgba(217, 30, 47,0.25)',
   },
   btnPrimaryPurple: {
     background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',

@@ -23,7 +23,7 @@ export const UNIVERSITIES: University[] = [
     name: 'Golden Gate University',
     fullName: 'Golden Gate University',
     location: 'San Francisco, USA',
-    accentColor: '#6366f1',
+    accentColor: '#0C2340',
     programs: [
       {
         id: 'dba-taught',

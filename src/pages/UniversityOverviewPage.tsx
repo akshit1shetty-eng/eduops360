@@ -28,7 +28,7 @@ export default function UniversityOverviewPage() {
         <div style={{ textAlign: 'center' }}>
           <i className="fas fa-exclamation-triangle" style={{ fontSize: 36, color: '#94a3b8', marginBottom: 16 }} />
           <p style={{ color: '#64748b', fontWeight: 700 }}>University not found.</p>
-          <button onClick={() => navigate('/programs')} style={{ marginTop: 16, color: '#4f46e5', fontWeight: 900, fontSize: 14, cursor: 'pointer', background: 'none', border: 'none' }}>
+          <button onClick={() => navigate('/programs')} style={{ marginTop: 16, color: '#D91E2F', fontWeight: 900, fontSize: 14, cursor: 'pointer', background: 'none', border: 'none' }}>
             ← Back to Universities
           </button>
         </div>
@@ -193,7 +193,7 @@ export default function UniversityOverviewPage() {
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
               }}
             >
-              <i className="fas fa-arrow-left" style={{ fontSize: 12, color: '#4f46e5' }} />
+              <i className="fas fa-arrow-left" style={{ fontSize: 12, color: '#D91E2F' }} />
               <span>Back to Programs</span>
             </button>
           </div>
@@ -231,12 +231,12 @@ export default function UniversityOverviewPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
+  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: 12, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' },
-  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(99,102,241,0.4)', flexShrink: 0 },
+  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #ED2B3B, #B71826)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)', flexShrink: 0 },
   sidebarNav: { flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
   navItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'rgba(148,163,184,0.7)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', width: '100%', transition: 'all 0.2s' },
-  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
+  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
   sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
