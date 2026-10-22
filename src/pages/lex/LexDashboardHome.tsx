@@ -342,7 +342,7 @@ export default function LexDashboardHome() {
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Program Distribution</h3>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Learner Volume by Program</p>
             </div>
-            <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-700">
+            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-700">
               <i className="fas fa-chart-pie" />
             </div>
           </div>
@@ -357,11 +357,11 @@ export default function LexDashboardHome() {
                 <div key={i} className="group">
                   <div className="flex justify-between items-end mb-2">
                     <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{item.name}</span>
-                    <span className="text-xs font-black text-brand-700">{item.count.toLocaleString()} <span className="text-brand-400 font-bold ml-1">({item.pct.toFixed(2)}%)</span></span>
+                    <span className="text-xs font-black text-teal-700">{item.count.toLocaleString()} <span className="text-teal-400 font-bold ml-1">({item.pct.toFixed(2)}%)</span></span>
                   </div>
                   <div className="h-2.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-[2px]">
                     <div
-                      className="h-full bg-brand-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(237,43,59,0.2)]"
+                      className="h-full bg-teal-600 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(13,148,136,0.2)]"
                       style={{ width: `${item.pct}%` }}
                     />
                   </div>
@@ -391,24 +391,24 @@ export default function LexDashboardHome() {
               ) : stats.countries.length > 0 ? (
                 stats.countries.map((item, i) => (
                   <div key={i} className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-brand-50 group-hover:border-brand-100 transition-colors">
-                      <i className={`fas ${item.name.includes('Others') ? 'fa-globe' : 'fa-flag'} text-[10px] text-slate-400 group-hover:text-brand-600`} />
+                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-teal-50 group-hover:border-teal-100 transition-colors">
+                      <i className={`fas ${item.name.includes('Others') ? 'fa-globe' : 'fa-flag'} text-[10px] text-slate-400 group-hover:text-teal-600`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-[10px] font-black text-slate-700 uppercase truncate pr-2 tracking-tight">{item.name}</span>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${item.name.includes('Others')
                           ? 'text-slate-700 bg-slate-100'
-                          : 'text-brand-700 bg-brand-50'
+                          : 'text-teal-700 bg-teal-50'
                           }`}>
-                          {item.count.toLocaleString()} <span className={`${item.name.includes('Others') ? 'text-slate-400' : 'text-brand-400'} font-bold ml-1`}>({item.pct.toFixed(2)}%)</span>
+                          {item.count.toLocaleString()} <span className={`${item.name.includes('Others') ? 'text-slate-400' : 'text-teal-400'} font-bold ml-1`}>({item.pct.toFixed(2)}%)</span>
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-1000 ${item.name.includes('Others')
                             ? 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.3)]'
-                            : 'bg-brand-600 shadow-[0_0_8px_rgba(237,43,59,0.3)]'
+                            : 'bg-teal-600 shadow-[0_0_8px_rgba(13,148,136,0.3)]'
                             }`}
                           style={{ width: `${item.pct}%` }}
                         />
