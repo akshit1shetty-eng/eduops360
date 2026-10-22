@@ -668,7 +668,7 @@ export default function AdminPanel() {
       {/* Main content */}
       <main style={styles.main}>
         {/* Top bar */}
-        <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-40 flex items-center px-8" style={{ margin: '-32px -36px 28px' }}>
+        <header className="h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/60 sticky z-40 flex items-center px-8" style={{ top: -32, margin: '-32px -36px 28px' }}>
           <TopbarGreeting />
         </header>
 
