@@ -22,46 +22,30 @@ function TableRowSkeleton() {
   );
 }
 
-function statusClass(status: string): string {
-  const s = (status || '').trim().toLowerCase();
-  if (s.includes('active')) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-  if (s.includes('completed') || s.includes('graduated')) return 'bg-purple-50 text-purple-700 border-purple-100';
-  if (s.includes('defer') || s.includes('ipd')) return 'bg-amber-50 text-amber-700 border-amber-100';
-  if (s.includes('withdrawn') || s.includes('dropout')) return 'bg-rose-50 text-rose-700 border-rose-100';
-  return 'bg-slate-50 text-slate-700 border-slate-100';
+type SortKey = 'name' | 'program' | 'status' | 'launch';
+
+// Status pill colours, consistent with the Home dashboard (Active red, Graduated teal, LOA gold, Exit grey)
+function statusTone(mapped: string): { bg: string; fg: string; dot: string } {
+  if (mapped === 'Active') return { bg: '#FDECEE', fg: '#9B000C', dot: '#E50913' };
+  if (mapped === 'Graduated') return { bg: '#E6F4F1', fg: '#13705F', dot: '#1f9e89' };
+  if (mapped === 'IPD') return { bg: '#FBF3E0', fg: '#7A5A0E', dot: '#d9a21b' };
+  return { bg: '#F1F1F2', fg: '#404041', dot: '#A7A9AC' };
 }
 
-// Dot colour matching statusClass, shown inside the status pill
-function statusDot(status: string): string {
-  const s = (status || '').trim().toLowerCase();
-  if (s.includes('active')) return 'bg-emerald-500';
-  if (s.includes('completed') || s.includes('graduated')) return 'bg-purple-500';
-  if (s.includes('defer') || s.includes('ipd')) return 'bg-amber-500';
-  if (s.includes('withdrawn') || s.includes('dropout')) return 'bg-rose-500';
-  return 'bg-slate-400';
+// Sortable timestamp for "Date(2023,8,30)" or "YYYY-MM[-DD]" launch values
+function launchTs(val: string): number {
+  const gs = (val || '').match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/);
+  if (gs) return new Date(Number(gs[1]), Number(gs[2]), Number(gs[3])).getTime();
+  const iso = (val || '').match(/^(\d{4})-(\d{2})/);
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1).getTime();
+  return 0;
 }
 
-// Two-letter initials and a stable soft colour per learner for the avatar
-const AVATAR_TONES = [
-  'bg-sky-100 text-sky-700',
-  'bg-violet-100 text-violet-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-800',
-  'bg-rose-100 text-rose-700',
-  'bg-teal-100 text-teal-700',
-  'bg-indigo-100 text-indigo-700',
-  'bg-slate-200 text-slate-700',
-];
 function initials(name: string): string {
   const parts = (name || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
 }
-function avatarTone(key: string): string {
-  const hash = [...(key || '')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-  return AVATAR_TONES[hash % AVATAR_TONES.length];
-}
-
 function SubStatSkeleton() {
   return <div className="h-5 w-16 bg-slate-100 rounded animate-pulse" />;
 }
@@ -72,6 +56,13 @@ export default function LexLearnerDashboard() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const toggleSort = (k: SortKey) => {
+    if (sortKey !== k) { setSortKey(k); setSortDir(k === 'launch' ? 'desc' : 'asc'); }
+    else if (sortDir === (k === 'launch' ? 'desc' : 'asc')) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else setSortKey(null);
+  };
 
   const [searchParams] = useSearchParams();
   const initialStatus = searchParams.get('status');
@@ -147,7 +138,7 @@ export default function LexLearnerDashboard() {
 
     const csvRows = filteredRows.map(r => {
       const raw = r.raw || {};
-      const rowMap: Record<string, any> = {
+      const rowMap: Record<string, unknown> = {
         'Email ID': raw['Email ID'] ?? '',
         'First Name': raw['First Name'] ?? '',
         'Last Name': raw['Last Name'] ?? '',
@@ -345,13 +336,27 @@ export default function LexLearnerDashboard() {
     });
   }, [rows, search, selectedCountries, selectedStatuses, selectedPrograms, selectedResidencies, selectedLaunchMonths]);
 
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return filteredRows;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const val = (r: typeof filteredRows[number]): string | number =>
+      sortKey === 'name' ? r.name.toLowerCase()
+        : sortKey === 'program' ? `${r.program} ${r.cohort}`.toLowerCase()
+          : sortKey === 'status' ? r.mappedStatus
+            : launchTs(r.launchMonth);
+    return [...filteredRows].sort((a, b) => {
+      const x = val(a), y = val(b);
+      return (x < y ? -1 : x > y ? 1 : 0) * dir;
+    });
+  }, [filteredRows, sortKey, sortDir]);
+
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
   const safePage = Math.min(currentPage, totalPages);
 
   const paginatedRows = useMemo(() => {
     const start = (safePage - 1) * perPage;
-    return filteredRows.slice(start, start + perPage);
-  }, [filteredRows, safePage, perPage]);
+    return sortedRows.slice(start, start + perPage);
+  }, [sortedRows, safePage, perPage]);
 
   const paginationPages = useMemo(() => {
     const pages: Array<number | 'ellipsis'> = [];
@@ -370,595 +375,279 @@ export default function LexLearnerDashboard() {
     return pages;
   }, [safePage, totalPages]);
 
+  const anyFilter = selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || !!search;
+  const resetAll = () => {
+    setSelectedCountries([]);
+    setSelectedStatuses([]);
+    setSelectedPrograms([]);
+    setSelectedResidencies([]);
+    setSelectedLaunchMonths([]);
+    setSearch('');
+  };
+
+  // Removable chips for every active filter value
+  const chips: Array<{ key: string; group: string; label: string; remove: () => void }> = [
+    ...(search ? [{ key: 'search', group: 'Search', label: `"${search}"`, remove: () => setSearch('') }] : []),
+    ...selectedPrograms.map(v => ({ key: `p-${v}`, group: 'Program', label: v, remove: () => toggleFilter(selectedPrograms, setSelectedPrograms, v) })),
+    ...selectedCountries.map(v => ({ key: `c-${v}`, group: 'Country', label: v, remove: () => toggleFilter(selectedCountries, setSelectedCountries, v) })),
+    ...selectedLaunchMonths.map(v => ({ key: `m-${v}`, group: 'Launch', label: v, remove: () => toggleFilter(selectedLaunchMonths, setSelectedLaunchMonths, v) })),
+    ...selectedResidencies.map(v => ({ key: `r-${v}`, group: 'Residency', label: v, remove: () => toggleFilter(selectedResidencies, setSelectedResidencies, v) })),
+    ...selectedStatuses.map(v => ({ key: `s-${v}`, group: 'Status', label: v === 'IPD' ? 'Leave of absence' : v, remove: () => toggleFilter(selectedStatuses, setSelectedStatuses, v) })),
+  ];
+
+  const statusCards: Array<{
+    key: string; label: string; icon: string; chip: string; bar: string;
+    value: number; intl: number; dom: number; filter: string[];
+  }> = [
+    { key: 'all', label: 'Total learners', icon: 'fa-users', chip: 'bg-slate-900 text-white', bar: '#1A1A1B', value: stats.total, intl: stats.international, dom: stats.domestic, filter: [] },
+    { key: 'Active', label: 'Active', icon: 'fa-user-check', chip: 'bg-brand-50 text-brand-600', bar: '#E50913', value: stats.active, intl: stats.activeInternational, dom: stats.activeDomestic, filter: ['Active'] },
+    { key: 'Graduated', label: 'Graduated', icon: 'fa-award', chip: 'bg-emerald-50 text-emerald-600', bar: '#1f9e89', value: stats.graduated, intl: stats.graduatedInternational, dom: stats.graduatedDomestic, filter: ['Graduated'] },
+    { key: 'IPD', label: 'Leave of absence', icon: 'fa-clock', chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b', value: stats.loa, intl: stats.loaInternational, dom: stats.loaDomestic, filter: ['IPD'] },
+    { key: 'Exit', label: 'Exited', icon: 'fa-user-minus', chip: 'bg-slate-100 text-slate-600', bar: '#7A7C7F', value: stats.exit, intl: stats.exitInternational, dom: stats.exitDomestic, filter: ['Exit'] },
+  ];
+
+  const sortHeader = (k: SortKey, label: string, className: string, align: 'left' | 'right' = 'left') => {
+    const on = sortKey === k;
+    return (
+      <th className={`py-3 text-[11px] font-semibold uppercase tracking-[0.06em] ${align === 'right' ? 'text-right' : 'text-left'} ${className}`}
+        aria-sort={on ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}>
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className={`inline-flex items-center gap-1.5 uppercase tracking-[0.06em] transition-colors ${on ? 'text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}
+        >
+          {label}
+          <i className={`fas ${on ? (sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down') : 'fa-sort'} text-[9px] ${on ? 'text-brand-500' : 'text-slate-300'}`} />
+        </button>
+      </th>
+    );
+  };
+
   return (
-    <div className="max-w-6xl mx-auto py-2">
-      <div className="flex items-center justify-between mb-8 gap-6">
+    <div className="max-w-7xl mx-auto py-2 space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-2">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Learner <span className="text-brand-700">Dashboard</span></h1>
-          <p className="text-slate-600 text-base font-medium opacity-80">Cross-program learner analytics and student lifecycle tracking.</p>
+          <p className="text-[11px] font-semibold text-brand-600 uppercase tracking-[0.14em] mb-1.5">Golden Gate University</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            Learner <span className="text-brand-500">Directory</span>
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Search, filter and export every learner across Golden Gate University programs.</p>
         </div>
         <DateBadge />
       </div>
 
-      {/* Top Metrics Cards - 5 Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
-        {/* Card 1: Total Volume */}
-        {(() => {
-          const isSelected = selectedStatuses.length === 0;
+      {/* Status cards: click to filter the directory */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        {statusCards.map(k => {
+          const selected = k.key === 'all'
+            ? selectedStatuses.length === 0
+            : selectedStatuses.length === 1 && selectedStatuses[0] === k.key;
+          const share = (k.value / (stats.total || 1)) * 100;
           return (
-            <div
-              onClick={() => setSelectedStatuses([])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-slate-800 ring-2 ring-slate-800/10' : 'border-slate-100'
-                }`}
+            <button
+              key={k.key}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => setSelectedStatuses(k.key === 'all' || selected ? [] : k.filter)}
+              className={`group text-left bg-white rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 ${selected
+                ? 'border-brand-500 shadow-[0_0_0_3px_rgba(229,9,19,0.10),0_10px_30px_-14px_rgba(229,9,19,0.35)]'
+                : 'border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)] hover:border-slate-300'}`}
+              style={selected ? { borderColor: '#E50913' } : undefined}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-users text-[10px]" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">Total Volume</div>
-                </div>
-                <div className="text-xl font-black text-slate-900">
-                  {loading ? <StatSkeleton /> : stats.total.toLocaleString()}
-                </div>
+              <div className="flex items-center justify-between">
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${k.chip}`}>
+                  <i className={`fas ${k.icon} text-[11px]`} />
+                </span>
+                {selected
+                  ? <span className="text-[10px] font-semibold text-brand-600 flex items-center gap-1"><i className="fas fa-check text-[9px]" />Showing</span>
+                  : <i className="fas fa-filter text-[10px] text-slate-300 group-hover:text-brand-500 transition-colors" />}
               </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Total Learners</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-brand-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.international / (stats.total || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.domestic / (stats.total || 1)) * 100}%` }}
-                />
+              <div className="mt-4 text-[12px] font-medium text-slate-500">{k.label}</div>
+              <div className="mt-0.5 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+                {loading ? <StatSkeleton /> : k.value.toLocaleString()}
               </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-brand-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.international.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.international / (stats.total || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.domestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.domestic / (stats.total || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
+              <div className="mt-3 h-1 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: loading ? '0%' : `${k.key === 'all' ? 100 : share}%`, background: k.bar }} />
               </div>
-            </div>
+              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 tabular-nums">
+                {loading ? <SubStatSkeleton /> : (
+                  <>
+                    <span title="India-based learners"><span className="text-slate-400">India</span> {k.dom.toLocaleString()}</span>
+                    <span title="International learners"><span className="text-slate-400">Intl</span> {k.intl.toLocaleString()}</span>
+                  </>
+                )}
+              </div>
+            </button>
           );
-        })()}
-
-        {/* Card 2: Active Pool */}
-        {(() => {
-          const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Active';
-          return (
-            <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['Active'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-indigo-700 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-user-check text-[10px]" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-indigo-400 uppercase tracking-wider">Active Pool</div>
-                </div>
-                <div className="text-xl font-black text-indigo-700">
-                  {loading ? <StatSkeleton /> : stats.active.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Active Learners</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-brand-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.activeInternational / (stats.active || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.activeDomestic / (stats.active || 1)) * 100}%` }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-brand-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.activeInternational.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.activeInternational / (stats.active || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.activeDomestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.activeDomestic / (stats.active || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Card 3: Alumni Success */}
-        {(() => {
-          const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'Graduated';
-          return (
-            <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['Graduated'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-slate-100'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-graduation-cap text-[10px]" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-emerald-500 uppercase tracking-wider">Alumni Success</div>
-                </div>
-                <div className="text-xl font-black text-emerald-600">
-                  {loading ? <StatSkeleton /> : stats.graduated.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Graduated</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-brand-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.graduatedInternational / (stats.graduated || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.graduatedDomestic / (stats.graduated || 1)) * 100}%` }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-brand-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.graduatedInternational.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.graduatedInternational / (stats.graduated || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.graduatedDomestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.graduatedDomestic / (stats.graduated || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Card 4: LOA (Leave of Absence) */}
-        {(() => {
-          const isSelected = selectedStatuses.length === 1 && selectedStatuses[0] === 'IPD';
-          return (
-            <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['IPD'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-100'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-amber-100 border border-amber-200 rounded-lg flex items-center justify-center text-amber-700 shadow-sm">
-                    <i className="fas fa-clock text-[10px] text-amber-700" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider">LOA</div>
-                </div>
-                <div className="text-xl font-black text-amber-600">
-                  {loading ? <StatSkeleton /> : stats.loa.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Leave of Absence</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-brand-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.loaInternational / (stats.loa || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.loaDomestic / (stats.loa || 1)) * 100}%` }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-brand-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.loaInternational.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.loaInternational / (stats.loa || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.loaDomestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.loaDomestic / (stats.loa || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Card 5: Exit (Excluding Graduated) */}
-        {(() => {
-          const isSelected = selectedStatuses.length > 0 && selectedStatuses.includes('Exit');
-          return (
-            <div
-              onClick={() => setSelectedStatuses(isSelected ? [] : ['Exit'])}
-              className={`cursor-pointer bg-white rounded-2xl p-3.5 border shadow-sm flex flex-col relative overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ${isSelected ? 'border-rose-500 ring-2 ring-rose-500/10' : 'border-slate-100'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-rose-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <i className="fas fa-user-minus text-[10px]" />
-                  </div>
-                  <div className="text-[9.5px] font-black text-rose-500 uppercase tracking-wider">Exit</div>
-                </div>
-                <div className="text-xl font-black text-rose-600">
-                  {loading ? <StatSkeleton /> : stats.exit.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-none">Exit Learners</div>
-
-              {/* Progress split bar */}
-              <div className="h-1 w-full bg-slate-100 rounded-full flex overflow-hidden mt-1 mb-0.5">
-                <div
-                  className="bg-brand-600 h-full transition-all duration-500"
-                  style={{ width: `${(stats.exitInternational / (stats.exit || 1)) * 100}%` }}
-                />
-                <div
-                  className="bg-emerald-500 h-full transition-all duration-500"
-                  style={{ width: `${(stats.exitDomestic / (stats.exit || 1)) * 100}%` }}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-50">
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">International</div>
-                  <div className="text-[13px] font-black text-brand-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.exitInternational.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.exitInternational / (stats.exit || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
-                  <div className="text-[13px] font-black text-emerald-600 leading-none">
-                    {loading ? <SubStatSkeleton /> : (
-                      <>
-                        {stats.exitDomestic.toLocaleString()}
-                        <span className="text-[9px] text-slate-600 font-bold ml-1">
-                          ({((stats.exitDomestic / (stats.exit || 1)) * 100).toFixed(1)}%)
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+        })}
       </div>
 
-      {/* Filter Engine */}
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 mb-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="relative group/search flex-1">
-            <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or program..."
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm font-medium text-slate-700 shadow-inner"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      {/* Filters */}
+      <section className="bg-white rounded-3xl border border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] p-5 lg:p-6">
+        <div className="relative group/search">
+          <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search by name, email or program..."
+            className="w-full pl-11 pr-10 py-3 rounded-[14px] border border-slate-200 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all text-sm text-slate-800 placeholder:text-slate-400"
+            style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-slate-400 hover:text-slate-700" aria-label="Clear search">
+              <i className="fas fa-times text-[11px]" />
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 bg-slate-50 rounded-2xl animate-pulse" />
-            ))
+            Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-[62px] rounded-[14px] bg-slate-100 animate-pulse" />)
           ) : (
             <>
-              <FilterDropdown
-                label="Academic Program"
-                iconClass="fas fa-graduation-cap"
-                placeholder="Select Programs"
-                values={filterOptions.programs}
-                selected={selectedPrograms}
-                onToggle={(v) => toggleFilter(selectedPrograms, setSelectedPrograms, v)}
-                isOpen={openDropdown === 'program'}
-                setIsOpen={(open) => setOpenDropdown(open ? 'program' : null)}
-              />
-              <FilterDropdown
-                label="Country of Residence"
-                iconClass="fas fa-flag"
-                placeholder="Select Countries"
-                values={filterOptions.countries}
-                selected={selectedCountries}
-                onToggle={(v) => toggleFilter(selectedCountries, setSelectedCountries, v)}
-                isOpen={openDropdown === 'country'}
-                setIsOpen={(open) => setOpenDropdown(open ? 'country' : null)}
-              />
-              <FilterDropdown
-                label="Launch Month"
-                iconClass="fas fa-calendar-alt"
-                placeholder="Select Months"
-                values={filterOptions.launchMonths}
-                selected={selectedLaunchMonths}
-                onToggle={(v) => toggleFilter(selectedLaunchMonths, setSelectedLaunchMonths, v)}
-                isOpen={openDropdown === 'launchMonth'}
-                setIsOpen={(open) => setOpenDropdown(open ? 'launchMonth' : null)}
-              />
-              <FilterDropdown
-                label="Learner Type"
-                iconClass="fas fa-globe-americas"
-                placeholder="Select Type"
-                values={filterOptions.residencies}
-                selected={selectedResidencies}
-                onToggle={(v) => toggleFilter(selectedResidencies, setSelectedResidencies, v)}
-                isOpen={openDropdown === 'residency'}
-                setIsOpen={(open) => setOpenDropdown(open ? 'residency' : null)}
-              />
-              <FilterDropdown
-                label="Learner Status"
-                iconClass="fas fa-user-tag"
-                placeholder="Select Status"
-                values={filterOptions.statuses}
-                selected={selectedStatuses}
-                onToggle={(v) => toggleFilter(selectedStatuses, setSelectedStatuses, v)}
-                isOpen={openDropdown === 'status'}
-                setIsOpen={(open) => setOpenDropdown(open ? 'status' : null)}
-              />
+              <FilterDropdown label="Program" iconClass="fas fa-graduation-cap" placeholder="All programs" values={filterOptions.programs} selected={selectedPrograms}
+                onToggle={(v) => toggleFilter(selectedPrograms, setSelectedPrograms, v)} isOpen={openDropdown === 'program'} setIsOpen={(open) => setOpenDropdown(open ? 'program' : null)} />
+              <FilterDropdown label="Country of residence" iconClass="fas fa-flag" placeholder="All countries" values={filterOptions.countries} selected={selectedCountries}
+                onToggle={(v) => toggleFilter(selectedCountries, setSelectedCountries, v)} isOpen={openDropdown === 'country'} setIsOpen={(open) => setOpenDropdown(open ? 'country' : null)} />
+              <FilterDropdown label="Launch month" iconClass="fas fa-calendar-alt" placeholder="All months" values={filterOptions.launchMonths} selected={selectedLaunchMonths}
+                onToggle={(v) => toggleFilter(selectedLaunchMonths, setSelectedLaunchMonths, v)} isOpen={openDropdown === 'launchMonth'} setIsOpen={(open) => setOpenDropdown(open ? 'launchMonth' : null)} />
+              <FilterDropdown label="Residency" iconClass="fas fa-globe-americas" placeholder="India & International" values={filterOptions.residencies} selected={selectedResidencies}
+                onToggle={(v) => toggleFilter(selectedResidencies, setSelectedResidencies, v)} isOpen={openDropdown === 'residency'} setIsOpen={(open) => setOpenDropdown(open ? 'residency' : null)} />
+              <FilterDropdown label="Status" iconClass="fas fa-user-tag" placeholder="All statuses" values={filterOptions.statuses} selected={selectedStatuses}
+                onToggle={(v) => toggleFilter(selectedStatuses, setSelectedStatuses, v)} isOpen={openDropdown === 'status'} setIsOpen={(open) => setOpenDropdown(open ? 'status' : null)} />
             </>
           )}
         </div>
 
-        {/* Clear Filters */}
-        <div className="mt-8 flex border-t border-slate-50 pt-6 items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2 items-center min-w-0">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Active Tuning:</span>
-            {(selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || search) ? (
-              <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full uppercase tracking-wider animate-in fade-in zoom-in duration-300">
-                {([search, ...selectedCountries, ...selectedStatuses, ...selectedPrograms, ...selectedResidencies, ...selectedLaunchMonths].filter(Boolean).length)} Parameters Active
+        {anyFilter && (
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2" style={{ animation: 'anaRise .25s ease-out both' }}>
+            <span className="text-[11px] font-semibold text-slate-500 mr-1">Filtered by</span>
+            {chips.map(c => (
+              <span key={c.key} className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full border border-slate-200 text-[12px] text-slate-700" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>
+                <span className="text-slate-400">{c.group}:</span>
+                <span className="font-medium max-w-[180px] truncate">{c.label}</span>
+                <button type="button" onClick={c.remove} className="w-5 h-5 rounded-full text-slate-400 hover:text-brand-600 transition-colors" aria-label={`Remove ${c.group} ${c.label}`}>
+                  <i className="fas fa-times text-[9px]" />
+                </button>
               </span>
-            ) : (
-              <span className="text-[10px] italic text-slate-300 uppercase tracking-widest">No active filters applied</span>
-            )}
-          </div>
-
-          {(selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || search) && (
-            <button
-              onClick={() => {
-                setSelectedCountries([]);
-                setSelectedStatuses([]);
-                setSelectedPrograms([]);
-                setSelectedResidencies([]);
-                setSelectedLaunchMonths([]);
-                setSearch('');
-              }}
-              className="px-8 py-3 bg-brand-600 text-white rounded-2xl hover:bg-brand-700 hover:shadow-xl hover:shadow-brand-200 transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 whitespace-nowrap animate-in slide-in-from-right-4 duration-300"
-            >
-              <i className="fas fa-sync-alt" />
-              Reset
+            ))}
+            <button type="button" onClick={resetAll} className="ml-auto text-[12px] font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1.5">
+              <i className="fas fa-rotate-left text-[10px]" />Clear all
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </section>
 
-      {/* Main Table Section */}
-      <div className="bg-white rounded-[2rem] border border-slate-200/70 shadow-[0_1px_2px_rgba(26, 26, 27,0.04),0_12px_32px_-16px_rgba(26, 26, 27,0.12)] overflow-hidden flex flex-col">
-        <div className="px-6 py-5 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+      {/* Directory */}
+      <section className="bg-white rounded-3xl border border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
+        <header className="px-6 py-5 flex flex-wrap gap-4 justify-between items-center">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
               <i className="fas fa-address-book text-sm" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Learner Directory</h3>
-                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 tabular-nums">
-                  {filteredRows.length.toLocaleString()}
-                </span>
+                <h2 className="text-lg font-bold text-slate-900 leading-tight">Learners</h2>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 tabular-nums">{filteredRows.length.toLocaleString()}</span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-[13px] text-slate-500 mt-0.5">
                 {loading
-                  ? 'Loading learners…'
+                  ? 'Loading learners...'
                   : filteredRows.length === 0
                     ? 'No learners match the current filters'
-                    : `Showing ${((safePage - 1) * perPage + 1).toLocaleString()}–${Math.min(safePage * perPage, filteredRows.length).toLocaleString()} of ${filteredRows.length.toLocaleString()}`}
+                    : `Showing ${((safePage - 1) * perPage + 1).toLocaleString()}–${Math.min(safePage * perPage, filteredRows.length).toLocaleString()} of ${filteredRows.length.toLocaleString()}${anyFilter ? ` (filtered from ${rows.length.toLocaleString()})` : ''}`}
               </p>
             </div>
           </div>
-          <div className="flex justify-end">
-            {!loading && filteredRows.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedExportColumns.length === 0) {
-                    setSelectedExportColumns([
-                      'Email ID',
-                      'First Name',
-                      'Last Name',
-                      'Cohort #',
-                      'Launch Month',
-                      'Status',
-                      'Country Of Residence'
-                    ]);
-                  }
-                  setShowExportModal(true);
-                }}
-                className="bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm text-slate-700 hover:text-brand-600 hover:border-brand-200 hover:shadow transition-all flex items-center gap-2 text-xs font-bold"
-              >
-                <i className="fas fa-file-export" />
-                Export CSV
-              </button>
-            )}
-          </div>
-        </div>
+          {!loading && filteredRows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedExportColumns.length === 0) {
+                  setSelectedExportColumns(['Email ID', 'First Name', 'Last Name', 'Cohort #', 'Launch Month', 'Status', 'Country Of Residence']);
+                }
+                setShowExportModal(true);
+              }}
+              className="px-4 py-2 rounded-[12px] text-white text-[12px] font-semibold flex items-center gap-2 shadow-[0_6px_16px_-8px_rgba(229,9,19,0.6)] hover:brightness-110 transition-all"
+              style={{ background: 'linear-gradient(135deg, #E50913, #BF2026)' }}
+            >
+              <i className="fas fa-file-export text-[11px]" />
+              Export CSV
+            </button>
+          )}
+        </header>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50/80 backdrop-blur border-b border-slate-200 sticky top-0 z-10">
+            <thead className="border-y border-slate-100" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>
               <tr>
-                <th className="pl-6 pr-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Learner</th>
-                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Program &amp; Cohort</th>
-                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Residency</th>
-                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="pl-4 pr-6 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Launch</th>
+                {sortHeader('name', 'Learner', 'pl-6 pr-4')}
+                {sortHeader('program', 'Program & cohort', 'px-4')}
+                <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.06em]">Residency</th>
+                {sortHeader('status', 'Status', 'px-4')}
+                {sortHeader('launch', 'Launch', 'pl-4 pr-6', 'right')}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 Array.from({ length: 10 }).map((_, i) => <TableRowSkeleton key={i} />)
               ) : paginatedRows.length > 0 ? (
-                paginatedRows.map((row, idx) => (
-                  <tr key={idx} className="group hover:bg-slate-50/80 transition-colors">
-                    <td className="pl-6 pr-4 py-3.5 whitespace-nowrap relative">
-                      <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ring-2 ring-white ${avatarTone(row.email || row.name)}`}>
-                          {initials(row.name)}
+                paginatedRows.map((row, idx) => {
+                  const tone = statusTone(row.mappedStatus);
+                  return (
+                    <tr key={`${row.userId}-${idx}`} className="group hover:bg-[#FAFAFB] transition-colors">
+                      <td className="pl-6 pr-4 py-3.5 whitespace-nowrap relative">
+                        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: '#F1F1F2', color: '#404041' }}>
+                            {initials(row.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 leading-tight">{row.name || 'N/A'}</p>
+                            <p className="text-xs text-slate-500 leading-tight mt-0.5">{row.email}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 leading-tight">{row.name || 'N/A'}</p>
-                          <p className="text-xs text-slate-500 leading-tight mt-0.5">{row.email}</p>
-                          {row.userId && (
-                            <span className="inline-block mt-1 px-1.5 py-px rounded bg-slate-100 text-[10px] text-slate-500 font-mono leading-tight">
-                              {row.userId}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <p className="text-sm font-medium text-slate-800 leading-tight">{row.program}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {row.cohort && (
-                          <span className="px-1.5 py-px rounded-md bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-600">{row.cohort}</span>
-                        )}
-                        {row.term && (
-                          <span className="text-[10px] font-medium text-slate-400">{row.term}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${row.learnerType === 'International'
-                        ? 'bg-sky-50 text-sky-700 border-sky-100'
-                        : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                        }`}>
-                        <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-home'} text-[9px]`} />
-                        {row.learnerType}
-                      </span>
-                      {(row.country || row.region) && (
-                        <p className="text-[11px] text-slate-500 mt-1 leading-tight">
-                          {[row.country, row.region].filter(Boolean).join(' · ')}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <p className="text-sm font-medium text-slate-800 leading-tight">{row.program}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {[row.cohort && row.cohort !== '-' ? `Cohort ${row.cohort}` : '', row.term].filter(Boolean).join(' · ') || '—'}
                         </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${statusClass(row.status)}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(row.status)}`} />
-                        {row.status || '—'}
-                      </span>
-                    </td>
-                    <td className="pl-4 pr-6 py-3.5 whitespace-nowrap text-right text-xs font-medium text-slate-600 tabular-nums">
-                      {formatLaunchMonth(row.launchMonth)}
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <p className="text-[13px] font-medium text-slate-800 flex items-center gap-1.5">
+                          <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-house'} text-[10px] text-slate-400`} />
+                          {row.learnerType}
+                        </p>
+                        {(row.country || row.region) && (
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{[row.country, row.region].filter(Boolean).join(' · ')}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-full" style={{ background: tone.bg, color: tone.fg }} title={row.mappedStatus}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.dot }} />
+                          {row.status || '—'}
+                        </span>
+                      </td>
+                      <td className="pl-4 pr-6 py-3.5 whitespace-nowrap text-right text-[12px] font-medium text-slate-600 tabular-nums">
+                        {row.formattedLaunch}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-300 text-2xl mb-4">
+                      <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-slate-300 text-xl mb-4" style={{ background: '#F7F7F8' }}>
                         <i className="fas fa-user-slash" />
                       </div>
-                      <p className="text-slate-700 font-semibold text-sm">No learners match your filters</p>
-                      <p className="text-slate-400 text-xs mt-1">Try a different search or clear the filters.</p>
-                      <button onClick={() => {
-                        setSelectedCountries([]);
-                        setSelectedStatuses([]);
-                        setSelectedPrograms([]);
-                        setSelectedResidencies([]);
-                        setSelectedLaunchMonths([]);
-                        setSearch('');
-                      }} className="mt-4 px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-brand-200 hover:text-brand-600 text-xs font-bold shadow-sm transition-all">
-                        <i className="fas fa-rotate-left mr-1.5" />Reset filters
+                      <p className="text-slate-800 font-semibold text-sm">No learners match your filters</p>
+                      <p className="text-slate-500 text-xs mt-1">Try a different search or clear the filters.</p>
+                      <button onClick={resetAll} className="mt-4 px-4 py-2 rounded-[12px] border border-slate-200 text-slate-700 hover:border-brand-300 hover:text-brand-600 text-xs font-semibold transition-all">
+                        <i className="fas fa-rotate-left mr-1.5" />Clear filters
                       </button>
                     </div>
                   </td>
@@ -968,70 +657,54 @@ export default function LexLearnerDashboard() {
           </table>
         </div>
 
-        {/* Pagination Matrix */}
-        <div className="px-6 py-3.5 bg-white border-t border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Show</span>
+        {/* Pagination */}
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex items-center gap-2 text-[12px] text-slate-500">
+            <span>Rows per page</span>
             <select
               value={perPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-gray-700"
+              onChange={(e) => { setPerPage(Number(e.target.value)); setCurrentPage(1); }}
+              className="px-2.5 py-1.5 rounded-[10px] border border-slate-200 bg-transparent text-[12px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
             >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
+              {[10, 15, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-            <span className="text-sm text-gray-600">entries</span>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <p className="text-sm text-gray-600">
-              Showing <span className="font-medium text-gray-800">{filteredRows.length === 0 ? 0 : (safePage - 1) * perPage + 1}</span> to{' '}
-              <span className="font-medium text-gray-800">{Math.min(safePage * perPage, filteredRows.length)}</span> of{' '}
-              <span className="font-medium text-gray-800">{filteredRows.length}</span> learners
-            </p>
-          </div>
-
-          <div className="flex space-x-2 items-center">
+          <div className="flex items-center gap-1">
             <button
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-600"
+              className="w-8 h-8 rounded-[10px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
               disabled={safePage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              aria-label="Previous page"
             >
-              <i className="fas fa-chevron-left" />
+              <i className="fas fa-chevron-left text-[11px]" />
             </button>
-
             {paginationPages.map((p, idx) =>
               p === 'ellipsis' ? (
-                <span key={`e-${idx}`} className="px-2 py-1 text-gray-500">...</span>
-              ) : p === safePage ? (
-                <button key={p} aria-current="page" className="min-w-[32px] h-8 px-2 bg-slate-900 text-white rounded-lg text-sm font-semibold shadow-sm">{p}</button>
+                <span key={`e-${idx}`} className="w-8 text-center text-slate-400">…</span>
               ) : (
                 <button
                   key={p}
                   onClick={() => setCurrentPage(p)}
-                  className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors font-medium"
+                  aria-current={p === safePage ? 'page' : undefined}
+                  className={`min-w-[32px] h-8 px-2 rounded-[10px] text-[12px] font-semibold tabular-nums transition-colors ${p === safePage ? 'text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+                  style={p === safePage ? { background: '#E50913', boxShadow: '0 4px 12px -6px rgba(229,9,19,0.7)' } : undefined}
                 >
                   {p}
                 </button>
               ),
             )}
-
             <button
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-600"
+              className="w-8 h-8 rounded-[10px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
               disabled={safePage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              aria-label="Next page"
             >
-              <i className="fas fa-chevron-right" />
+              <i className="fas fa-chevron-right text-[11px]" />
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Export Modal */}
       {showExportModal && (

@@ -62,13 +62,17 @@ export function SidebarBrand({ collapsed, subtitle }: { collapsed: boolean; subt
   if (collapsed) {
     return <UpGradShortMark color="red" style={{ width: 26, height: 'auto', display: 'block' }} />;
   }
+  // Horizontal co-brand lockup: upGrad Word Mark | EduOps360, with the context line underneath
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
-      <UpGradWordmark color="red" style={{ height: 24, width: 'auto', display: 'block' }} />
-      <div style={{ marginTop: 24, color: '#FFFFFF', fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em', fontFamily: "'Montserrat', 'Roboto', sans-serif", lineHeight: 1.1 }}>
-        EduOps360
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <UpGradWordmark color="red" style={{ height: 19, width: 'auto', display: 'block', flexShrink: 0 }} />
+        <span aria-hidden style={{ width: 1, height: 18, background: 'rgba(208, 210, 211, 0.28)', flexShrink: 0 }} />
+        <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em', fontFamily: "'Montserrat', 'Roboto', sans-serif", lineHeight: 1, whiteSpace: 'nowrap', paddingTop: 1 }}>
+          EduOps<span style={{ color: '#E50913' }}>360</span>
+        </span>
       </div>
-      <div style={{ marginTop: 3, color: 'rgba(208, 210, 211, 0.6)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 190 }}>
+      <div style={{ marginTop: 10, color: 'rgba(208, 210, 211, 0.55)', fontWeight: 500, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.14em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
         {subtitle}
       </div>
     </div>
