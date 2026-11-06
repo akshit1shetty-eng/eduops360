@@ -298,7 +298,7 @@ export default function LearnerProfilePage() {
     const s = (status ?? '').trim().toLowerCase();
     if (s === 'active') return { bg: 'rgba(16,185,129,0.12)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' };
     if (s.startsWith('deferred')) return { bg: 'rgba(249,115,22,0.12)', color: '#ea6c00', border: '1px solid rgba(249,115,22,0.3)' };
-    return { bg: 'rgba(148,163,184,0.12)', color: 'var(--text-secondary)', border: '1px solid rgba(148,163,184,0.3)' };
+    return { bg: 'rgba(167, 169, 172,0.12)', color: 'var(--text-secondary)', border: '1px solid rgba(167, 169, 172,0.3)' };
   };
 
   return (
@@ -362,7 +362,7 @@ export default function LearnerProfilePage() {
           background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
           display: flex; align-items: center; justify-content: center;
           font-size: 1.8rem; font-weight: 800; color: #fff;
-          box-shadow: 0 0 0 4px rgba(59,108,246,0.15), var(--shadow-md);
+          box-shadow: 0 0 0 4px rgba(229, 9, 19,0.15), var(--shadow-md);
         }
 
         .lp-header-info { flex: 1; }
@@ -412,17 +412,17 @@ export default function LearnerProfilePage() {
           bottom: 30px;
           width: 3px;
           background: linear-gradient(to bottom, 
-            #3a86ff, 
-            #8338ec, 
-            #ff006e, 
-            #fb5607
+            #E50913, 
+            #BF2026, 
+            #9B000C, 
+            #404041
           );
           border-radius: 10px;
           transform: translateX(-50%);
           opacity: 0.8;
         }
         [data-theme="dark"] .lp-timeline::before {
-          box-shadow: 0 0 8px rgba(131, 56, 236, 0.3);
+          box-shadow: 0 0 8px rgba(229, 9, 19, 0.3);
           opacity: 1;
         }
 
@@ -442,7 +442,7 @@ export default function LearnerProfilePage() {
           display: flex; 
           align-items: center; 
           justify-content: center;
-          color: #1e40af;
+          color: #404041;
           background: #fff;
           font-size: 1.05rem;
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -455,9 +455,9 @@ export default function LearnerProfilePage() {
           box-shadow: 0 6px 16px rgba(0,0,0,0.3);
         }
 
-        .lp-tl-icon-prof   { color: #3a86ff; border: 1px solid rgba(58,134,255,0.2); }
-        .lp-tl-icon-cohort { color: #8338ec; border: 1px solid rgba(131, 56, 236, 0.2); }
-        .lp-tl-icon-diss   { color: #ff006e; border: 1px solid rgba(255, 0, 110, 0.2); }
+        .lp-tl-icon-prof   { color: #E50913; border: 1px solid rgba(229,9,19,0.2); }
+        .lp-tl-icon-cohort { color: #404041; border: 1px solid rgba(64, 64, 65, 0.2); }
+        .lp-tl-icon-diss   { color: #9B000C; border: 1px solid rgba(155, 0, 12, 0.2); }
 
         /* ─── Section cards ─── */
         .lp-card {
@@ -529,9 +529,9 @@ export default function LearnerProfilePage() {
           padding: 0.9rem 1rem;
           border: 1px solid;
         }
-        .lp-stat-card-blue   { background: rgba(59,108,246,0.08);  border-color: rgba(59,108,246,0.2);  }
+        .lp-stat-card-blue   { background: rgba(229, 9, 19,0.08);  border-color: rgba(229, 9, 19,0.2);  }
         .lp-stat-card-green  { background: rgba(16,185,129,0.08);  border-color: rgba(16,185,129,0.2);  }
-        .lp-stat-card-purple { background: rgba(124,92,246,0.08);  border-color: rgba(124,92,246,0.2);  }
+        .lp-stat-card-purple { background: rgba(64, 64, 65,0.08);  border-color: rgba(64, 64, 65,0.2);  }
         .lp-stat-card-amber  { background: rgba(245,158,11,0.08);  border-color: rgba(245,158,11,0.2);  }
 
         .lp-stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
@@ -575,9 +575,9 @@ export default function LearnerProfilePage() {
         }
         .grade-excellent { background: rgba(16,185,129,0.1); color: #059669; }
         .grade-good      { background: rgba(245,158,11,0.1);  color: #d97706; }
-        .grade-satisfactory { background: rgba(59,108,246,0.1); color: var(--accent-blue); }
+        .grade-satisfactory { background: rgba(229, 9, 19,0.1); color: var(--accent-blue); }
         .grade-low       { background: rgba(239,68,68,0.1);   color: #dc2626; }
-        .grade-pending   { background: rgba(148,163,184,0.1); color: #64748b; }
+        .grade-pending   { background: rgba(167, 169, 172,0.1); color: #7A7C7F; }
 
         /* ─── Low GPA alert ─── */
         .lp-alert-box {
@@ -670,16 +670,16 @@ export default function LearnerProfilePage() {
           border: 1px solid;
         }
         .lp-diss-info-purple {
-          background: rgba(124,92,246,0.08);
-          border-color: rgba(124,92,246,0.2);
+          background: rgba(64, 64, 65,0.08);
+          border-color: rgba(64, 64, 65,0.2);
         }
         .lp-diss-info-blue {
-          background: rgba(59,108,246,0.08);
-          border-color: rgba(59,108,246,0.2);
+          background: rgba(229, 9, 19,0.08);
+          border-color: rgba(229, 9, 19,0.2);
         }
         .lp-diss-info-indigo {
-          background: rgba(99,102,241,0.08);
-          border-color: rgba(99,102,241,0.2);
+          background: rgba(229, 9, 19,0.08);
+          border-color: rgba(229, 9, 19,0.2);
         }
         .lp-diss-info-label {
           font-size: 11px; font-weight: 700;
@@ -747,7 +747,7 @@ export default function LearnerProfilePage() {
         .diss-step-not-approved { background: linear-gradient(135deg, #ef4444, #ec4899); }
         .diss-step-submitted   { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
         .diss-step-not-submitted { background: linear-gradient(135deg, #ef4444, #f97316); }
-        .diss-step-pending     { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .diss-step-pending     { background: linear-gradient(135deg, #A7A9AC, #7A7C7F); }
 
         .lp-step-num { font-size: 13px; font-weight: 800; }
 
@@ -820,7 +820,7 @@ export default function LearnerProfilePage() {
         .legend-approved    { background: #22c55e; }
         .legend-not-approved { background: #ef4444; }
         .legend-submitted   { background: #f59e0b; }
-        .legend-pending     { background: #94a3b8; }
+        .legend-pending     { background: #A7A9AC; }
 
         /* ─── Academic Review Cards ─── */
         .ar-summary-grid {
@@ -854,8 +854,8 @@ export default function LearnerProfilePage() {
         .ar-card-icon {
           width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
         }
-        .ar-card-ar1 .ar-card-icon { background: rgba(59,108,246,0.1); color: var(--accent-blue); }
-        .ar-card-ar2 .ar-card-icon { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+        .ar-card-ar1 .ar-card-icon { background: rgba(229, 9, 19,0.1); color: var(--accent-blue); }
+        .ar-card-ar2 .ar-card-icon { background: rgba(64, 64, 65,0.1); color: #404041; }
         .ar-card-final .ar-card-icon { background: rgba(236,72,153,0.1); color: #ec4899; }
 
         .ar-card-body { flex: 1; }
@@ -872,8 +872,8 @@ export default function LearnerProfilePage() {
         .ar-badge {
           display: inline-flex; align-items: center; gap: 6px;
           padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 700;
-          background: rgba(148,163,184,0.1); color: #64748b;
-          border: 1px solid rgba(148,163,184,0.2);
+          background: rgba(167, 169, 172,0.1); color: #7A7C7F;
+          border: 1px solid rgba(167, 169, 172,0.2);
         }
         .ar-badge-good { background: rgba(16,185,129,0.1); color: #059669; border-color: rgba(16,185,129,0.2); }
         .ar-badge-probation { background: rgba(245,158,11,0.1); color: #d97706; border-color: rgba(245,158,11,0.2); }
@@ -1090,7 +1090,7 @@ export default function LearnerProfilePage() {
                                           cat === 'excellent' ? '#059669' :
                                             cat === 'good' ? '#d97706' :
                                               cat === 'satisfactory' ? 'var(--accent-blue)' :
-                                                cat === 'pending' ? '#64748b' : '#dc2626';
+                                                cat === 'pending' ? '#7A7C7F' : '#dc2626';
                                         return (
                                           <tr key={course.gradeCol}>
                                             <td style={{ fontWeight: 600 }}>{course.name}</td>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { SidebarBrand } from '../../components/UpGradLogo';
 import { useNavigate } from 'react-router-dom';
 import { authService, HARDCODED_SYSTEM_ROLES } from '../../lib/authService';
 import { useAuth } from '../../hooks/useAuth';
@@ -38,15 +39,12 @@ function formatRelativeDate(iso: string) {
 
 // Colour + icon per role, so roles are recognisable at a glance (badges, avatars, filter chips)
 const ROLE_STYLES: Record<string, { color: string; icon: string }> = {
-  'super admin': { color: '#D91E2F', icon: 'fa-crown' },
-  'admin': { color: '#7c3aed', icon: 'fa-shield-alt' },
+  'super admin': { color: '#BF2026', icon: 'fa-crown' },
+  'admin': { color: '#404041', icon: 'fa-shield-alt' },
   'ggu viewer': { color: '#0C2340', icon: 'fa-university' },
-  'psb viewer': { color: '#d97706', icon: 'fa-graduation-cap' },
-  'esgci viewer': { color: '#059669', icon: 'fa-globe-europe' },
-  'edgewood viewer': { color: '#0d9488', icon: 'fa-tree' },
-  'user': { color: '#475569', icon: 'fa-user' },
+  'user': { color: '#58595B', icon: 'fa-user' },
 };
-const CUSTOM_ROLE_COLORS = ['#2563eb', '#db2777', '#0891b2', '#65a30d', '#c2410c', '#4f46e5'];
+const CUSTOM_ROLE_COLORS = ['#2a78d6', '#c43d8a', '#1f9e89', '#3a8f3a', '#eb6834', '#6250d6'];
 
 function roleStyle(role: string) {
   const known = ROLE_STYLES[role];
@@ -550,19 +548,7 @@ export default function AdminPanel() {
           justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, width: '100%', justifyContent: collapsed ? 'center' : 'flex-start' }}>
-            <div style={{
-              ...styles.sidebarLogoIcon,
-              width: collapsed ? 36 : 40,
-              height: collapsed ? 36 : 40,
-            }}>
-              <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: collapsed ? 18 : 22 }} />
-            </div>
-            {!collapsed && (
-              <div>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 16, letterSpacing: '-0.01em' }}>EduOps360</div>
-                <div style={{ color: 'rgba(148,163,184,0.6)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Admin Panel</div>
-              </div>
-            )}
+            <SidebarBrand collapsed={collapsed} subtitle="Admin Panel" />
           </div>
         </div>
 
@@ -636,7 +622,7 @@ export default function AdminPanel() {
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {adminProfile?.full_name || adminProfile?.email?.split('@')[0] || 'Admin'}
                   </div>
-                  <div style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Administrator</div>
+                  <div style={{ color: 'rgba(167, 169, 172,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Administrator</div>
                 </div>
               </div>
               <button onClick={handleSignOut} style={styles.signOutBtn} className="sidebar-signout-btn sidebar-nav-item" title="Sign out">
@@ -706,7 +692,7 @@ export default function AdminPanel() {
                 </button>
               </>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, color: '#64748b', fontSize: 12, fontWeight: 700 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#F7F7F8', border: '1px solid #E3E4E5', borderRadius: 12, color: '#7A7C7F', fontSize: 12, fontWeight: 700 }}>
                 <i className="fas fa-shield-alt text-indigo-500" />
                 <span>Pre-coded System Roles</span>
               </div>
@@ -717,21 +703,21 @@ export default function AdminPanel() {
         {/* Stats */}
         <style>{`
           .admin-stat-card { transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
-          .admin-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.08) !important; }
-          .admin-user-row:hover { background: #f8fafc; }
+          .admin-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26, 26, 27,0.08) !important; }
+          .admin-user-row:hover { background: #F7F7F8; }
           .admin-user-row .admin-copy-btn { opacity: 0; transition: opacity 0.15s; }
           .admin-user-row:hover .admin-copy-btn { opacity: 1; }
           .admin-sort-th { cursor: pointer; user-select: none; transition: color 0.15s; }
-          .admin-sort-th:hover { color: #475569 !important; }
+          .admin-sort-th:hover { color: #58595B !important; }
           .admin-chip { transition: all 0.15s; }
-          .admin-chip:hover { border-color: #ED2B3B !important; color: #D91E2F !important; }
+          .admin-chip:hover { border-color: #E50913 !important; color: #BF2026 !important; }
           .admin-role-badge { cursor: pointer; transition: filter 0.15s; }
           .admin-role-badge:hover { filter: brightness(0.95); }
         `}</style>
         <div style={styles.statsGrid}>
           {[
-            { key: null, icon: 'fa-users', color: '#6366f1', bg: 'rgba(99,102,241,0.12)', value: totalUsersCount, label: 'Total Users', hint: 'Show all users' },
-            { key: 'admins', icon: 'fa-shield-alt', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)', value: adminUsersCount, label: 'Admins', hint: 'Super admins & admins' },
+            { key: null, icon: 'fa-users', color: '#E50913', bg: 'rgba(229, 9, 19,0.12)', value: totalUsersCount, label: 'Total Users', hint: 'Show all users' },
+            { key: 'admins', icon: 'fa-shield-alt', color: '#404041', bg: 'rgba(64, 64, 65,0.12)', value: adminUsersCount, label: 'Admins', hint: 'Super admins & admins' },
             { key: 'roles', icon: 'fa-user-tag', color: '#10b981', bg: 'rgba(16,185,129,0.12)', value: rolesInUseCount, label: 'Roles in Use', hint: `of ${definedRolesCount} defined · view roles` },
             { key: 'recent', icon: 'fa-user-clock', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', value: recentUsersCount, label: 'Added (30 days)', hint: 'Recently added users' },
           ].map(card => {
@@ -750,8 +736,8 @@ export default function AdminPanel() {
                 style={{
                   ...styles.statCard,
                   cursor: 'pointer', textAlign: 'left', font: 'inherit', width: '100%',
-                  border: `1px solid ${isActive ? '#ED2B3B' : 'rgba(15,23,42,0.07)'}`,
-                  boxShadow: isActive ? '0 0 0 3px rgba(237,43,59,0.12)' : styles.statCard.boxShadow,
+                  border: `1px solid ${isActive ? '#E50913' : 'rgba(26, 26, 27,0.07)'}`,
+                  boxShadow: isActive ? '0 0 0 3px rgba(229, 9, 19,0.12)' : styles.statCard.boxShadow,
                 }}
               >
                 <div style={{ ...styles.statCardIcon, background: card.bg, color: card.color }}>
@@ -760,7 +746,7 @@ export default function AdminPanel() {
                 <div style={{ minWidth: 0 }}>
                   <div style={styles.statCardValue}>{card.value}</div>
                   <div style={styles.statCardLabel}>{card.label}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.hint}</div>
+                  <div style={{ fontSize: 11, color: '#A7A9AC', fontWeight: 600, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.hint}</div>
                 </div>
               </button>
             );
@@ -784,7 +770,7 @@ export default function AdminPanel() {
                   {(userFilter || search) && (
                     <button
                       onClick={() => { setUserFilter(null); setSearch(''); }}
-                      style={{ marginLeft: 8, background: 'none', border: 'none', color: '#D91E2F', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                      style={{ marginLeft: 8, background: 'none', border: 'none', color: '#BF2026', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}
                     >
                       Reset filters
                     </button>
@@ -806,7 +792,7 @@ export default function AdminPanel() {
                 </div>
               )}
               <div style={{ ...styles.searchWrapper, marginLeft: selectedUserIds.length > 0 ? 0 : 'auto' }}>
-                <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13 }} />
+                <i className="fas fa-search" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#A7A9AC', fontSize: 13 }} />
                 <input
                   type="text"
                   placeholder="Search by email, name or role…"
@@ -819,7 +805,7 @@ export default function AdminPanel() {
                   <button
                     onClick={() => setSearch('')}
                     title="Clear search"
-                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e2e8f0', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', fontSize: 9 }}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#E3E4E5', border: 'none', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#7A7C7F', fontSize: 9 }}
                   >
                     <i className="fas fa-times" />
                   </button>
@@ -829,7 +815,7 @@ export default function AdminPanel() {
 
             {/* Role filter chips */}
             {roleCounts.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '12px 24px', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '12px 24px', borderBottom: '1px solid #EFEFF0' }}>
                 {[{ role: null as string | null, count: totalUsersCount }, ...roleCounts.map(([role, count]) => ({ role, count }))].map(({ role, count }) => {
                   const active = userFilter === role;
                   const rs = role ? roleStyle(role) : null;
@@ -842,14 +828,14 @@ export default function AdminPanel() {
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
                         fontSize: 11, fontWeight: 700, textTransform: 'capitalize',
-                        background: active ? '#ED2B3B' : 'white',
-                        color: active ? 'white' : '#475569',
-                        border: `1px solid ${active ? '#ED2B3B' : '#e2e8f0'}`,
+                        background: active ? '#E50913' : 'white',
+                        color: active ? 'white' : '#58595B',
+                        border: `1px solid ${active ? '#E50913' : '#E3E4E5'}`,
                       }}
                     >
                       {rs && <i className={`fas ${rs.icon}`} style={{ fontSize: 9, color: active ? 'white' : rs.color }} />}
                       {role ?? 'All users'}
-                      <span style={{ background: active ? 'rgba(255,255,255,0.25)' : '#f1f5f9', borderRadius: 10, padding: '0 6px', fontSize: 10 }}>{count}</span>
+                      <span style={{ background: active ? 'rgba(255,255,255,0.25)' : '#EFEFF0', borderRadius: 10, padding: '0 6px', fontSize: 10 }}>{count}</span>
                     </button>
                   );
                 })}
@@ -868,7 +854,7 @@ export default function AdminPanel() {
                         ref={el => { if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected; }}
                         onChange={toggleSelectAllVisible}
                         disabled={selectableProfiles.length === 0}
-                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#ED2B3B' }}
+                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#E50913' }}
                       />
                     </th>
                     {([
@@ -880,13 +866,13 @@ export default function AdminPanel() {
                         key={col.key}
                         className="admin-sort-th"
                         onClick={() => toggleSort(col.key)}
-                        style={{ ...styles.th, width: col.width, color: sortKey === col.key ? '#0f172a' : styles.th.color }}
+                        style={{ ...styles.th, width: col.width, color: sortKey === col.key ? '#1A1A1B' : styles.th.color }}
                         aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                       >
                         {col.label}
                         <i
                           className={`fas ${sortKey === col.key ? (sortDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}`}
-                          style={{ marginLeft: 6, fontSize: 10, opacity: sortKey === col.key ? 1 : 0.35, color: sortKey === col.key ? '#ED2B3B' : undefined }}
+                          style={{ marginLeft: 6, fontSize: 10, opacity: sortKey === col.key ? 1 : 0.35, color: sortKey === col.key ? '#E50913' : undefined }}
                         />
                       </th>
                     ))}
@@ -898,15 +884,15 @@ export default function AdminPanel() {
                     Array.from({ length: 4 }).map((_, i) => (
                       <tr key={i}>
                         <td colSpan={5} style={styles.td}>
-                          <div style={{ height: 16, background: '#f1f5f9', borderRadius: 6, width: '100%', animation: 'pulse 1.5s infinite' }} />
+                          <div style={{ height: 16, background: '#EFEFF0', borderRadius: 6, width: '100%', animation: 'pulse 1.5s infinite' }} />
                         </td>
                       </tr>
                     ))
                   ) : filteredProfiles.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '48px 24px', color: '#94a3b8', fontWeight: 600 }}>
+                      <td colSpan={5} style={{ ...styles.td, textAlign: 'center', padding: '48px 24px', color: '#A7A9AC', fontWeight: 600 }}>
                         <i className="fas fa-user-slash" style={{ fontSize: 26, marginBottom: 10, display: 'block', opacity: 0.4 }} />
-                        No users match {search ? <>“<strong style={{ color: '#475569' }}>{search}</strong>”</> : 'this filter'}
+                        No users match {search ? <>“<strong style={{ color: '#58595B' }}>{search}</strong>”</> : 'this filter'}
                         <div style={{ marginTop: 12 }}>
                           <button onClick={() => { setUserFilter(null); setSearch(''); }} style={{ ...styles.btnSecondary, padding: '7px 14px', fontSize: 12 }}>
                             Reset filters
@@ -923,7 +909,7 @@ export default function AdminPanel() {
                         <tr
                           key={p.id}
                           className="admin-user-row"
-                          style={{ ...styles.tableRow, ...(isSelected ? { background: 'rgba(237,43,59,0.05)' } : {}) }}
+                          style={{ ...styles.tableRow, ...(isSelected ? { background: 'rgba(229, 9, 19,0.05)' } : {}) }}
                         >
                           <td style={styles.td}>
                             <input
@@ -933,7 +919,7 @@ export default function AdminPanel() {
                               onChange={() => toggleUserSelected(p.id)}
                               disabled={isSelf}
                               title={isSelf ? 'You cannot delete your own account' : undefined}
-                              style={{ width: 16, height: 16, cursor: isSelf ? 'not-allowed' : 'pointer', accentColor: '#ED2B3B' }}
+                              style={{ width: 16, height: 16, cursor: isSelf ? 'not-allowed' : 'pointer', accentColor: '#E50913' }}
                             />
                           </td>
                           <td style={styles.td}>
@@ -948,18 +934,18 @@ export default function AdminPanel() {
                                 {displayName(p)[0].toUpperCase()}
                               </div>
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: '#0f172a' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 14, color: '#1A1A1B' }}>
                                   {displayName(p)}
-                                  {isSelf && <span style={{ fontSize: 9, fontWeight: 800, color: '#D91E2F', background: '#FDE4E6', borderRadius: 6, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>You</span>}
+                                  {isSelf && <span style={{ fontSize: 9, fontWeight: 800, color: '#BF2026', background: '#FDE4E6', borderRadius: 6, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>You</span>}
                                   {isRecent(p) && !isSelf && <span style={{ fontSize: 9, fontWeight: 800, color: '#b45309', background: '#fef3c7', borderRadius: 6, padding: '1px 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>New</span>}
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', fontWeight: 500 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#7A7C7F', fontWeight: 500 }}>
                                   {p.email}
                                   <button
                                     className="admin-copy-btn"
                                     onClick={() => void copyEmail(p.email)}
                                     title="Copy email"
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: copiedEmail === p.email ? '#059669' : '#94a3b8' }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: copiedEmail === p.email ? '#059669' : '#A7A9AC' }}
                                   >
                                     <i className={`fas ${copiedEmail === p.email ? 'fa-check' : 'fa-copy'}`} />
                                   </button>
@@ -985,7 +971,7 @@ export default function AdminPanel() {
                               {p.role}
                             </span>
                           </td>
-                          <td style={{ ...styles.td, color: '#64748b', fontSize: 13, fontWeight: 600 }} title={formatDate(p.created_at)}>
+                          <td style={{ ...styles.td, color: '#7A7C7F', fontSize: 13, fontWeight: 600 }} title={formatDate(p.created_at)}>
                             {formatRelativeDate(p.created_at)}
                           </td>
                           <td style={{ ...styles.td, textAlign: 'right' }}>
@@ -1034,19 +1020,19 @@ export default function AdminPanel() {
                   {loading ? (
                     <tr>
                       <td colSpan={4} style={styles.td}>
-                        <div style={{ height: 16, background: '#f1f5f9', borderRadius: 6, width: '100%', animation: 'pulse 1.5s infinite' }} />
+                        <div style={{ height: 16, background: '#EFEFF0', borderRadius: 6, width: '100%', animation: 'pulse 1.5s infinite' }} />
                       </td>
                     </tr>
                   ) : (
                     roles.map(r => (
                       <tr key={r.name} style={styles.tableRow}>
-                        <td style={{ ...styles.td, fontWeight: 800, textTransform: 'capitalize', color: '#0f172a' }}>
+                        <td style={{ ...styles.td, fontWeight: 800, textTransform: 'capitalize', color: '#1A1A1B' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {r.name}
                             {r.is_system && <span style={styles.sysRoleBadge}>System</span>}
                           </span>
                         </td>
-                        <td style={{ ...styles.td, color: '#64748b', fontSize: 13 }}>{r.description || 'No description provided.'}</td>
+                        <td style={{ ...styles.td, color: '#7A7C7F', fontSize: 13 }}>{r.description || 'No description provided.'}</td>
                         <td style={styles.td}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {r.permissions.map(perm => (
@@ -1067,7 +1053,7 @@ export default function AdminPanel() {
                               </button>
                             </div>
                           ) : (
-                            <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginRight: 8 }}><i className="fas fa-lock" /> Locked</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#A7A9AC', marginRight: 8 }}><i className="fas fa-lock" /> Locked</span>
                           )}
                         </td>
                       </tr>
@@ -1191,9 +1177,9 @@ export default function AdminPanel() {
             </div>
             <div style={{ padding: '24px 20px', textAlign: 'center' }}>
               <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444', fontSize: 42, marginBottom: 16 }} />
-              <p style={{ color: '#334155', fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>Confirm deletion</p>
-              <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 20px', lineHeight: 1.5 }}>
-                Are you sure you want to permanently delete the account for <strong style={{ color: '#0f172a' }}>{formEmail}</strong>? This action cannot be undone.
+              <p style={{ color: '#404041', fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>Confirm deletion</p>
+              <p style={{ color: '#7A7C7F', fontSize: 13, margin: '0 0 20px', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete the account for <strong style={{ color: '#1A1A1B' }}>{formEmail}</strong>? This action cannot be undone.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setShowDeleteUserModal(false)} style={{ ...styles.btnSecondary, flex: 1 }}>Cancel</button>
@@ -1214,14 +1200,14 @@ export default function AdminPanel() {
             </div>
             <div style={{ padding: '24px 20px', textAlign: 'center' }}>
               <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444', fontSize: 42, marginBottom: 16 }} />
-              <p style={{ color: '#334155', fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>Confirm deletion</p>
-              <p style={{ color: '#64748b', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>
+              <p style={{ color: '#404041', fontSize: 15, fontWeight: 700, margin: '0 0 8px' }}>Confirm deletion</p>
+              <p style={{ color: '#7A7C7F', fontSize: 13, margin: '0 0 12px', lineHeight: 1.5 }}>
                 The following accounts will be permanently deleted. This action cannot be undone.
               </p>
-              <div style={{ maxHeight: 160, overflowY: 'auto', textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', marginBottom: 20 }}>
+              <div style={{ maxHeight: 160, overflowY: 'auto', textAlign: 'left', background: '#F7F7F8', border: '1px solid #E3E4E5', borderRadius: 10, padding: '8px 12px', marginBottom: 20 }}>
                 {selectedProfiles.map(p => (
-                  <div key={p.id} style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, padding: '3px 0' }}>
-                    {p.full_name || p.email.split('@')[0]} <span style={{ color: '#64748b', fontWeight: 500 }}>· {p.email}</span>
+                  <div key={p.id} style={{ fontSize: 12, color: '#1A1A1B', fontWeight: 600, padding: '3px 0' }}>
+                    {p.full_name || p.email.split('@')[0]} <span style={{ color: '#7A7C7F', fontWeight: 500 }}>· {p.email}</span>
                   </div>
                 ))}
               </div>
@@ -1244,10 +1230,10 @@ export default function AdminPanel() {
             </div>
             <div style={styles.modalForm}>
               <div style={{ marginBottom: 18 }}>
-                <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 10px', lineHeight: 1.5 }}>
+                <p style={{ fontSize: 12, color: '#7A7C7F', margin: '0 0 10px', lineHeight: 1.5 }}>
                   Prepare a CSV file containing at least an <strong>email</strong> column. You can also include <strong>name</strong> and <strong>role</strong> columns. Example:
                 </p>
-                <pre style={{ background: '#f8fafc', padding: 12, borderRadius: 10, fontSize: 11, fontFamily: 'monospace', margin: 0, border: '1px solid #e2e8f0', color: '#475569' }}>
+                <pre style={{ background: '#F7F7F8', padding: 12, borderRadius: 10, fontSize: 11, fontFamily: 'monospace', margin: 0, border: '1px solid #E3E4E5', color: '#58595B' }}>
                   email,name,role{'\n'}
                   akash@upgrad.com,Akash Gupta,user{'\n'}
                   admin2@upgrad.com,Assistant Admin,admin
@@ -1265,11 +1251,11 @@ export default function AdminPanel() {
                 />
               </div>
 
-              <div style={{ border: '1px solid rgba(15,23,42,0.08)', borderRadius: 16, padding: 16, background: '#f8fafc', marginBottom: 18 }}>
+              <div style={{ border: '1px solid rgba(26, 26, 27,0.08)', borderRadius: 16, padding: 16, background: '#F7F7F8', marginBottom: 18 }}>
                 <label style={{ ...styles.formLabel, marginBottom: 12 }}>Or Enter User Details Directly</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr auto', gap: 10, alignItems: 'flex-end' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Email</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: '#58595B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Email</label>
                     <input
                       type="email"
                       placeholder="name@example.com"
@@ -1279,7 +1265,7 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Full Name</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: '#58595B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Full Name</label>
                     <input
                       type="text"
                       placeholder="e.g. John Doe"
@@ -1289,7 +1275,7 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label style={{ fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Role</label>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: '#58595B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Role</label>
                     <select
                       value={bulkInputRole}
                       onChange={e => setBulkInputRole(e.target.value)}
@@ -1333,7 +1319,7 @@ export default function AdminPanel() {
                       </thead>
                       <tbody>
                         {csvPreview.map((row, index) => (
-                          <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <tr key={index} style={{ borderBottom: '1px solid #E3E4E5' }}>
                             <td style={styles.previewTd}>{row.email || <span style={{ color: '#ef4444' }}>Empty</span>}</td>
                             <td style={styles.previewTd}>{row.name}</td>
                             <td style={styles.previewTd}>{row.role}</td>
@@ -1397,7 +1383,7 @@ export default function AdminPanel() {
                       disabled={!!editingRoleName}
                       style={{
                         ...styles.formInput,
-                        ...(editingRoleName ? { background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {})
+                        ...(editingRoleName ? { background: '#EFEFF0', cursor: 'not-allowed', color: '#7A7C7F' } : {})
                       }}
                     />
                   </div>
@@ -1418,10 +1404,10 @@ export default function AdminPanel() {
                     <div style={{
                       maxHeight: 280,
                       overflowY: 'auto',
-                      border: '1px solid #cbd5e1',
+                      border: '1px solid #D0D2D3',
                       borderRadius: 12,
                       padding: 12,
-                      background: '#f8fafc',
+                      background: '#F7F7F8',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 8
@@ -1435,8 +1421,8 @@ export default function AdminPanel() {
                             gap: 10,
                             padding: '8px 10px',
                             borderRadius: 8,
-                            background: isChecked ? 'rgba(237, 43, 59,0.06)' : 'white',
-                            border: `1px solid ${isChecked ? 'rgba(237, 43, 59,0.2)' : '#e2e8f0'}`,
+                            background: isChecked ? 'rgba(229, 9, 19,0.06)' : 'white',
+                            border: `1px solid ${isChecked ? 'rgba(229, 9, 19,0.2)' : '#E3E4E5'}`,
                             cursor: 'pointer',
                             transition: 'all 0.15s'
                           }}>
@@ -1447,8 +1433,8 @@ export default function AdminPanel() {
                               style={{ marginTop: 3 }}
                             />
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: isChecked ? '#D91E2F' : '#0f172a' }}>{perm.name}</div>
-                              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{perm.desc}</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isChecked ? '#BF2026' : '#1A1A1B' }}>{perm.name}</div>
+                              <div style={{ fontSize: 11, color: '#7A7C7F', marginTop: 2 }}>{perm.desc}</div>
                             </div>
                           </label>
                         );
@@ -1464,10 +1450,10 @@ export default function AdminPanel() {
                     flex: 1,
                     maxHeight: 400,
                     overflowY: 'auto',
-                    border: '1px solid #cbd5e1',
+                    border: '1px solid #D0D2D3',
                     borderRadius: 12,
                     padding: 12,
-                    background: '#f8fafc',
+                    background: '#F7F7F8',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 12
@@ -1478,7 +1464,7 @@ export default function AdminPanel() {
                       return (
                         <div key={uni.id} style={{
                           background: 'white',
-                          border: '1px solid #e2e8f0',
+                          border: '1px solid #E3E4E5',
                           borderRadius: 12,
                           padding: 12
                         }}>
@@ -1489,7 +1475,7 @@ export default function AdminPanel() {
                             gap: 10,
                             cursor: 'pointer',
                             paddingBottom: 8,
-                            borderBottom: '1px solid #f1f5f9',
+                            borderBottom: '1px solid #EFEFF0',
                             marginBottom: 8
                           }}>
                             <input
@@ -1499,7 +1485,7 @@ export default function AdminPanel() {
                             />
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <i className="fas fa-university" style={{ color: uni.accentColor, fontSize: 13 }} />
-                              <span style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>{uni.name}</span>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: '#1A1A1B' }}>{uni.name}</span>
                             </div>
                           </label>
 
@@ -1527,7 +1513,7 @@ export default function AdminPanel() {
                                     disabled={hasUniAccess}
                                     onChange={() => toggleProgramContext(prog.id)}
                                   />
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#475569' }}>
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#58595B' }}>
                                     {prog.name}
                                   </span>
                                 </label>
@@ -1582,12 +1568,12 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     display: 'flex',
     minHeight: '100vh',
-    background: '#f8fafc',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    background: '#F7F7F8',
+    fontFamily: "'Roboto', 'Segoe UI', sans-serif",
   },
   sidebar: {
     width: 240,
-    background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
+    background: 'linear-gradient(160deg, #0D0D0D 0%, #1A0204 100%)',
     display: 'flex',
     flexDirection: 'column',
     padding: '0',
@@ -1607,10 +1593,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sidebarLogoIcon: {
     width: 40, height: 40,
-    background: 'linear-gradient(135deg, #ED2B3B, #B71826)',
+    background: 'transparent',
     borderRadius: 12,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
+    boxShadow: 'none',
     flexShrink: 0,
   },
   sidebarNav: {
@@ -1625,7 +1611,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '10px 12px',
     borderRadius: 10,
-    color: 'rgba(148,163,184,0.7)',
+    color: 'rgba(167, 169, 172,0.7)',
     fontSize: 13, fontWeight: 600,
     cursor: 'pointer',
     background: 'none',
@@ -1640,8 +1626,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     color: 'white',
     fontSize: 13, fontWeight: 700,
-    background: 'rgba(237, 43, 59,0.2)',
-    border: '1px solid rgba(237, 43, 59,0.25)',
+    background: 'rgba(229, 9, 19,0.2)',
+    border: '1px solid rgba(229, 9, 19,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',
@@ -1659,7 +1645,7 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarAvatar: {
     width: 34, height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
+    background: 'linear-gradient(135deg, #E50913, #9B000C)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: 'white', fontWeight: 900, fontSize: 14,
     flexShrink: 0,
@@ -1686,16 +1672,16 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 28,
   },
   headerTitle: {
-    fontSize: 28, fontWeight: 900, color: '#0f172a',
+    fontSize: 28, fontWeight: 900, color: '#1A1A1B',
     margin: '0 0 4px', letterSpacing: '-0.025em',
   },
   headerSub: {
-    fontSize: 13, color: '#64748b', fontWeight: 500, margin: 0,
+    fontSize: 13, color: '#7A7C7F', fontWeight: 500, margin: 0,
   },
   primaryBtnAction: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '10px 18px',
-    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #BF2026 0%, #E50913 100%)',
     border: 'none',
     borderRadius: 12,
     color: 'white', fontSize: 13, fontWeight: 700,
@@ -1706,7 +1692,7 @@ const styles: Record<string, React.CSSProperties> = {
   primaryBtnActionPurple: {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '10px 18px',
-    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     border: 'none',
     borderRadius: 12,
     color: 'white', fontSize: 13, fontWeight: 700,
@@ -1718,9 +1704,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex', alignItems: 'center', gap: 8,
     padding: '9px 18px',
     background: 'white',
-    border: '1px solid rgba(15,23,42,0.12)',
+    border: '1px solid rgba(26, 26, 27,0.12)',
     borderRadius: 12,
-    color: '#475569', fontSize: 13, fontWeight: 700,
+    color: '#58595B', fontSize: 13, fontWeight: 700,
     cursor: 'pointer',
     boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
     transition: 'all 0.2s',
@@ -1735,7 +1721,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'white',
     borderRadius: 20,
     padding: '20px 24px',
-    border: '1px solid rgba(15,23,42,0.07)',
+    border: '1px solid rgba(26, 26, 27,0.07)',
     boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
     display: 'flex', alignItems: 'center', gap: 16,
   },
@@ -1746,28 +1732,28 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 18,
   },
   statCardValue: {
-    fontSize: 24, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em',
+    fontSize: 24, fontWeight: 900, color: '#1A1A1B', letterSpacing: '-0.02em',
   },
   statCardLabel: {
-    fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2,
+    fontSize: 11, fontWeight: 700, color: '#7A7C7F', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2,
   },
   tableCard: {
     background: 'white',
     borderRadius: 24,
-    border: '1px solid rgba(15,23,42,0.07)',
+    border: '1px solid rgba(26, 26, 27,0.07)',
     boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
     overflow: 'hidden',
   },
   tableHeader: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '20px 24px',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1px solid #EFEFF0',
   },
   tableTitle: {
-    fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 2px',
+    fontSize: 16, fontWeight: 800, color: '#1A1A1B', margin: '0 0 2px',
   },
   tableSub: {
-    fontSize: 12, color: '#94a3b8', fontWeight: 600, margin: 0,
+    fontSize: 12, color: '#A7A9AC', fontWeight: 600, margin: 0,
   },
   searchWrapper: {
     position: 'relative',
@@ -1776,10 +1762,10 @@ const styles: Record<string, React.CSSProperties> = {
   searchInput: {
     width: '100%', boxSizing: 'border-box',
     padding: '9px 14px 9px 38px',
-    background: '#f8fafc',
-    border: '1px solid rgba(15,23,42,0.1)',
+    background: '#F7F7F8',
+    border: '1px solid rgba(26, 26, 27,0.1)',
     borderRadius: 10,
-    fontSize: 13, fontWeight: 500, color: '#334155',
+    fontSize: 13, fontWeight: 500, color: '#404041',
     outline: 'none',
   },
   errorBanner: {
@@ -1797,19 +1783,19 @@ const styles: Record<string, React.CSSProperties> = {
     borderCollapse: 'collapse',
   },
   tableHead: {
-    background: '#f8fafc',
+    background: '#F7F7F8',
   },
   th: {
     padding: '12px 24px',
     fontSize: 10, fontWeight: 800,
-    color: '#94a3b8',
+    color: '#A7A9AC',
     textTransform: 'uppercase', letterSpacing: '0.12em',
     textAlign: 'left',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1px solid #EFEFF0',
   },
   td: {
     padding: '16px 24px',
-    borderBottom: '1px solid #f8fafc',
+    borderBottom: '1px solid #F7F7F8',
     fontSize: 14,
     verticalAlign: 'middle',
   },
@@ -1817,16 +1803,16 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'background 0.15s',
   },
   sysRoleBadge: {
-    fontSize: 9, fontWeight: 800, color: '#64748b', background: '#e2e8f0', borderRadius: 4, padding: '2px 6px',
+    fontSize: 9, fontWeight: 800, color: '#7A7C7F', background: '#E3E4E5', borderRadius: 4, padding: '2px 6px',
   },
   permBadge: {
-    fontSize: 9, fontWeight: 700, color: '#475569', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 6px', textTransform: 'capitalize',
+    fontSize: 9, fontWeight: 700, color: '#58595B', background: '#EFEFF0', border: '1px solid #E3E4E5', borderRadius: 6, padding: '2px 6px', textTransform: 'capitalize',
   },
   actionBtnEdit: {
     width: 32, height: 32,
     border: '1px solid rgba(217, 30, 47,0.2)',
     borderRadius: 8,
-    color: '#D91E2F',
+    color: '#BF2026',
     background: 'rgba(217, 30, 47,0.06)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer', transition: 'all 0.2s',
@@ -1843,7 +1829,7 @@ const styles: Record<string, React.CSSProperties> = {
   modalOverlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(15,23,42,0.4)',
+    background: 'rgba(26, 26, 27,0.4)',
     backdropFilter: 'blur(4px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 1000,
@@ -1855,19 +1841,19 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 500,
     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     overflow: 'hidden',
-    border: '1px solid #e2e8f0',
+    border: '1px solid #E3E4E5',
   },
   modalHeader: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '16px 20px',
-    borderBottom: '1px solid #e2e8f0',
-    background: '#f8fafc',
+    borderBottom: '1px solid #E3E4E5',
+    background: '#F7F7F8',
   },
   modalTitle: {
-    fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0,
+    fontSize: 16, fontWeight: 800, color: '#1A1A1B', margin: 0,
   },
   modalCloseBtn: {
-    background: 'none', border: 'none', color: '#94a3b8', fontSize: 16, cursor: 'pointer',
+    background: 'none', border: 'none', color: '#A7A9AC', fontSize: 16, cursor: 'pointer',
   },
   modalForm: {
     padding: 20,
@@ -1876,71 +1862,71 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 16,
   },
   formLabel: {
-    display: 'block', color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6,
+    display: 'block', color: '#58595B', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6,
   },
   formInput: {
     width: '100%', boxSizing: 'border-box',
-    border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px',
-    fontSize: 14, color: '#0f172a', outline: 'none',
+    border: '1px solid #D0D2D3', borderRadius: 8, padding: '10px 12px',
+    fontSize: 14, color: '#1A1A1B', outline: 'none',
   },
   formSelect: {
     width: '100%', boxSizing: 'border-box',
-    border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px',
-    fontSize: 14, color: '#0f172a', outline: 'none', background: 'white',
+    border: '1px solid #D0D2D3', borderRadius: 8, padding: '10px 12px',
+    fontSize: 14, color: '#1A1A1B', outline: 'none', background: 'white',
   },
   formTextarea: {
     width: '100%', boxSizing: 'border-box',
-    border: '1px solid #cbd5e1', borderRadius: 8, padding: '10px 12px',
-    fontSize: 13, color: '#0f172a', outline: 'none', resize: 'vertical', fontFamily: 'monospace',
+    border: '1px solid #D0D2D3', borderRadius: 8, padding: '10px 12px',
+    fontSize: 13, color: '#1A1A1B', outline: 'none', resize: 'vertical', fontFamily: 'monospace',
   },
   fileInput: {
     width: '100%', boxSizing: 'border-box',
-    border: '1px dashed #cbd5e1', borderRadius: 8, padding: '14px 12px',
-    fontSize: 13, color: '#475569', cursor: 'pointer', background: '#f8fafc',
+    border: '1px dashed #D0D2D3', borderRadius: 8, padding: '14px 12px',
+    fontSize: 13, color: '#58595B', cursor: 'pointer', background: '#F7F7F8',
   },
   previewTableWrapper: {
-    maxHeight: 180, overflowY: 'auto', border: '1px solid #cbd5e1', borderRadius: 10,
+    maxHeight: 180, overflowY: 'auto', border: '1px solid #D0D2D3', borderRadius: 10,
   },
   previewTable: {
     width: '100%', borderCollapse: 'collapse', fontSize: 12,
   },
   previewTh: {
-    padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #cbd5e1', textAlign: 'left', fontWeight: 700, color: '#475569',
+    padding: '8px 12px', background: '#F7F7F8', borderBottom: '1px solid #D0D2D3', textAlign: 'left', fontWeight: 700, color: '#58595B',
   },
   previewTd: {
-    padding: '8px 12px', color: '#334155',
+    padding: '8px 12px', color: '#404041',
   },
   permissionsListGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
-    maxHeight: 200, overflowY: 'auto', border: '1px solid #cbd5e1', borderRadius: 10, padding: 12,
+    maxHeight: 200, overflowY: 'auto', border: '1px solid #D0D2D3', borderRadius: 10, padding: 12,
   },
   permissionItem: {
-    display: 'flex', alignItems: 'flex-start', cursor: 'pointer', padding: '6px 8px', borderRadius: 6, border: '1px solid #f1f5f9', background: '#f8fafc',
+    display: 'flex', alignItems: 'flex-start', cursor: 'pointer', padding: '6px 8px', borderRadius: 6, border: '1px solid #EFEFF0', background: '#F7F7F8',
   },
   modalFooter: {
-    display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: '1px solid #e2e8f0',
+    display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24, paddingTop: 16, borderTop: '1px solid #E3E4E5',
   },
   btnPrimary: {
-    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #BF2026 0%, #E50913 100%)',
     border: 'none', borderRadius: 10, padding: '10px 20px',
     color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 4px 10px rgba(217, 30, 47,0.25)',
   },
   btnPrimaryPurple: {
-    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     border: 'none', borderRadius: 10, padding: '10px 20px',
     color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 4px 10px rgba(124,58,237,0.25)',
   },
   btnSecondary: {
-    background: 'white', border: '1px solid #cbd5e1', borderRadius: 10, padding: '9px 20px',
-    color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+    background: 'white', border: '1px solid #D0D2D3', borderRadius: 10, padding: '9px 20px',
+    color: '#58595B', fontSize: 13, fontWeight: 700, cursor: 'pointer',
   },
   toast: {
     position: 'fixed',
     bottom: 28,
     right: 28,
-    background: '#0f172a',
+    background: '#1A1A1B',
     color: 'white',
     padding: '14px 22px',
     borderRadius: 14,

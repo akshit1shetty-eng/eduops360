@@ -623,7 +623,7 @@ export default function ImmersionPage() {
                       <span className="font-black text-[var(--text-primary)]">{currentStats.rsvpFilled}</span>
                     </span>
                   </div>
-                  <MiniProgressBar pct={currentStats.rsvpRate} color="#8b5cf6" />
+                  <MiniProgressBar pct={currentStats.rsvpRate} color="#404041" />
                 </div>
 
                 {/* Arrow */}

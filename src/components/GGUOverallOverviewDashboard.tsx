@@ -1,26 +1,155 @@
-import React, { useState } from 'react';
-import {
-  STATUS_LEVEL_DETAILS,
-  STATUS_LEVEL_TOTALS,
-  RETENTION_ACTIVE_COHORT,
-  RETENTION_ACTIVE_TOTAL,
-  HISTORICAL_RETENTION,
-  HISTORICAL_RETENTION_TOTAL,
-  CLOSED_COHORT_GRADUATION,
-  CLOSED_COHORT_TOTAL,
-  ACTIVE_COHORT_GRADUATION,
-  ACTIVE_COHORT_GRADUATION_TOTAL,
-  COHORT_COUNTS,
-  COHORT_COUNTS_TOTAL,
-  TERM_LEVEL_ACTIVE,
-} from '../lib/gguOverviewData';
-
+import React, { useMemo, useState } from 'react';
+import type { TermActiveRow } from '../lib/gguOverviewData';
 import { useGGUOverviewAnalytics } from '../hooks/useGGUOverviewAnalytics';
 import FilterDropdown from './FilterDropdown';
 
 interface Props {
   onClose?: () => void;
 }
+
+type TabId = 'status' | 'retention' | 'graduation' | 'cohorts' | 'terms';
+type ViewMode = 'chart' | 'table';
+
+/* ── Encoding (kept identical on every tab so the page reads as one system) ── */
+const C = {
+  active: '#E50913',   // live / active cohorts — upGrad red
+  past: '#404041',     // historical / closed cohorts — upGrad dark grey
+  loa: '#d9a21b',      // leave of absence
+  exit: '#B5B7BA',     // exited
+  track: '#EEEEF0',
+};
+const HEAT_RAMP = ['#FDECEE', '#F9C0C7', '#F4949C', '#EC5C67', '#C8101A'];
+
+const TERM_COLS: Array<{ key: keyof Omit<TermActiveRow, 'term' | 'grandTotal'>; label: string }> = [
+  { key: 'dba', label: 'DBA' },
+  { key: 'mba', label: 'MBA' },
+  { key: 'dbaEt', label: 'DBA ET' },
+  { key: 'mPsych', label: 'MPsych' },
+  { key: 'dbaDl', label: 'DBA DL' },
+  { key: 'sjd', label: 'SJD' },
+  { key: 'mbaSa', label: 'MBA SA' },
+  { key: 'bachelorsSa', label: 'Bachelors SA' },
+];
+
+const TABS: Array<{ id: TabId; label: string; icon: string; hint: string }> = [
+  { id: 'status', label: 'Status', icon: 'fa-chart-bar', hint: 'Active, leave of absence and exited learners by program' },
+  { id: 'retention', label: 'Retention', icon: 'fa-shield-alt', hint: 'Live cohorts compared with all-time retention' },
+  { id: 'graduation', label: 'Graduation', icon: 'fa-graduation-cap', hint: 'Completion in closed versus in-progress cohorts' },
+  { id: 'cohorts', label: 'Cohorts', icon: 'fa-layer-group', hint: 'Live and closed cohorts per program' },
+  { id: 'terms', label: 'Intake terms', icon: 'fa-calendar-alt', hint: 'Active learners per intake term and program' },
+];
+
+const fmt = (n: number) => n.toLocaleString();
+const pctStr = (n: number | null | undefined, digits = 1) => (n === null || n === undefined || Number.isNaN(n) ? '—' : `${n.toFixed(digits)}%`);
+/** Program names are all GGU — drop the prefix so labels stay scannable. */
+const shortName = (p: string) => p.replace(/^GGU\s+/i, '');
+
+/* ── Small building blocks ─────────────────────────────────────────────── */
+
+function Meter({ value, color, max = 100 }: { value: number; color: string; max?: number }) {
+  return (
+    <div className="h-1 rounded-full overflow-hidden" style={{ background: C.track }}>
+      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(0, Math.min(100, (value / (max || 1)) * 100))}%`, background: color }} />
+    </div>
+  );
+}
+
+function Kpi({ label, icon, value, meter, caption, loading }: {
+  label: string; icon: string; value: React.ReactNode; meter: React.ReactNode; caption: React.ReactNode; loading: boolean;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
+        <i className={`fas ${icon} text-[11px] text-slate-400`} />
+        {label}
+      </div>
+      <div className="mt-2 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+        {loading ? <span className="inline-block h-7 w-20 rounded bg-slate-200 animate-pulse" /> : value}
+      </div>
+      <div className="mt-3">{meter}</div>
+      <div className="mt-1.5 text-[11px] text-slate-500">{caption}</div>
+    </div>
+  );
+}
+
+function Legend({ items }: { items: Array<{ label: string; color: string; value?: string }> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      {items.map(i => (
+        <span key={i.label} className="inline-flex items-center gap-2 text-[12px] text-slate-600">
+          <span className="w-2.5 h-2.5 rounded-sm" style={{ background: i.color }} />
+          {i.label}
+          {i.value && <span className="font-semibold text-slate-900 tabular-nums">{i.value}</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Headline figure used at the top of each tab. */
+function Stat({ label, value, sub, color }: { label: string; value: string; sub?: React.ReactNode; color?: string }) {
+  return (
+    <div className="min-w-[140px]">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+        {color && <span className="w-2 h-2 rounded-full" style={{ background: color }} />}
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-extrabold text-slate-900 font-display tabular-nums leading-tight">{value}</div>
+      {sub && <div className="text-[11px] text-slate-500 mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+interface Column<T> { label: string; align?: 'left' | 'right'; render: (row: T) => React.ReactNode }
+
+function DataTable<T>({ columns, rows, rowKey, footer }: {
+  columns: Column<T>[]; rows: T[]; rowKey: (r: T) => string; footer?: React.ReactNode[];
+}) {
+  return (
+    <div className="overflow-x-auto rounded-[16px] border border-slate-200/80">
+      <table className="w-full text-[13px] border-collapse">
+        <thead>
+          <tr className="text-[11px] uppercase tracking-[0.06em] text-slate-500" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>
+            {columns.map(c => (
+              <th key={c.label} className={`px-4 py-3 font-semibold whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'}`}>{c.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={rowKey(r)} className="border-t border-slate-100 hover:bg-[#FAFAFB] transition-colors">
+              {columns.map(c => (
+                <td key={c.label} className={`px-4 py-3 tabular-nums text-slate-700 ${c.align === 'right' ? 'text-right' : 'text-left'}`}>{c.render(r)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+        {footer && (
+          <tfoot>
+            <tr className="border-t-2 border-slate-200 font-bold text-slate-900" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>
+              {footer.map((f, i) => (
+                <td key={i} className={`px-4 py-3 tabular-nums ${i === 0 ? 'text-left' : 'text-right'}`}>{f}</td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+  );
+}
+
+/** One labelled chart row: program name · visual · trailing figures. */
+function ChartRow({ label, children, trailing }: { label: string; children: React.ReactNode; trailing: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[110px_1fr_auto] sm:grid-cols-[140px_1fr_auto] items-center gap-4 rounded-[12px] px-3 py-2.5 hover:bg-[#F7F7F8] transition-colors">
+      <span className="text-[13px] font-semibold text-slate-800 truncate" title={label}>{label}</span>
+      <div className="min-w-0">{children}</div>
+      <div className="text-right tabular-nums">{trailing}</div>
+    </div>
+  );
+}
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
 
 export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const {
@@ -40,670 +169,552 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
     activeCohortTotal,
     cohortCounts,
     cohortTotals,
-    termLevelActive,
     getFilteredTermActive,
   } = useGGUOverviewAnalytics();
 
-  const [activeTab, setActiveTab] = useState<'status' | 'retention' | 'graduation' | 'cohorts' | 'terms'>('status');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<TabId>('status');
+  const [view, setView] = useState<ViewMode>('chart');
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedYears, setSelectedYears] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-  const toggleInList = (item: string, list: string[], setList: (n: string[]) => void) => {
-    if (list.includes(item)) {
-      setList(list.filter(i => i !== item));
-    } else {
-      setList([...list, item]);
-    }
-  };
+  const toggleInList = (item: string, list: string[], setList: (n: string[]) => void) =>
+    setList(list.includes(item) ? list.filter(i => i !== item) : [...list, item]);
 
-  // Programs list
-  const programs = [
-    'GGU DBA',
-    'GGU MBA',
-    'GGU DBA ET',
-    'GGU MPsych',
-    'GGU DBA DL',
-    'GGU SJD',
-    'GGU MBA SA',
-    'GGU Bachelors SA',
-  ];
+  const share = (n: number) => (statusTotals.grandTotal > 0 ? (n / statusTotals.grandTotal) * 100 : 0);
+  const retentionDelta = retentionActiveTotal.retentionPct - historicalRetentionTotal.retentionPct;
+  const tab = TABS.find(t => t.id === activeTab)!;
+
+  /* Status rows, largest program first */
+  const statusRows = useMemo(() => [...statusDetails].sort((a, b) => b.total - a.total), [statusDetails]);
+  const statusMax = statusRows[0]?.total || 1;
+
+  /* Retention: pair live vs historical per program */
+  const retentionRows = useMemo(() => retentionActiveCohort.map(r => {
+    const h = historicalRetention.find(x => x.program === r.program);
+    return { program: r.program, live: r, hist: h };
+  }).sort((a, b) => (b.hist?.total ?? 0) - (a.hist?.total ?? 0)), [retentionActiveCohort, historicalRetention]);
+  const retentionDomainMin = useMemo(() => {
+    const vals = retentionRows.flatMap(r => [r.live.total > 0 ? r.live.retentionPct : null, r.hist && r.hist.total > 0 ? r.hist.retentionPct : null])
+      .filter((v): v is number => v !== null);
+    const min = vals.length ? Math.min(...vals) : 50;
+    return Math.max(0, Math.floor((min - 5) / 10) * 10);
+  }, [retentionRows]);
+  const retentionTicks = useMemo(() => {
+    const t: number[] = [];
+    for (let v = retentionDomainMin; v <= 100; v += retentionDomainMin <= 40 ? 20 : 10) t.push(v);
+    return t;
+  }, [retentionDomainMin]);
+  const retX = (v: number) => ((v - retentionDomainMin) / (100 - retentionDomainMin)) * 100;
+
+  /* Graduation: pair closed vs active per program */
+  const graduationRows = useMemo(() => closedCohortGraduation.map(r => ({
+    program: r.program,
+    closed: r,
+    active: activeCohortGraduation.find(x => x.program === r.program),
+  })).sort((a, b) => (b.closed.graduationPct ?? -1) - (a.closed.graduationPct ?? -1)), [closedCohortGraduation, activeCohortGraduation]);
+
+  /* Cohorts */
+  const cohortRows = useMemo(() => [...cohortCounts].sort((a, b) => b.allTimeCohorts - a.allTimeCohorts), [cohortCounts]);
+  const cohortMax = cohortRows[0]?.allTimeCohorts || 1;
+
+  /* Terms */
+  const getYearFromTerm = (term: string): string => {
+    const match = term.match(/^(\d{2})\//);
+    if (match) return `20${match[1]}`;
+    const digits = term.substring(0, 2);
+    return /^\d{2}$/.test(digits) ? `20${digits}` : 'Other';
+  };
+  const termMatrix = activeTab === 'terms' ? getFilteredTermActive(selectedCountries) : [];
+  const availableYears = Array.from(new Set(termMatrix.map(t => getYearFromTerm(t.term)))).filter(y => y !== 'Other').sort();
+  const termRows = termMatrix.filter(t => selectedYears.length === 0 || selectedYears.includes(getYearFromTerm(t.term)));
+  const termTotals = TERM_COLS.reduce<Record<string, number>>((acc, c) => {
+    acc[c.key] = termRows.reduce((s, t) => s + (t[c.key] || 0), 0);
+    return acc;
+  }, {});
+  const termGrand = termRows.reduce((s, t) => s + (t.grandTotal || 0), 0);
+  // Quantile bins over the non-empty cells, so a few very large intakes don't wash the rest out
+  const heatVals = termRows.flatMap(t => TERM_COLS.map(c => t[c.key] || 0)).filter(v => v > 0).sort((a, b) => a - b);
+  const heatCuts = heatVals.length ? [1, 2, 3, 4].map(i => heatVals[Math.floor((heatVals.length * i) / HEAT_RAMP.length)]) : [];
+  const heatStep = (v: number) => heatCuts.filter(c => v >= c).length;
+  const filtersOn = selectedYears.length > 0 || selectedCountries.length > 0;
 
   return (
-    <div style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className="rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden my-4 transition-all duration-300">
-      {/* ── Top Header ── */}
-      <div style={{ backgroundColor: '#ffffff' }} className="p-6 border-b border-slate-200/80 text-slate-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[9px] font-black uppercase tracking-widest">
-              Golden Gate University
+    <div className="space-y-6">
+      {/* ── KPI row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        <Kpi
+          label="Total enrolled" icon="fa-users" loading={loading}
+          value={fmt(statusTotals.grandTotal)}
+          meter={
+            <div className="flex h-1 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
+              <div style={{ width: `${share(statusTotals.active)}%`, background: C.active }} />
+              <div style={{ width: `${share(statusTotals.inactive)}%`, background: C.loa }} />
+              <div style={{ width: `${share(statusTotals.exit)}%`, background: C.exit }} />
+            </div>
+          }
+          caption={<>across {statusDetails.length} programs</>}
+        />
+        <Kpi
+          label="Active learners" icon="fa-user-check" loading={loading}
+          value={fmt(statusTotals.active)}
+          meter={<Meter value={share(statusTotals.active)} color={C.active} />}
+          caption={<><span className="font-semibold text-slate-700">{pctStr(share(statusTotals.active))}</span> of enrolled</>}
+        />
+        <Kpi
+          label="Retention · live cohorts" icon="fa-shield-alt" loading={loading}
+          value={pctStr(retentionActiveTotal.retentionPct)}
+          meter={<Meter value={retentionActiveTotal.retentionPct} color={C.active} />}
+          caption={<>
+            <span className={`font-semibold ${retentionDelta >= 0 ? 'text-emerald-700' : 'text-brand-700'}`}>
+              <i className={`fas fa-arrow-${retentionDelta >= 0 ? 'up' : 'down'} text-[9px] mr-0.5`} />
+              {Math.abs(retentionDelta).toFixed(1)} pts
+            </span> vs all-time {pctStr(historicalRetentionTotal.retentionPct)}
+          </>}
+        />
+        <Kpi
+          label="Graduation · closed cohorts" icon="fa-award" loading={loading}
+          value={pctStr(closedCohortTotal.graduationPct)}
+          meter={<Meter value={closedCohortTotal.graduationPct ?? 0} color={C.past} />}
+          caption={<><span className="font-semibold text-slate-700">{fmt(closedCohortTotal.graduatedLearners)}</span> learners graduated</>}
+        />
+        <Kpi
+          label="Live cohorts" icon="fa-layer-group" loading={loading}
+          value={fmt(cohortTotals.liveCohorts)}
+          meter={<Meter value={cohortTotals.liveCohorts} max={cohortTotals.allTimeCohorts} color={C.active} />}
+          caption={<>of {fmt(cohortTotals.allTimeCohorts)} cohorts all-time</>}
+        />
+      </div>
+
+      {/* ── Analysis panel ── */}
+      <section className="bg-white rounded-3xl border border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
+        {/* Toolbar: tabs + view toggle */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 lg:px-6 pt-5">
+          <div role="tablist" aria-label="Analytics views" className="inline-flex flex-wrap gap-1 p-1 rounded-[14px]" style={{ background: 'var(--bg-surface-2, #F3F3F4)' }}>
+            {TABS.map(t => {
+              const on = t.id === activeTab;
+              return (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all ${on ? 'text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]' : 'text-slate-500 hover:text-slate-900'}`}
+                  style={on ? { background: 'var(--bg-surface, #fff)' } : undefined}
+                >
+                  <i className={`fas ${t.icon} text-[11px] ${on ? 'text-brand-500' : ''}`} />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-slate-500" title={isCalculatedLive ? `${fmt(totalRawRows)} learner records` : 'Baseline snapshot'}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: isCalculatedLive ? '#1f9e89' : '#A7A9AC' }} />
+              {isCalculatedLive ? 'Live from learner sheet' : 'Baseline snapshot'}
             </span>
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            GGU Operational Analytics Overview
-          </h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Comprehensive lifecycle performance, retention metrics, graduation rates, and term active distribution.
-          </p>
-        </div>
-
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="self-start md:self-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-          >
-            <i className="fas fa-times text-xs" />
-            <span>Close Overview</span>
-          </button>
-        )}
-      </div>
-
-      {/* ── KPI Summary Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-6 bg-white border-b border-slate-200/80">
-        <div style={{ backgroundColor: '#ffffff' }} className="border border-slate-200/80 rounded-2xl p-4 shadow-sm col-span-2 md:col-span-1">
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Grand Total Enrolled</div>
-          <div className="text-2xl font-black text-slate-900">{statusTotals.grandTotal.toLocaleString()}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-1">across 8 GGU programs</div>
-        </div>
-
-        <div style={{ backgroundColor: '#ffffff' }} className="border border-slate-200/80 rounded-2xl p-4 shadow-sm">
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Learners</div>
-          <div className="text-2xl font-black text-emerald-600">{statusTotals.active.toLocaleString()}</div>
-          <div className="text-[10px] font-bold text-emerald-700/80 mt-1">
-            {statusTotals.grandTotal > 0 ? ((statusTotals.active / statusTotals.grandTotal) * 100).toFixed(1) : '51.0'}% of total enrolled
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: '#ffffff' }} className="border border-slate-200/80 rounded-2xl p-4 shadow-sm">
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Retention Rate</div>
-          <div className="text-2xl font-black text-slate-900">{retentionActiveTotal.retentionPct}%</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-1">Active cohorts retention</div>
-        </div>
-
-        <div style={{ backgroundColor: '#ffffff' }} className="border border-slate-200/80 rounded-2xl p-4 shadow-sm">
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Closed Cohort Grad</div>
-          <div className="text-2xl font-black text-amber-600">{closedCohortTotal.graduationPct}%</div>
-          <div className="text-[10px] font-bold text-amber-700/80 mt-1">{closedCohortTotal.graduatedLearners.toLocaleString()} graduated learners</div>
-        </div>
-
-        <div style={{ backgroundColor: '#ffffff' }} className="border border-slate-200/80 rounded-2xl p-4 shadow-sm">
-          <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Live Cohorts</div>
-          <div className="text-2xl font-black text-cyan-600">{cohortTotals.liveCohorts}</div>
-          <div className="text-[10px] font-bold text-slate-500 mt-1">out of {cohortTotals.allTimeCohorts} all-time</div>
-        </div>
-      </div>
-
-      {/* ── Navigation Tabs ── */}
-      <div className="flex items-center gap-2 px-6 pt-4 border-b border-slate-200 bg-white overflow-x-auto">
-        {[
-          { id: 'status', label: 'Status Breakdown', icon: 'fas fa-chart-pie' },
-          { id: 'retention', label: 'Retention Analytics', icon: 'fas fa-shield-alt' },
-          { id: 'graduation', label: 'Graduation Rates', icon: 'fas fa-graduation-cap' },
-          { id: 'cohorts', label: 'Cohort Distribution', icon: 'fas fa-layer-group' },
-          { id: 'terms', label: 'Term Matrix', icon: 'fas fa-calendar-alt' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold text-xs transition-colors shrink-0 ${activeTab === tab.id
-                ? 'border-slate-900 text-slate-900 bg-slate-100/70 rounded-t-xl'
-                : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'
-              }`}
-          >
-            <i className={tab.icon} />
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Tab Content ── */}
-      <div className="p-6 bg-white">
-        {/* ── TAB 1: STATUS LEVEL DETAILS ── */}
-        {activeTab === 'status' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black text-slate-900 mb-0.5">Status Level Details</h3>
-                <p className="text-xs text-slate-500 font-medium">Distribution of Active, Exit, and LOA learners by GGU program.</p>
+            {activeTab !== 'terms' && (
+              <div className="inline-flex p-0.5 rounded-[10px]" style={{ background: 'var(--bg-surface-2, #F3F3F4)' }} role="group" aria-label="Display as">
+                {(['chart', 'table'] as ViewMode[]).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setView(m)}
+                    aria-pressed={view === m}
+                    title={m === 'chart' ? 'Chart view' : 'Table view'}
+                    className={`w-8 h-7 rounded-[8px] text-[11px] transition-all ${view === m ? 'text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]' : 'text-slate-400 hover:text-slate-700'}`}
+                    style={view === m ? { background: 'var(--bg-surface, #fff)' } : undefined}
+                  >
+                    <i className={`fas ${m === 'chart' ? 'fa-chart-bar' : 'fa-table'}`} />
+                  </button>
+                ))}
               </div>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100/90 text-slate-700 font-black border-b border-slate-200">
-                    <th className="px-4 py-3.5">Status</th>
-                    {programs.map((p) => (
-                      <th key={p} className="px-4 py-3.5 text-center">{p}</th>
-                    ))}
-                    <th className="px-4 py-3.5 text-right bg-slate-200/60 text-slate-900 font-black">Grand Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {/* Total Active */}
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3.5 font-black text-emerald-700 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                      Total Active
-                    </td>
-                    {statusDetails.map((r) => (
-                      <td key={r.program} className="px-4 py-3.5 text-center font-bold text-slate-900">{r.active.toLocaleString()}</td>
-                    ))}
-                    <td className="px-4 py-3.5 text-right font-black text-emerald-700 bg-emerald-50/60">{statusTotals.active.toLocaleString()}</td>
-                  </tr>
-
-                  {/* Total Exit */}
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3.5 font-black text-amber-700 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-600" />
-                      Total Exit
-                    </td>
-                    {statusDetails.map((r) => (
-                      <td key={r.program} className="px-4 py-3.5 text-center text-slate-700">{r.exit.toLocaleString()}</td>
-                    ))}
-                    <td className="px-4 py-3.5 text-right font-black text-amber-700 bg-amber-50/60">{statusTotals.exit.toLocaleString()}</td>
-                  </tr>
-
-                  {/* Total LOA */}
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3.5 font-black text-rose-700 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-600" />
-                      Total LOA
-                    </td>
-                    {statusDetails.map((r) => (
-                      <td key={r.program} className="px-4 py-3.5 text-center text-slate-600">{r.inactive.toLocaleString()}</td>
-                    ))}
-                    <td className="px-4 py-3.5 text-right font-black text-rose-700 bg-rose-50/60">{statusTotals.inactive.toLocaleString()}</td>
-                  </tr>
-
-                  {/* Program Total */}
-                  <tr className="bg-slate-100/80 font-black text-slate-900 border-t-2 border-slate-200">
-                    <td className="px-4 py-3.5 uppercase tracking-wider text-slate-700">Total Enrolled</td>
-                    {statusDetails.map((r) => (
-                      <td key={r.program} className="px-4 py-3.5 text-center font-black text-slate-900">{r.total.toLocaleString()}</td>
-                    ))}
-                    <td className="px-4 py-3.5 text-right font-black text-slate-900 bg-slate-200/80">{statusTotals.grandTotal.toLocaleString()}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Visual Program Distribution Bars */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              {statusDetails.map((r) => {
-                const activePct = r.total > 0 ? ((r.active / r.total) * 100).toFixed(1) : '0';
-                const exitPct = r.total > 0 ? ((r.exit / r.total) * 100).toFixed(1) : '0';
-                const inactivePct = r.total > 0 ? ((r.inactive / r.total) * 100).toFixed(1) : '0';
-
-                return (
-                  <div key={r.program} className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-black text-sm text-slate-900">{r.program}</span>
-                      <span className="text-xs font-bold text-slate-500">{r.total.toLocaleString()} learners</span>
-                    </div>
-
-                    {/* Progress Segment */}
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex mb-2 border border-slate-200">
-                      <div style={{ width: `${activePct}%` }} className="bg-emerald-400 h-full" title={`Active: ${r.active} (${activePct}%)`} />
-                      <div style={{ width: `${exitPct}%` }} className="bg-amber-400 h-full" title={`Exit: ${r.exit} (${exitPct}%)`} />
-                      <div style={{ width: `${inactivePct}%` }} className="bg-rose-400 h-full" title={`LOA: ${r.inactive} (${inactivePct}%)`} />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] font-bold">
-                      <span className="text-emerald-700">Active: {r.active} ({activePct}%)</span>
-                      <span className="text-amber-700">Exit: {r.exit} ({exitPct}%)</span>
-                      <span className="text-rose-700">LOA: {r.inactive} ({inactivePct}%)</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            )}
+            {onClose && (
+              <button onClick={onClose} className="px-3 py-1.5 rounded-[10px] border border-slate-200 text-[12px] font-semibold text-slate-600 hover:text-slate-900">
+                <i className="fas fa-times mr-1.5 text-[10px]" />Close
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* ── TAB 2: RETENTION ANALYTICS ── */}
-        {activeTab === 'retention' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black text-slate-900 mb-0.5">Retention Active Cohort vs. Historical Retention</h3>
-                <p className="text-xs text-slate-500 font-medium">Comparative retention analysis across active cohorts and all-time historical data.</p>
-              </div>
-            </div>
+        <div className="px-5 lg:px-6 pt-4 pb-1">
+          <h2 className="text-lg font-bold text-slate-900 leading-tight">{tab.label === 'Intake terms' ? 'Intake term matrix' : `${tab.label} overview`}</h2>
+          <p className="text-[13px] text-slate-500 mt-0.5">{tab.hint}</p>
+        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Active Cohorts Retention Table */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div className="p-5 lg:p-6 pt-5" key={activeTab + view}>
+          <div style={{ animation: 'anaRise .35s ease-out both' }}>
+            {/* ── STATUS ── */}
+            {activeTab === 'status' && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-x-10 gap-y-4 pb-5 border-b border-slate-100">
+                  <Stat label="Active" color={C.active} value={fmt(statusTotals.active)} sub={`${pctStr(share(statusTotals.active))} of enrolled`} />
+                  <Stat label="Leave of absence" color={C.loa} value={fmt(statusTotals.inactive)} sub={`${pctStr(share(statusTotals.inactive))} of enrolled`} />
+                  <Stat label="Exited" color={C.exit} value={fmt(statusTotals.exit)} sub={`${pctStr(share(statusTotals.exit))} of enrolled`} />
+                  <Stat label="Total enrolled" value={fmt(statusTotals.grandTotal)} sub={`${statusDetails.length} programs`} />
+                </div>
+
+                {view === 'chart' ? (
                   <div>
-                    <h4 className="text-sm font-black text-emerald-700">Retention Active Cohort</h4>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Current Live Cohorts</span>
-                  </div>
-                  <div className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-black">
-                    {retentionActiveTotal.retentionPct}% Retention
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="text-slate-500 font-bold border-b border-slate-200">
-                        <th className="px-3 py-2.5">Program</th>
-                        <th className="px-3 py-2.5 text-right">Enrolment</th>
-                        <th className="px-3 py-2.5 text-right">Dropout</th>
-                        <th className="px-3 py-2.5 text-right">Total</th>
-                        <th className="px-3 py-2.5 text-right">Retention</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {retentionActiveCohort.map((r) => (
-                        <tr key={r.program} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-bold text-slate-900">{r.program}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.totalEnrolment.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-rose-600">{r.disqualifiedDropout.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.total.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right font-black text-emerald-700">
-                            {r.total > 0 ? `${r.retentionPct}%` : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="font-black text-slate-900 bg-slate-100/80 border-t border-slate-200">
-                        <td className="px-3 py-3 uppercase text-slate-700">Total</td>
-                        <td className="px-3 py-3 text-right">{retentionActiveTotal.totalEnrolment.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-rose-600">{retentionActiveTotal.disqualifiedDropout.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right">{retentionActiveTotal.total.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-emerald-700">{retentionActiveTotal.retentionPct}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Historical Retention Table */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                  <div>
-                    <h4 className="text-sm font-black text-slate-800">Historical Retention</h4>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">All-Time Cumulative Cohorts</span>
-                  </div>
-                  <div className="px-3 py-1 bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-black">
-                    {historicalRetentionTotal.retentionPct}% Retention
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="text-slate-500 font-bold border-b border-slate-200">
-                        <th className="px-3 py-2.5">Program</th>
-                        <th className="px-3 py-2.5 text-right">Enrolment</th>
-                        <th className="px-3 py-2.5 text-right">Dropout</th>
-                        <th className="px-3 py-2.5 text-right">Total</th>
-                        <th className="px-3 py-2.5 text-right">Retention</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {historicalRetention.map((r) => (
-                        <tr key={r.program} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-bold text-slate-900">{r.program}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.totalEnrolment.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-rose-600">{r.disqualifiedDropout.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.total.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right font-black text-slate-900">
-                            {r.total > 0 ? `${r.retentionPct}%` : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="font-black text-slate-900 bg-slate-100/80 border-t border-slate-200">
-                        <td className="px-3 py-3 uppercase text-slate-700">Total</td>
-                        <td className="px-3 py-3 text-right">{historicalRetentionTotal.totalEnrolment.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-rose-600">{historicalRetentionTotal.disqualifiedDropout.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right">{historicalRetentionTotal.total.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-slate-900">{historicalRetentionTotal.retentionPct}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 3: GRADUATION RATES ── */}
-        {activeTab === 'graduation' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black text-slate-900 mb-0.5">Closed Cohort vs. Active Cohort Graduation Rates</h3>
-                <p className="text-xs text-slate-500 font-medium">Graduation completion rates across completed (closed) cohorts and in-progress (active) cohorts.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Closed Cohort Graduation */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                  <div>
-                    <h4 className="text-sm font-black text-amber-700">Closed Cohort Graduation</h4>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Completed Alumni Cohorts</span>
-                  </div>
-                  <div className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-black">
-                    {closedCohortTotal.graduationPct}% Overall
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="text-slate-500 font-bold border-b border-slate-200">
-                        <th className="px-3 py-2.5">Program</th>
-                        <th className="px-3 py-2.5 text-right">Enrolment</th>
-                        <th className="px-3 py-2.5 text-right">Graduated</th>
-                        <th className="px-3 py-2.5 text-right">Graduation %</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {closedCohortGraduation.map((r) => (
-                        <tr key={r.program} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-bold text-slate-900">{r.program}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.totalEnrolment.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-emerald-700 font-bold">{r.graduatedLearners.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right font-black text-amber-700">
-                            {r.graduationPct !== null ? `${r.graduationPct}%` : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="font-black text-slate-900 bg-slate-100/80 border-t border-slate-200">
-                        <td className="px-3 py-3 uppercase text-slate-700">Total</td>
-                        <td className="px-3 py-3 text-right">{closedCohortTotal.totalEnrolment.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-emerald-700">{closedCohortTotal.graduatedLearners.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-amber-700">{closedCohortTotal.graduationPct}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Active Cohort Graduation */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                  <div>
-                    <h4 className="text-sm font-black text-cyan-700">Active Cohort Graduation</h4>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">In-Progress Cohorts Completion</span>
-                  </div>
-                  <div className="px-3 py-1 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-xl text-xs font-black">
-                    {activeCohortTotal.graduationPct}% Overall
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="text-slate-500 font-bold border-b border-slate-200">
-                        <th className="px-3 py-2.5">Program</th>
-                        <th className="px-3 py-2.5 text-right">Enrolment</th>
-                        <th className="px-3 py-2.5 text-right">Graduated</th>
-                        <th className="px-3 py-2.5 text-right">Graduation %</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {activeCohortGraduation.map((r) => (
-                        <tr key={r.program} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-bold text-slate-900">{r.program}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-700">{r.totalEnrolment.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-emerald-700 font-bold">{r.graduatedLearners.toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right font-black text-cyan-700">
-                            {r.graduationPct !== null ? `${r.graduationPct}%` : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="font-black text-slate-900 bg-slate-100/80 border-t border-slate-200">
-                        <td className="px-3 py-3 uppercase text-slate-700">Total</td>
-                        <td className="px-3 py-3 text-right">{activeCohortTotal.totalEnrolment.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-emerald-700">{activeCohortTotal.graduatedLearners.toLocaleString()}</td>
-                        <td className="px-3 py-3 text-right text-cyan-700">{activeCohortTotal.graduationPct}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 4: COHORT DISTRIBUTION ── */}
-        {activeTab === 'cohorts' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black text-slate-900 mb-0.5">Number of Cohorts</h3>
-                <p className="text-xs text-slate-500 font-medium">Comparison of all-time created cohorts versus currently live active cohorts.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cohortCounts.map((r) => (
-                <div key={r.program} className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900 mb-1">{r.program}</h4>
-                    <div className="text-xs text-slate-500 font-medium">
-                      All-Time Cohorts: <strong className="text-slate-900 font-bold">{r.allTimeCohorts}</strong>
+                    <div className="flex items-center justify-between mb-3 px-3">
+                      <Legend items={[{ label: 'Active', color: C.active }, { label: 'Leave of absence', color: C.loa }, { label: 'Exited', color: C.exit }]} />
+                      <span className="text-[11px] text-slate-400">Bar length = program size</span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-5 text-right">
-                    <div>
-                      <div className="text-2xl font-black text-emerald-600">{r.liveCohorts}</div>
-                      <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Live</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-amber-600">{r.closedCohorts}</div>
-                      <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Closed</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Total Banner */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 text-slate-900 flex items-center justify-between shadow-sm">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Network Cohorts</span>
-                <h3 className="text-2xl font-black text-slate-900">{cohortTotals.liveCohorts} Live Cohorts across GGU</h3>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-xs text-slate-500 font-bold">All-Time</div>
-                  <div className="text-2xl font-black text-slate-900">{cohortTotals.allTimeCohorts}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-emerald-700 font-bold">Live Active</div>
-                  <div className="text-2xl font-black text-emerald-600">{cohortTotals.liveCohorts}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-amber-700 font-bold">Closed</div>
-                  <div className="text-2xl font-black text-amber-600">{cohortTotals.closedCohorts}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 5: TERM LEVEL ACTIVE MATRIX ── */}
-        {activeTab === 'terms' && (() => {
-          const getYearFromTerm = (term: string): string => {
-            const match = term.match(/^(\d{2})\//);
-            if (match) return `20${match[1]}`;
-            const digits = term.substring(0, 2);
-            if (/^\d{2}$/.test(digits)) return `20${digits}`;
-            return 'Other';
-          };
-
-          const activeMatrix = getFilteredTermActive(selectedCountries);
-
-          const availableYears = Array.from(
-            new Set(activeMatrix.map(t => getYearFromTerm(t.term)))
-          ).filter(y => y !== 'Other').sort();
-
-          const filteredTermRows = activeMatrix.filter(t => {
-            const termYear = getYearFromTerm(t.term);
-            const matchesYear = selectedYears.length === 0 || selectedYears.includes(termYear);
-            return matchesYear;
-          });
-
-          const termTotals = {
-            dba: filteredTermRows.reduce((acc, t) => acc + (t.dba || 0), 0),
-            mba: filteredTermRows.reduce((acc, t) => acc + (t.mba || 0), 0),
-            dbaEt: filteredTermRows.reduce((acc, t) => acc + (t.dbaEt || 0), 0),
-            mPsych: filteredTermRows.reduce((acc, t) => acc + (t.mPsych || 0), 0),
-            dbaDl: filteredTermRows.reduce((acc, t) => acc + (t.dbaDl || 0), 0),
-            sjd: filteredTermRows.reduce((acc, t) => acc + (t.sjd || 0), 0),
-            mbaSa: filteredTermRows.reduce((acc, t) => acc + (t.mbaSa || 0), 0),
-            bachelorsSa: filteredTermRows.reduce((acc, t) => acc + (t.bachelorsSa || 0), 0),
-            grandTotal: filteredTermRows.reduce((acc, t) => acc + (t.grandTotal || 0), 0),
-          };
-
-          return (
-            <div className="space-y-6">
-              {/* ── Beautified Filter Header Bar ── */}
-              <div className="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Term Active Matrix</h4>
-                  <p className="text-xs text-slate-500 font-medium">Color-coded active learner distribution per intake term.</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Country Filter Dropdown */}
-                  <div className="w-48">
-                    <FilterDropdown
-                      label="Country"
-                      iconClass="fas fa-globe"
-                      placeholder="All Countries"
-                      values={allCountries}
-                      selected={selectedCountries}
-                      onToggle={(v) => toggleInList(v, selectedCountries, setSelectedCountries)}
-                      isOpen={openDropdown === 'country'}
-                      setIsOpen={(open) => setOpenDropdown(open ? 'country' : null)}
-                    />
-                  </div>
-
-                  {/* Year Filter Dropdown */}
-                  <div className="w-44">
-                    <FilterDropdown
-                      label="Intake Year"
-                      iconClass="fas fa-calendar-alt"
-                      placeholder="All Years"
-                      values={availableYears}
-                      selected={selectedYears}
-                      onToggle={(v) => toggleInList(v, selectedYears, setSelectedYears)}
-                      isOpen={openDropdown === 'year'}
-                      setIsOpen={(open) => setOpenDropdown(open ? 'year' : null)}
-                    />
-                  </div>
-
-                  {/* Reset Button if filtered */}
-                  {(selectedYears.length > 0 || selectedCountries.length > 0) && (
-                    <button
-                      onClick={() => { setSelectedYears([]); setSelectedCountries([]); }}
-                      className="mt-5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-                      title="Reset all filters"
-                    >
-                      <i className="fas fa-undo-alt text-[10px]" />
-                      <span>Reset</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Filter Active Chips */}
-              {(selectedYears.length > 0 || selectedCountries.length > 0) && (
-                <div className="flex items-center gap-2 bg-indigo-50/80 border border-indigo-100 rounded-xl px-3.5 py-1.5 text-xs text-indigo-700 font-bold w-fit flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider text-indigo-500">Active Filters:</span>
-                  {selectedCountries.length > 0 && <span className="bg-indigo-100 px-2 py-0.5 rounded-md">Countries: {selectedCountries.join(', ')}</span>}
-                  {selectedYears.length > 0 && <span className="bg-indigo-100 px-2 py-0.5 rounded-md">Years: {selectedYears.join(', ')}</span>}
-                </div>
-              )}
-
-              {/* ── HEATMAP MATRIX TABLE ONLY ── */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm max-h-[540px] overflow-y-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="sticky top-0 z-10 bg-slate-100 text-slate-700 font-black border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3.5">Term</th>
-                      <th className="px-3 py-3.5 text-center">GGU DBA</th>
-                      <th className="px-3 py-3.5 text-center">GGU MBA</th>
-                      <th className="px-3 py-3.5 text-center">GGU DBA ET</th>
-                      <th className="px-3 py-3.5 text-center">GGU MPsych</th>
-                      <th className="px-3 py-3.5 text-center">GGU DBA DL</th>
-                      <th className="px-3 py-3.5 text-center">GGU SJD</th>
-                      <th className="px-3 py-3.5 text-center">GGU MBA SA</th>
-                      <th className="px-3 py-3.5 text-center">GGU Bachelors SA</th>
-                      <th className="px-4 py-3.5 text-right bg-slate-200/60 text-slate-900 font-black">Grand Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                    {filteredTermRows.length > 0 ? (
-                      filteredTermRows.map((t) => {
-                        const getHeatmapColor = (val: number) => {
-                          if (val === 0) return 'bg-slate-50/40 text-slate-300';
-                          if (val <= 15) return 'bg-emerald-50 text-emerald-800 font-bold border border-emerald-100/80';
-                          if (val <= 35) return 'bg-emerald-100 text-emerald-900 font-extrabold border border-emerald-200';
-                          return 'bg-emerald-600 text-white font-black shadow-sm';
-                        };
-
+                    <div className="-mx-3">
+                      {statusRows.map(r => {
+                        const segs = [
+                          { label: 'Active', v: r.active, color: C.active },
+                          { label: 'Leave of absence', v: r.inactive, color: C.loa },
+                          { label: 'Exited', v: r.exit, color: C.exit },
+                        ];
                         return (
-                          <tr key={t.term} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="px-4 py-3.5 font-black text-slate-900 flex items-center justify-between gap-2">
-                              <span>{t.term}</span>
-                              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                                {getYearFromTerm(t.term)}
-                              </span>
-                            </td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.dba || 0)}`}>{t.dba || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.mba || 0)}`}>{t.mba || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.dbaEt || 0)}`}>{t.dbaEt || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.mPsych || 0)}`}>{t.mPsych || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.dbaDl || 0)}`}>{t.dbaDl || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.sjd || 0)}`}>{t.sjd || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.mbaSa || 0)}`}>{t.mbaSa || '—'}</td>
-                            <td className={`px-3 py-3.5 text-center transition-all ${getHeatmapColor(t.bachelorsSa || 0)}`}>{t.bachelorsSa || '—'}</td>
-                            <td className="px-4 py-3.5 text-right font-black text-emerald-700 bg-emerald-50/70">{t.grandTotal.toLocaleString()}</td>
-                          </tr>
+                          <ChartRow
+                            key={r.program}
+                            label={shortName(r.program)}
+                            trailing={<>
+                              <div className="text-[13px] font-bold text-slate-900">{fmt(r.total)}</div>
+                              <div className="text-[11px] text-slate-500">{r.total ? pctStr((r.active / r.total) * 100, 0) : '—'} active</div>
+                            </>}
+                          >
+                            <div className="flex h-3 gap-[2px]" style={{ width: `${Math.max(2, (r.total / statusMax) * 100)}%` }}>
+                              {segs.filter(s => s.v > 0).map(s => (
+                                <div
+                                  key={s.label}
+                                  className="h-full first:rounded-l-[4px] last:rounded-r-[4px] transition-all duration-700"
+                                  style={{ width: `${(s.v / (r.total || 1)) * 100}%`, background: s.color, minWidth: 2 }}
+                                  title={`${shortName(r.program)} · ${s.label}: ${fmt(s.v)} (${pctStr((s.v / (r.total || 1)) * 100)})`}
+                                />
+                              ))}
+                            </div>
+                          </ChartRow>
                         );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={10} className="p-8 text-center text-slate-400 font-medium">
-                          No term records found matching the selected filters.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                  {filteredTermRows.length > 0 && (
-                    <tfoot className="sticky bottom-0 z-10 bg-slate-100 text-slate-900 font-black border-t-2 border-slate-300">
-                      <tr>
-                        <td className="px-4 py-3.5 uppercase tracking-wider text-slate-800">Total ({filteredTermRows.length} terms)</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.dba || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.mba || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.dbaEt || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.mPsych || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.dbaDl || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.sjd || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.mbaSa || '—'}</td>
-                        <td className="px-3 py-3.5 text-center font-black">{termTotals.bachelorsSa || '—'}</td>
-                        <td className="px-4 py-3.5 text-right text-emerald-700 bg-emerald-100/90 font-black text-sm">{termTotals.grandTotal.toLocaleString()}</td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <DataTable
+                    rows={statusRows}
+                    rowKey={r => r.program}
+                    columns={[
+                      { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
+                      { label: 'Active', align: 'right', render: r => fmt(r.active) },
+                      { label: 'Leave of absence', align: 'right', render: r => fmt(r.inactive) },
+                      { label: 'Exited', align: 'right', render: r => fmt(r.exit) },
+                      { label: 'Total', align: 'right', render: r => <span className="font-semibold text-slate-900">{fmt(r.total)}</span> },
+                      { label: 'Active %', align: 'right', render: r => (r.total ? pctStr((r.active / r.total) * 100) : '—') },
+                    ]}
+                    footer={['Total', fmt(statusTotals.active), fmt(statusTotals.inactive), fmt(statusTotals.exit), fmt(statusTotals.grandTotal), pctStr(share(statusTotals.active))]}
+                  />
+                )}
               </div>
-            </div>
-          );
-        })()}
-      </div>
+            )}
+
+            {/* ── RETENTION ── */}
+            {activeTab === 'retention' && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-x-10 gap-y-4 pb-5 border-b border-slate-100">
+                  <Stat label="Live cohorts" color={C.active} value={pctStr(retentionActiveTotal.retentionPct)} sub={`${fmt(retentionActiveTotal.disqualifiedDropout)} dropouts of ${fmt(retentionActiveTotal.total)}`} />
+                  <Stat label="All-time" color={C.past} value={pctStr(historicalRetentionTotal.retentionPct)} sub={`${fmt(historicalRetentionTotal.disqualifiedDropout)} dropouts of ${fmt(historicalRetentionTotal.total)}`} />
+                  <Stat label="Difference" value={`${retentionDelta >= 0 ? '+' : '−'}${Math.abs(retentionDelta).toFixed(1)} pts`} sub={retentionDelta >= 0 ? 'Live cohorts retain better' : 'Live cohorts retain worse'} />
+                </div>
+
+                {view === 'chart' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-3 px-3">
+                      <Legend items={[{ label: 'Live cohorts', color: C.active }, { label: 'All-time', color: C.past }]} />
+                      <span className="text-[11px] text-slate-400">Retention rate, {retentionDomainMin}–100%</span>
+                    </div>
+                    <div className="-mx-3">
+                      {retentionRows.map(({ program, live, hist }) => {
+                        const lv = live.total > 0 ? live.retentionPct : null;
+                        const hv = hist && hist.total > 0 ? hist.retentionPct : null;
+                        return (
+                          <ChartRow
+                            key={program}
+                            label={shortName(program)}
+                            trailing={<div className="w-[110px] flex justify-end gap-3 text-[12px]">
+                              <span className="font-bold text-slate-900">{pctStr(lv)}</span>
+                              <span className="text-slate-500">{pctStr(hv)}</span>
+                            </div>}
+                          >
+                            <div className="relative h-6">
+                              {retentionTicks.map(t => (
+                                <span key={t} className="absolute top-0 bottom-0 w-px" style={{ left: `${retX(t)}%`, background: '#EEEEF0' }} />
+                              ))}
+                              {lv !== null && hv !== null && (
+                                <span className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full" style={{ left: `${retX(Math.min(lv, hv))}%`, width: `${Math.abs(retX(lv) - retX(hv))}%`, background: '#D0D2D3' }} />
+                              )}
+                              {hv !== null && (
+                                <span className="absolute top-1/2 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white" style={{ left: `${retX(hv)}%`, background: C.past }} title={`${shortName(program)} · all-time: ${pctStr(hv)}`} />
+                              )}
+                              {lv !== null && (
+                                <span className="absolute top-1/2 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white" style={{ left: `${retX(lv)}%`, background: C.active }} title={`${shortName(program)} · live cohorts: ${pctStr(lv)}`} />
+                              )}
+                            </div>
+                          </ChartRow>
+                        );
+                      })}
+                      <div className="grid grid-cols-[110px_1fr_auto] sm:grid-cols-[140px_1fr_auto] gap-4 px-3 pt-1">
+                        <span />
+                        <div className="relative h-4 text-[10px] text-slate-400 tabular-nums">
+                          {retentionTicks.map(t => (
+                            <span key={t} className="absolute -translate-x-1/2" style={{ left: `${retX(t)}%` }}>{t}%</span>
+                          ))}
+                        </div>
+                        <div className="w-[110px] flex justify-end gap-3 text-[10px] uppercase tracking-wider text-slate-400"><span>Live</span><span>All-time</span></div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <DataTable
+                    rows={retentionRows}
+                    rowKey={r => r.program}
+                    columns={[
+                      { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
+                      { label: 'Live · enrolled', align: 'right', render: r => fmt(r.live.totalEnrolment) },
+                      { label: 'Live · dropouts', align: 'right', render: r => fmt(r.live.disqualifiedDropout) },
+                      { label: 'Live retention', align: 'right', render: r => <span className="font-semibold text-slate-900">{r.live.total > 0 ? pctStr(r.live.retentionPct) : '—'}</span> },
+                      { label: 'All-time · enrolled', align: 'right', render: r => fmt(r.hist?.totalEnrolment ?? 0) },
+                      { label: 'All-time · dropouts', align: 'right', render: r => fmt(r.hist?.disqualifiedDropout ?? 0) },
+                      { label: 'All-time retention', align: 'right', render: r => <span className="font-semibold text-slate-900">{r.hist && r.hist.total > 0 ? pctStr(r.hist.retentionPct) : '—'}</span> },
+                    ]}
+                    footer={['Total', fmt(retentionActiveTotal.totalEnrolment), fmt(retentionActiveTotal.disqualifiedDropout), pctStr(retentionActiveTotal.retentionPct), fmt(historicalRetentionTotal.totalEnrolment), fmt(historicalRetentionTotal.disqualifiedDropout), pctStr(historicalRetentionTotal.retentionPct)]}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* ── GRADUATION ── */}
+            {activeTab === 'graduation' && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-x-10 gap-y-4 pb-5 border-b border-slate-100">
+                  <Stat label="Closed cohorts" color={C.past} value={pctStr(closedCohortTotal.graduationPct)} sub={`${fmt(closedCohortTotal.graduatedLearners)} of ${fmt(closedCohortTotal.totalEnrolment)} graduated`} />
+                  <Stat label="In-progress cohorts" color={C.active} value={pctStr(activeCohortTotal.graduationPct)} sub={`${fmt(activeCohortTotal.graduatedLearners)} of ${fmt(activeCohortTotal.totalEnrolment)} graduated so far`} />
+                  <Stat label="Total graduates" value={fmt(closedCohortTotal.graduatedLearners + activeCohortTotal.graduatedLearners)} sub="Closed and in-progress cohorts" />
+                </div>
+
+                {view === 'chart' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-3 px-3">
+                      <Legend items={[{ label: 'Closed cohorts', color: C.past }, { label: 'In-progress cohorts', color: C.active }]} />
+                      <span className="text-[11px] text-slate-400">Graduation rate, 0–100%</span>
+                    </div>
+                    <div className="-mx-3">
+                      {graduationRows.map(({ program, closed, active }) => (
+                        <ChartRow
+                          key={program}
+                          label={shortName(program)}
+                          trailing={<div className="w-[110px] flex justify-end gap-3 text-[12px]">
+                            <span className="font-bold text-slate-900">{pctStr(closed.graduationPct)}</span>
+                            <span className="text-slate-500">{pctStr(active?.graduationPct ?? null)}</span>
+                          </div>}
+                        >
+                          <div className="space-y-[3px]">
+                            {[{ v: closed.graduationPct, color: C.past, label: 'Closed cohorts', row: closed }, { v: active?.graduationPct ?? null, color: C.active, label: 'In-progress cohorts', row: active }].map(b => (
+                              <div key={b.label} className="h-2 rounded-r-[4px]" style={{ background: C.track }}>
+                                {b.v !== null && (
+                                  <div
+                                    className="h-full rounded-r-[4px] transition-all duration-700"
+                                    style={{ width: `${Math.max(0.8, b.v)}%`, background: b.color }}
+                                    title={`${shortName(program)} · ${b.label}: ${pctStr(b.v)} (${fmt(b.row?.graduatedLearners ?? 0)} of ${fmt(b.row?.totalEnrolment ?? 0)})`}
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </ChartRow>
+                      ))}
+                      <div className="grid grid-cols-[110px_1fr_auto] sm:grid-cols-[140px_1fr_auto] gap-4 px-3 pt-1">
+                        <span />
+                        <div className="text-[10px] text-slate-400">— no closed cohorts yet</div>
+                        <div className="w-[110px] flex justify-end gap-3 text-[10px] uppercase tracking-wider text-slate-400"><span>Closed</span><span>Active</span></div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <DataTable
+                    rows={graduationRows}
+                    rowKey={r => r.program}
+                    columns={[
+                      { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
+                      { label: 'Closed · enrolled', align: 'right', render: r => fmt(r.closed.totalEnrolment) },
+                      { label: 'Closed · graduated', align: 'right', render: r => fmt(r.closed.graduatedLearners) },
+                      { label: 'Closed rate', align: 'right', render: r => <span className="font-semibold text-slate-900">{pctStr(r.closed.graduationPct)}</span> },
+                      { label: 'Active · enrolled', align: 'right', render: r => fmt(r.active?.totalEnrolment ?? 0) },
+                      { label: 'Active · graduated', align: 'right', render: r => fmt(r.active?.graduatedLearners ?? 0) },
+                      { label: 'Active rate', align: 'right', render: r => <span className="font-semibold text-slate-900">{pctStr(r.active?.graduationPct ?? null)}</span> },
+                    ]}
+                    footer={['Total', fmt(closedCohortTotal.totalEnrolment), fmt(closedCohortTotal.graduatedLearners), pctStr(closedCohortTotal.graduationPct), fmt(activeCohortTotal.totalEnrolment), fmt(activeCohortTotal.graduatedLearners), pctStr(activeCohortTotal.graduationPct)]}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* ── COHORTS ── */}
+            {activeTab === 'cohorts' && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-x-10 gap-y-4 pb-5 border-b border-slate-100">
+                  <Stat label="Live" color={C.active} value={fmt(cohortTotals.liveCohorts)} sub={`${pctStr((cohortTotals.liveCohorts / (cohortTotals.allTimeCohorts || 1)) * 100, 0)} of all cohorts`} />
+                  <Stat label="Closed" color={C.past} value={fmt(cohortTotals.closedCohorts)} sub="Completed cohorts" />
+                  <Stat label="All-time" value={fmt(cohortTotals.allTimeCohorts)} sub={`${cohortCounts.length} programs`} />
+                </div>
+
+                {view === 'chart' ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-3 px-3">
+                      <Legend items={[{ label: 'Live', color: C.active }, { label: 'Closed', color: C.past }]} />
+                      <span className="text-[11px] text-slate-400">Bar length = all-time cohorts</span>
+                    </div>
+                    <div className="-mx-3">
+                      {cohortRows.map(r => (
+                        <ChartRow
+                          key={r.program}
+                          label={shortName(r.program)}
+                          trailing={<div className="w-[110px] flex justify-end gap-3 text-[12px]">
+                            <span className="font-bold text-slate-900">{r.liveCohorts} live</span>
+                            <span className="text-slate-500">{r.allTimeCohorts} total</span>
+                          </div>}
+                        >
+                          <div className="flex h-3 gap-[2px]" style={{ width: `${Math.max(2, (r.allTimeCohorts / cohortMax) * 100)}%` }}>
+                            {[{ v: r.liveCohorts, color: C.active, label: 'Live' }, { v: r.closedCohorts, color: C.past, label: 'Closed' }].filter(s => s.v > 0).map(s => (
+                              <div
+                                key={s.label}
+                                className="h-full first:rounded-l-[4px] last:rounded-r-[4px] transition-all duration-700"
+                                style={{ width: `${(s.v / (r.allTimeCohorts || 1)) * 100}%`, background: s.color, minWidth: 2 }}
+                                title={`${shortName(r.program)} · ${s.label}: ${s.v} cohorts`}
+                              />
+                            ))}
+                          </div>
+                        </ChartRow>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <DataTable
+                    rows={cohortRows}
+                    rowKey={r => r.program}
+                    columns={[
+                      { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
+                      { label: 'Live', align: 'right', render: r => fmt(r.liveCohorts) },
+                      { label: 'Closed', align: 'right', render: r => fmt(r.closedCohorts) },
+                      { label: 'All-time', align: 'right', render: r => <span className="font-semibold text-slate-900">{fmt(r.allTimeCohorts)}</span> },
+                    ]}
+                    footer={['Total', fmt(cohortTotals.liveCohorts), fmt(cohortTotals.closedCohorts), fmt(cohortTotals.allTimeCohorts)]}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* ── INTAKE TERMS ── */}
+            {activeTab === 'terms' && (
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="w-48">
+                      <FilterDropdown
+                        label="Country"
+                        iconClass="fas fa-globe"
+                        placeholder="All countries"
+                        values={allCountries}
+                        selected={selectedCountries}
+                        onToggle={(v) => toggleInList(v, selectedCountries, setSelectedCountries)}
+                        isOpen={openDropdown === 'country'}
+                        setIsOpen={(open) => setOpenDropdown(open ? 'country' : null)}
+                      />
+                    </div>
+                    <div className="w-44">
+                      <FilterDropdown
+                        label="Intake year"
+                        iconClass="fas fa-calendar-alt"
+                        placeholder="All years"
+                        values={availableYears}
+                        selected={selectedYears}
+                        onToggle={(v) => toggleInList(v, selectedYears, setSelectedYears)}
+                        isOpen={openDropdown === 'year'}
+                        setIsOpen={(open) => setOpenDropdown(open ? 'year' : null)}
+                      />
+                    </div>
+                    {filtersOn && (
+                      <button
+                        onClick={() => { setSelectedYears([]); setSelectedCountries([]); }}
+                        className="h-[38px] px-3 rounded-[10px] border border-slate-200 text-[12px] font-semibold text-slate-600 hover:text-brand-600 transition-colors"
+                      >
+                        <i className="fas fa-undo-alt text-[10px] mr-1.5" />Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                    <span>Fewer</span>
+                    <div className="flex gap-[2px]">
+                      {HEAT_RAMP.map(c => <span key={c} className="w-5 h-2.5 first:rounded-l-[3px] last:rounded-r-[3px]" style={{ background: c }} />)}
+                    </div>
+                    <span>More active learners</span>
+                  </div>
+                </div>
+
+                <div className="overflow-auto max-h-[560px] rounded-[16px] border border-slate-200/80">
+                  <table className="w-full text-[12px] border-separate border-spacing-0">
+                    <thead className="sticky top-0 z-10">
+                      <tr className="text-[11px] uppercase tracking-[0.06em] text-slate-500">
+                        <th className="px-4 py-3 text-left font-semibold border-b border-slate-200" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>Term</th>
+                        {TERM_COLS.map(c => (
+                          <th key={c.key} className="px-2 py-3 text-center font-semibold whitespace-nowrap border-b border-slate-200" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>{c.label}</th>
+                        ))}
+                        <th className="px-4 py-3 text-right font-semibold border-b border-slate-200" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {termRows.length > 0 ? termRows.map(t => (
+                        <tr key={t.term} className="group">
+                          <td className="px-4 py-1.5 border-b border-slate-100 whitespace-nowrap">
+                            <span className="font-semibold text-slate-900">{t.term}</span>
+                            <span className="ml-2 text-[10px] text-slate-400">{getYearFromTerm(t.term)}</span>
+                          </td>
+                          {TERM_COLS.map(c => {
+                            const v = t[c.key] || 0;
+                            const step = v > 0 ? heatStep(v) : -1;
+                            return (
+                              <td key={c.key} className="px-1 py-1 border-b border-slate-100">
+                                <div
+                                  className="h-8 rounded-[6px] flex items-center justify-center tabular-nums font-semibold"
+                                  style={v > 0
+                                    ? { background: HEAT_RAMP[step], color: step >= 3 ? '#FFFFFF' : '#404041' }
+                                    : { color: '#C4C6C8' }}
+                                  title={`${t.term} · ${c.label}: ${v} active`}
+                                >
+                                  {v > 0 ? v : '·'}
+                                </div>
+                              </td>
+                            );
+                          })}
+                          <td className="px-4 py-1.5 border-b border-slate-100 text-right font-bold text-slate-900 tabular-nums">{fmt(t.grandTotal)}</td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={TERM_COLS.length + 2} className="p-10 text-center text-slate-400">No intake terms match the selected filters.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    {termRows.length > 0 && (
+                      <tfoot className="sticky bottom-0 z-10">
+                        <tr className="font-bold text-slate-900">
+                          <td className="px-4 py-3 border-t-2 border-slate-200 whitespace-nowrap" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>Total · {termRows.length} terms</td>
+                          {TERM_COLS.map(c => (
+                            <td key={c.key} className="px-2 py-3 text-center tabular-nums border-t-2 border-slate-200" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>{termTotals[c.key] ? fmt(termTotals[c.key]) : '—'}</td>
+                          ))}
+                          <td className="px-4 py-3 text-right tabular-nums border-t-2 border-slate-200 text-brand-600" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>{fmt(termGrand)}</td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

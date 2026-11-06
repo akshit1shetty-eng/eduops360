@@ -3,53 +3,90 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="icon" type="image/svg+xml" href="/upgrad-favicon.svg" />
+  <meta name="theme-color" content="#E50913" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EduOps360</title>
+  <title>EduOps360 · Golden Gate University | upGrad</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+  <!-- upGrad brand typography: Montserrat (headlines) + Roboto (body) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&display=swap"
     rel="stylesheet" />
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
+    // ── upGrad brand system (see upGrad branding/ and src/lib/brand.ts) ──
+    // Primary: Red #E50913, Black #000000 · Secondary: Dark red #9B000C, Pink #F9C0C7,
+    // Dark grey #404041, Light grey #D0D2D3 · Gradient #E50913 → #BF2026
+    const upgradRed = {
+      50: '#FEF2F3',
+      100: '#FDE3E5',
+      200: '#F9C0C7', // brand pink
+      300: '#F48F99',
+      400: '#EC4F59',
+      500: '#E50913', // brand red
+      600: '#D00811',
+      700: '#BF2026', // gradient end
+      800: '#9B000C', // brand dark red
+      900: '#6E0009',
+      950: '#3A0005',
+    };
+    // True neutral greys anchored on the brand greys (replaces blue-tinted slate/gray)
+    const upgradGrey = {
+      50: '#F7F7F8',
+      100: '#EFEFF0',
+      200: '#E3E4E5',
+      300: '#D0D2D3', // brand light grey
+      400: '#A7A9AC',
+      500: '#7A7C7F',
+      600: '#58595B',
+      700: '#404041', // brand dark grey
+      800: '#2B2B2C',
+      900: '#1A1A1B',
+      950: '#0D0D0D',
+    };
+    const upgradPink = {
+      50: '#FFF5F6',
+      100: '#FDE6E9',
+      200: '#F9C0C7', // brand pink
+      300: '#F59AA6',
+      400: '#EE6F80',
+      500: '#E14862',
+      600: '#C9304B',
+      700: '#A8233B',
+      800: '#861C30',
+      900: '#6B1A29',
+      950: '#3D0E17',
+    };
     tailwind.config = {
       darkMode: ['selector', '[data-theme="dark"]'],
       theme: {
         extend: {
           colors: {
-            primary: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              200: '#bfdbfe',
-              300: '#93c5fd',
-              400: '#60a5fa',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              800: '#1e40af',
-              900: '#1e3a8a',
-            },
-            // upGrad brand red (#ED2B3B) — used for app chrome (nav, headers, buttons), not metrics
-            brand: {
-              50: '#FEF2F3',
-              100: '#FDE4E6',
-              200: '#FBCDD1',
-              300: '#F8A5AC',
-              400: '#F3717C',
-              500: '#ED2B3B',
-              600: '#D91E2F',
-              700: '#B71826',
-              800: '#911520',
-              900: '#78161F',
-              950: '#2B0F13',
-            },
+            brand: upgradRed,
+            primary: upgradRed,
+            // Indigo was the app's de-facto action colour → upGrad red
+            indigo: upgradRed,
+            // Decorative purples → upGrad dark grey family
+            violet: upgradGrey,
+            purple: upgradGrey,
+            // Neutrals → brand greys
+            slate: upgradGrey,
+            gray: upgradGrey,
+            pink: upgradPink,
+            fuchsia: upgradPink,
           },
           fontFamily: {
-            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            sans: ['Roboto', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Montserrat', 'Roboto', 'system-ui', 'sans-serif'],
+          },
+          backgroundImage: {
+            'brand-gradient': 'linear-gradient(135deg, #E50913, #BF2026)',
+            'brand-radial': 'radial-gradient(circle, #BF2026, #E50913)',
           },
         },
       },

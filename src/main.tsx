@@ -3,12 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import './index.css'
 import { ThemeProvider } from './hooks/useTheme'
-import eduopsFaviconUrl from './assets/eduops.png'
+import eduopsFaviconUrl from './assets/upgrad-favicon.svg'
 import AppPreloader from './components/AppPreloader.tsx'
 import Layout from './components/Layout.tsx'
-import ProgramSelectorPage from './pages/ProgramSelectorPage.tsx'
 import UniversityProgramsPage from './pages/UniversityProgramsPage.tsx'
-import UniversityOverviewPage from './pages/UniversityOverviewPage.tsx'
 import DashboardPage from './pages/DashboardPage.tsx'
 import LearnerProfilePage from './pages/LearnerProfilePage.tsx'
 import LearnersPage from './pages/LearnersPage.tsx'
@@ -24,6 +22,7 @@ import LexLearnerDashboard from './pages/lex/LexLearnerDashboard.tsx'
 import LexBudgetDashboard from './pages/lex/LexBudgetDashboard.tsx'
 import LexProgramBudgetDetail from './pages/lex/LexProgramBudgetDetail.tsx'
 import LexCohortBudgetDetail from './pages/lex/LexCohortBudgetDetail.tsx'
+import LexAnalyticsPage from './pages/lex/LexAnalyticsPage.tsx'
 
 // Auth
 import { AuthProvider } from './hooks/useAuth'
@@ -38,7 +37,7 @@ const ensureFavicon = (href: string) => {
   const existing = head.querySelector<HTMLLinkElement>('link[rel="icon"]')
   const link = existing ?? document.createElement('link')
   link.rel = 'icon'
-  link.type = 'image/png'
+  link.type = 'image/svg+xml'
   link.href = href
   if (!existing) head.appendChild(link)
 }
@@ -77,8 +76,9 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
+            // GGU-only app: the university picker goes straight to Golden Gate University
             path: '/programs',
-            element: <ProgramSelectorPage />,
+            element: <Navigate to="/programs/ggu" replace />,
             errorElement: <ErrorPage />,
           },
           {
@@ -87,8 +87,9 @@ const router = createBrowserRouter([
             errorElement: <ErrorPage />,
           },
           {
+            // Overview now lives inside the main shell as Program Insights
             path: '/programs/:uniId/overview',
-            element: <UniversityOverviewPage />,
+            element: <Navigate to="/lex/insights" replace />,
             errorElement: <ErrorPage />,
           },
         ],
@@ -106,6 +107,8 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="home" replace /> },
           { path: 'home', element: <LexDashboardHome /> },
           { path: 'learners', element: <LexLearnerDashboard /> },
+          { path: 'insights', element: <LexAnalyticsPage /> },
+          { path: 'analytics', element: <Navigate to="/lex/insights" replace /> },
           { path: 'budget', element: <LexBudgetDashboard /> },
           { path: 'budget/:programId', element: <LexProgramBudgetDetail /> },
           { path: 'budget/:programId/:cohortId', element: <LexCohortBudgetDetail /> },

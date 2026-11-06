@@ -76,7 +76,7 @@ function parseARDate(val: any): Date | null {
 /* ─── Status pill ─── */
 function ARStatusPill({ status }: { status: string }) {
     const s = status.toLowerCase();
-    let bg = 'rgba(243, 244, 246, 1)', color = '#374151', icon = 'fa-minus';
+    let bg = 'rgba(243, 244, 246, 1)', color = '#404041', icon = 'fa-minus';
 
     if (s.includes('good standing')) { bg = 'rgba(16, 185, 129, 0.12)'; color = '#10b981'; icon = 'fa-check-circle'; }
     else if (s.includes('probation')) { bg = 'rgba(245, 158, 11, 0.12)'; color = '#f59e0b'; icon = 'fa-exclamation-triangle'; }
@@ -224,7 +224,7 @@ function ARBreakdownCard({ title, step, color, good, probation, disqualified, hi
                         <i className={`fas fa-chart-pie`} style={{ color }} />
                     </div>
                     <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1 inline-block" style={{ color: color === '#10b981' ? '#10b981' : (color === '#8b5cf6' ? '#8b5cf6' : color), backgroundColor: `${color}15` }}>{step}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full mb-1 inline-block" style={{ color: color === '#10b981' ? '#10b981' : (color === '#404041' ? '#404041' : color), backgroundColor: `${color}15` }}>{step}</div>
                         <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 leading-tight">{title}</h3>
                     </div>
                 </div>
@@ -285,7 +285,7 @@ function formatDateForDisplay(val: any): string {
 function UpcomingCard({ cohort, date, cgpaReq, type, daysAway }: {
     cohort: string; date: string; cgpaReq: string; type: 'ar1' | 'ar2'; daysAway: number;
 }) {
-    const color = type === 'ar1' ? '#6366f1' : '#8b5cf6';
+    const color = type === 'ar1' ? '#E50913' : '#404041';
     const urgency = daysAway <= 30 ? '#ef4444' : daysAway <= 90 ? '#f59e0b' : '#22c55e';
 
     return (
@@ -742,9 +742,9 @@ export default function AcademicPerformancePage() {
                         {/* KPI Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             <KpiCard icon="fa-users" label="Total Learners" value={analytics.totalAllStatuses}
-                                sublabel="Total Learners" color="#6b7280" gradFrom="#9ca3af" gradTo="#6b7280" />
+                                sublabel="Total Learners" color="#7A7C7F" gradFrom="#A7A9AC" gradTo="#7A7C7F" />
                             <KpiCard icon="fa-user-check" label="Active Learners" value={analytics.total}
-                                sublabel="Active" color="#2563eb" gradFrom="#60a5fa" gradTo="#2563eb" />
+                                sublabel="Active" color="#E50913" gradFrom="#EC4F59" gradTo="#BF2026" />
                             <KpiCard icon="fa-medal" label="Final Good Standing" value={analytics.finalGood}
                                 sublabel="End of Course 7" color="#10b981" gradFrom="#34d399" gradTo="#10b981" />
                             <KpiCard icon="fa-times-circle" label="Final Disqualified" value={analytics.finalDisqActive}
@@ -920,7 +920,7 @@ export default function AcademicPerformancePage() {
                                 <div className="acad-section-card">
                                     <div className="acad-section-header" style={{ display: 'flex', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                            <div className="acad-section-icon" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                                            <div className="acad-section-icon" style={{ background: 'linear-gradient(135deg, #E50913, #BF2026)' }}>
                                                 <i className="fas fa-calendar-check" />
                                             </div>
                                             <div>
@@ -933,7 +933,7 @@ export default function AcademicPerformancePage() {
                                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Date Range:</label>
                                             {arDatesLoading ? (
-                                                <span style={{ fontSize: 13, color: '#9ca3af' }}>Loading...</span>
+                                                <span style={{ fontSize: 13, color: '#A7A9AC' }}>Loading...</span>
                                             ) : (
                                                 <select
                                                     className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm rounded-lg px-2 py-1 outline-none text-gray-700 dark:text-gray-200 shadow-sm"
@@ -981,7 +981,7 @@ export default function AcademicPerformancePage() {
                                     {cohortSummaries.length > 0 && (
                                         <>
                                             <div style={{ margin: '20px 0 10px', paddingTop: 16, borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <i className="fas fa-table" style={{ color: '#6366f1', fontSize: 14 }} />
+                                                <i className="fas fa-table" style={{ color: '#E50913', fontSize: 14 }} />
                                                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>Cohort AR Status Summary</span>
                                             </div>
                                             <div className="acad-table-wrap">
@@ -1005,7 +1005,7 @@ export default function AcademicPerformancePage() {
                                                     <tbody>
                                                         {cohortSummaries.map(cs => (
                                                             <tr key={cs.cohortNum} className="acad-table-row">
-                                                                <td><span className="acad-cohort-badge" style={{ backgroundColor: '#f1f5f9', color: '#475569', borderRadius: '4px', fontSize: '10px' }}>{cs.cohortNum}</span></td>
+                                                                <td><span className="acad-cohort-badge" style={{ backgroundColor: '#EFEFF0', color: '#58595B', borderRadius: '4px', fontSize: '10px' }}>{cs.cohortNum}</span></td>
                                                                 <td style={{ textAlign: 'center', fontWeight: 700 }}>{cs.total}</td>
                                                                 <td style={{ textAlign: 'center' }}><span style={{ color: '#10b981', fontWeight: 800 }}>{cs.active}</span></td>
                                                                 <td style={{ textAlign: 'center' }}>
@@ -1033,7 +1033,7 @@ export default function AcademicPerformancePage() {
                                                                 </td>
                                                                 <td style={{ textAlign: 'center' }}><span style={{ color: '#10b981', fontWeight: 800 }}>{cs.ar2Good}</span></td>
                                                                 <td style={{ textAlign: 'center' }}><span style={{ color: '#f59e0b', fontWeight: 800 }}>{cs.ar2Prob}</span></td>
-                                                                <td style={{ textAlign: 'center' }}><span style={{ color: '#6366f1', fontWeight: 800 }}>{cs.finalGood}</span></td>
+                                                                <td style={{ textAlign: 'center' }}><span style={{ color: '#E50913', fontWeight: 800 }}>{cs.finalGood}</span></td>
                                                                 <td style={{ textAlign: 'center' }}><span style={{ color: '#ef4444', fontWeight: 800 }}>{cs.finalDisq}</span></td>
                                                             </tr>
                                                         ))}
@@ -1059,7 +1059,7 @@ export default function AcademicPerformancePage() {
                                         <ARBreakdownCard
                                             title="Academic Review 1"
                                             step="AR 1"
-                                            color="#6366f1"
+                                            color="#E50913"
                                             good={analytics.ar1Good}
                                             probation={analytics.ar1Prob}
                                             disqualified={analytics.ar1Disq}
@@ -1077,7 +1077,7 @@ export default function AcademicPerformancePage() {
                                         <ARBreakdownCard
                                             title="Academic Review 2"
                                             step="AR 2"
-                                            color="#8b5cf6"
+                                            color="#404041"
                                             good={analytics.ar2Good}
                                             probation={analytics.ar2Prob}
                                             disqualified={analytics.ar2Disq}
@@ -1097,7 +1097,7 @@ export default function AcademicPerformancePage() {
                                 {/* Summary bar */}
                                 <div className="acad-summary-bar">
                                     <div className="acad-summary-left">
-                                        <i className="fas fa-info-circle" style={{ color: '#6366f1', marginRight: 8 }} />
+                                        <i className="fas fa-info-circle" style={{ color: '#E50913', marginRight: 8 }} />
                                         <span>Academic Standing Summary — </span>
                                         <strong style={{ marginLeft: 4 }}>{analytics.total} learners tracked across all reviews</strong>
                                     </div>
@@ -1125,7 +1125,7 @@ export default function AcademicPerformancePage() {
                                         <i className="fas fa-clipboard-list" />
                                         <h3>No Academic Review Data</h3>
                                         <p>The "Academic Review" sheet tab has no data or could not be loaded.</p>
-                                        <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>
+                                        <p style={{ fontSize: 12, color: '#A7A9AC', marginTop: 6 }}>
                                             Make sure the sheet tab is named exactly: <strong>"Academic Review"</strong>
                                         </p>
                                     </div>
@@ -1181,7 +1181,7 @@ export default function AcademicPerformancePage() {
                                                                 <div className="acad-td-name">{r.fullName || '—'}</div>
                                                                 <div className="acad-td-email">{r.email || '—'}</div>
                                                             </td>
-                                                            <td style={{ textAlign: 'center' }}><span className="acad-cohort-badge" style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '10px' }}>{r.cohortNum || '—'}</span></td>
+                                                            <td style={{ textAlign: 'center' }}><span className="acad-cohort-badge" style={{ backgroundColor: '#EFEFF0', color: '#58595B', fontSize: '10px' }}>{r.cohortNum || '—'}</span></td>
                                                             <td style={{ textAlign: 'center' }}>
                                                                 {r.secondaryStatus ? (
                                                                     <span style={{
@@ -1194,23 +1194,23 @@ export default function AcademicPerformancePage() {
                                                                         backgroundColor:
                                                                             r.secondaryStatus.toLowerCase().includes('active') ? 'rgba(16,185,129,0.1)' :
                                                                                 r.secondaryStatus.toLowerCase().includes('disqualif') ? 'rgba(239,68,68,0.1)' :
-                                                                                    r.secondaryStatus.toLowerCase().includes('graduated') ? 'rgba(99,102,241,0.1)' :
+                                                                                    r.secondaryStatus.toLowerCase().includes('graduated') ? 'rgba(229, 9, 19,0.1)' :
                                                                                         'rgba(156,163,175,0.15)',
                                                                         color:
                                                                             r.secondaryStatus.toLowerCase().includes('active') ? '#10b981' :
                                                                                 r.secondaryStatus.toLowerCase().includes('disqualif') ? '#ef4444' :
-                                                                                    r.secondaryStatus.toLowerCase().includes('graduated') ? '#6366f1' :
-                                                                                        '#6b7280',
+                                                                                    r.secondaryStatus.toLowerCase().includes('graduated') ? '#E50913' :
+                                                                                        '#7A7C7F',
                                                                         border: `1px solid ${r.secondaryStatus.toLowerCase().includes('active') ? '#10b98130' :
                                                                             r.secondaryStatus.toLowerCase().includes('disqualif') ? '#ef444430' :
-                                                                                r.secondaryStatus.toLowerCase().includes('graduated') ? '#6366f130' :
-                                                                                    '#9ca3af30'
+                                                                                r.secondaryStatus.toLowerCase().includes('graduated') ? '#E5091330' :
+                                                                                    '#A7A9AC30'
                                                                             }`,
                                                                     }}>{r.secondaryStatus}</span>
                                                                 ) : '—'}
                                                             </td>
                                                             <td style={{ textAlign: 'center' }}><GPABadge gpa={r.overallCgpa} /></td>
-                                                            <td style={{ textAlign: 'center', fontWeight: 700, color: '#6366f1' }}>{r.coursesCompleted || '—'}</td>
+                                                            <td style={{ textAlign: 'center', fontWeight: 700, color: '#E50913' }}>{r.coursesCompleted || '—'}</td>
                                                             <td style={{ textAlign: 'center' }}><GPABadge gpa={r.ar1Cgpa} /></td>
                                                             <td style={{ textAlign: 'center' }}>
                                                                 {r.ar1Status ? <ARStatusPill status={r.ar1Status} /> : '—'}

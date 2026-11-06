@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SidebarBrand } from './UpGradLogo';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useProgramConfig } from '../hooks/useProgramConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -62,15 +63,15 @@ export default function Layout() {
           border-radius: 12px !important;
           font-size: 13px !important;
           font-weight: 700 !important;
-          color: #ED2B3B !important;
-          background: rgba(237, 43, 59, 0.08) !important;
-          border: 1px solid rgba(237, 43, 59, 0.2) !important;
+          color: #E50913 !important;
+          background: rgba(229, 9, 19, 0.08) !important;
+          border: 1px solid rgba(229, 9, 19, 0.2) !important;
           transition: all 0.2s ease-in-out !important;
         }
         .topbar-back-btn:hover {
-          background: rgba(237, 43, 59, 0.15) !important;
-          color: #D91E2F !important;
-          border-color: rgba(237, 43, 59, 0.3) !important;
+          background: rgba(229, 9, 19, 0.15) !important;
+          color: #BF2026 !important;
+          border-color: rgba(229, 9, 19, 0.3) !important;
           transform: translateX(-2px);
         }
       `}</style>
@@ -82,7 +83,7 @@ export default function Layout() {
       <aside
         className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''} ${mobileOpen ? 'sidebar-mobile-open' : ''}`}
         style={{
-          background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
+          background: 'linear-gradient(160deg, #0D0D0D 0%, #1A0204 100%)',
           borderRight: '1px solid rgba(255,255,255,0.07)',
           boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
         }}
@@ -107,26 +108,7 @@ export default function Layout() {
               gap: collapsed ? 0 : 12,
             }}
           >
-            <div 
-              className="sidebar-logo-icon" 
-              style={{ 
-                background: 'linear-gradient(135deg, #ED2B3B, #B71826)', 
-                boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
-                width: collapsed ? 36 : 40,
-                height: collapsed ? 36 : 40,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <i className="fas fa-graduation-cap" style={{ fontSize: collapsed ? 16 : 18 }} />
-            </div>
-            {!collapsed && (
-              <div className="sidebar-logo-text">
-                <span className="sidebar-logo-title" style={{ color: 'white', fontWeight: 900 }}>EduOps360</span>
-                <span className="sidebar-logo-sub" style={{ color: 'rgba(148,163,184,0.6)', fontWeight: 600 }}>GGU · {config.name}</span>
-              </div>
-            )}
+            <SidebarBrand collapsed={collapsed} subtitle={<>GGU · {config.name}</>} />
           </button>
         </div>
 
@@ -140,7 +122,7 @@ export default function Layout() {
               return (
                 <>
                   {!collapsed && (
-                    <div className="sidebar-section-label" style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>
+                    <div className="sidebar-section-label" style={{ color: 'rgba(167, 169, 172,0.5)', fontWeight: 600 }}>
                       Dissertation Phase
                     </div>
                   )}
@@ -156,7 +138,7 @@ export default function Layout() {
                       isActiveCustom={location.pathname.includes('/dissertation') && currentProgParam === 'overall'}
                     />
                     {!collapsed && (
-                      <div style={{ padding: '10px 12px 2px 12px', fontSize: 10, fontWeight: 800, color: 'rgba(148,163,184,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <div style={{ padding: '10px 12px 2px 12px', fontSize: 10, fontWeight: 800, color: 'rgba(167, 169, 172,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Doctoral Programs
                       </div>
                     )}
@@ -196,7 +178,7 @@ export default function Layout() {
                 {/* Coursework Phase - Only for Taught Phase or general programs */}
                 {programId !== 'mba' && programId !== 'm-psych' && (
                   <>
-                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Coursework Phase</div>}
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(167, 169, 172,0.5)', fontWeight: 600 }}>Coursework Phase</div>}
                     {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
                     <nav className="sidebar-nav">
                       {programId !== 'mba' && programId !== 'dba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
@@ -210,7 +192,7 @@ export default function Layout() {
                 {/* Dissertation Phase - Only for general DBA programs if any */}
                 {!isTaughtPhase && programId !== 'mba' && programId !== 'm-psych' && (
                   <>
-                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Dissertation Phase</div>}
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(167, 169, 172,0.5)', fontWeight: 600 }}>Dissertation Phase</div>}
                     {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
                     <nav className="sidebar-nav">
                       <SidebarLink to={`/${programId}/dissertation`} label="Dissertation Summary" iconClass="fas fa-scroll" collapsed={collapsed} />
@@ -221,7 +203,7 @@ export default function Layout() {
                 {/* Immersion - Only for non-dissertation / non-dba programs */}
                 {programId !== 'dba' && programId !== 'dba-taught' && programId !== 'mba' && programId !== 'dba-dl' && programId !== 'm-psych' && (
                   <>
-                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(148,163,184,0.5)', fontWeight: 600 }}>Immersion</div>}
+                    {!collapsed && <div className="sidebar-section-label" style={{ marginTop: 18, color: 'rgba(167, 169, 172,0.5)', fontWeight: 600 }}>Immersion</div>}
                     {collapsed && <div className="sidebar-divider-collapsed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', margin: '12px 0' }} />}
                     <nav className="sidebar-nav">
                       <SidebarLink to={`/${programId}/immersion`} label="Immersion" iconClass="fas fa-globe-americas" collapsed={collapsed} />
@@ -259,7 +241,7 @@ export default function Layout() {
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
                   </div>
-                  <div style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <div style={{ color: 'rgba(167, 169, 172,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     {profile?.role || 'User'}
                   </div>
                 </div>
@@ -332,7 +314,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     padding: '10px 12px',
     borderRadius: 10,
-    color: 'rgba(148,163,184,0.7)',
+    color: 'rgba(167, 169, 172,0.7)',
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
@@ -351,8 +333,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'white',
     fontSize: 13,
     fontWeight: 700,
-    background: 'rgba(237, 43, 59,0.2)',
-    border: '1px solid rgba(237, 43, 59,0.25)',
+    background: 'rgba(229, 9, 19,0.2)',
+    border: '1px solid rgba(229, 9, 19,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',
@@ -369,7 +351,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
+    background: 'transparent',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

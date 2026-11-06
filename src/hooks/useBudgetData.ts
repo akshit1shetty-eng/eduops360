@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { PROGRAMS, SHEET_TABS } from '../lib/config';
 import { fetchSheetTab } from '../lib/sheets';
 import { UNIVERSITIES } from '../lib/universities';
+import { chartColor } from '../lib/brand';
 
 export interface BudgetRow {
   _programId: string;
@@ -458,14 +459,10 @@ export function useProgramBudgetData(programId: string, fyStartYear?: number) {
       detailsConsumption: Object.entries(programDynamicTotals)
         .filter(([_, value]) => value > 0)
         .map(([name, value], index) => {
-          const colors = [
-            '#ec4899', '#8b5cf6', '#eab308', '#06b6d4', '#f97316', '#14b8a6',
-            '#ef4444', '#3b82f6', '#84cc16', '#a855f7', '#f43f5e', '#0ea5e9'
-          ];
           return {
             name,
             value,
-            color: colors[index % colors.length]
+            color: chartColor(index)
           };
         })
         .sort((a, b) => b.value - a.value)
@@ -812,14 +809,10 @@ export function useCohortBudgetData(programId: string, cohortId: string, fyStart
       detailsConsumption: Object.entries(dynamicTotals)
         .filter(([_, value]) => value > 0)
         .map(([name, value], index) => {
-          const colors = [
-            '#ec4899', '#8b5cf6', '#eab308', '#06b6d4', '#f97316', '#14b8a6',
-            '#ef4444', '#3b82f6', '#84cc16', '#a855f7', '#f43f5e', '#0ea5e9'
-          ];
           return {
             name,
             value,
-            color: colors[index % colors.length]
+            color: chartColor(index)
           };
         })
         .sort((a, b) => b.value - a.value)

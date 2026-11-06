@@ -116,11 +116,8 @@ async function initDb() {
     ['super admin', 'Super Administrator with full access to all panels and dashboards', superAdminPerms],
     ['admin', 'Administrator with full access except Admin Panel and user editing', adminPerms],
     ['ggu viewer', 'Golden Gate University Viewer (Restricted to GGU details only)', ['page_home', 'page_learners', 'uni_ggu']],
-    ['psb viewer', 'Paris School of Business Viewer (Restricted to PSB details only)', ['page_home', 'page_learners', 'uni_psb']],
-    ['edgewood viewer', 'Edgewood University Viewer (Restricted to Edgewood details only)', ['page_home', 'page_learners', 'uni_edgewood']],
-    ['esgci viewer', 'ESGCI Viewer (Restricted to ESGCI details only)', ['page_home', 'page_learners', 'uni_esgci']],
     // Default role for bulk uploads and users whose custom role was deleted
-    ['user', 'Standard user with Home and Learners access across all universities', ['page_home', 'page_learners', 'uni_all']],
+    ['user', 'Standard user with Home and Learners access to Golden Gate University', ['page_home', 'page_learners', 'uni_all']],
   ];
 
   // Seed users are only inserted if missing, so edits made in the Admin Panel are preserved
@@ -129,9 +126,6 @@ async function initDb() {
     ['admin-shetty-id', 'akshit1.shetty@upgrad.com', 'super admin', 'Akshit Shetty'],
     ['user-standard-id', 'standard.user@upgrad.com', 'user', 'Standard User'],
     ['user-ggu-id', 'ggu.user@upgrad.com', 'ggu viewer', 'GGU Manager'],
-    ['user-psb-id', 'psb.user@upgrad.com', 'psb viewer', 'PSB Manager'],
-    ['user-edgewood-id', 'edgewood.user@upgrad.com', 'edgewood viewer', 'Edgewood Manager'],
-    ['user-esgci-id', 'esgci.user@upgrad.com', 'esgci viewer', 'ESGCI Manager'],
   ];
 
   // Demo accounts are only seeded into an empty database, so users deleted in the Admin Panel stay deleted.

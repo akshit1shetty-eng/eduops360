@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SidebarBrand } from '../components/UpGradLogo';
 import { useNavigate, useParams, NavLink } from 'react-router-dom';
 import { PROGRAMS } from '../lib/config';
 import { useProgramStats } from '../hooks/useProgramStats';
@@ -28,42 +29,6 @@ const UNI_META: Record<string, {
       { label: 'Location', value: 'San Francisco, CA' },
     ],
     gradient: 'bg-gradient-to-r from-[#0C2340] via-slate-900 to-[#081A30]',
-  },
-  psb: {
-    code: 'PSB',
-    icon: 'fas fa-graduation-cap',
-    tagline: 'European Excellence in Management Education',
-    about:
-      `Paris School of Business is a leading French grande école consistently ranked among Europe's top business schools. PSB combines a strong international perspective with rigorous academic excellence, preparing future global leaders through innovative programs in management, technology, and entrepreneurship.`,
-    facts: [
-      { label: 'Founded', value: '1974' },
-      { label: 'Location', value: 'Paris, France' },
-    ],
-    gradient: 'bg-gradient-to-r from-amber-900 via-slate-900 to-orange-950',
-  },
-  esgci: {
-    code: 'ESG',
-    icon: 'fas fa-globe-europe',
-    tagline: 'International Commerce & Global Leadership',
-    about:
-      `ESGCI (Ecole Superieure de Gestion et de Commerce International) is a prestigious Paris-based business school specialising in international commerce and management, equipping students with the strategic mindset to lead in a globalised economy.`,
-    facts: [
-      { label: 'Founded', value: '1937' },
-      { label: 'Location', value: 'Paris, France' },
-    ],
-    gradient: 'bg-gradient-to-r from-teal-900 via-slate-900 to-emerald-950',
-  },
-  edgewood: {
-    code: 'EDGE',
-    icon: 'fas fa-book-reader',
-    tagline: 'Values-Driven Education for Modern Leaders',
-    about:
-      `Edgewood University in Madison, Wisconsin offers a mission-centred approach to higher education, blending strong liberal arts foundations with professional programs in education, business, and health sciences. Edgewood fosters servant leadership, ethical responsibility, and a commitment to learning as a lifelong endeavour.`,
-    facts: [
-      { label: 'Founded', value: '1927' },
-      { label: 'Location', value: 'Madison, Wisconsin' },
-    ],
-    gradient: 'bg-gradient-to-r from-rose-900 via-slate-900 to-red-950',
   },
 };
 
@@ -246,8 +211,8 @@ export default function UniversityProgramsPage() {
         <div className="text-center">
           <i className="fas fa-exclamation-triangle text-4xl text-slate-300 mb-4" />
           <p className="text-slate-500 font-bold">University not found.</p>
-          <button onClick={() => navigate('/programs')} className="mt-4 text-brand-600 font-black text-sm hover:underline">
-            ← Back to Universities
+          <button onClick={() => navigate('/lex/home')} className="mt-4 text-brand-600 font-black text-sm hover:underline">
+            ← Back to Home
           </button>
         </div>
       </div>
@@ -269,15 +234,7 @@ export default function UniversityProgramsPage() {
       <aside style={{ ...styles.sidebar, width: collapsed ? 56 : 240, transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)' }}>
         <div style={{ ...styles.sidebarLogo, padding: collapsed ? '24px 8px' : '24px 20px', justifyContent: collapsed ? 'center' : 'flex-start' }}>
           <div onClick={() => navigate('/lex/home')} style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 12, cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', width: '100%' }}>
-            <div style={{ ...styles.sidebarLogoIcon, width: collapsed ? 36 : 40, height: collapsed ? 36 : 40 }}>
-              <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: collapsed ? 18 : 22 }} />
-            </div>
-            {!collapsed && (
-              <div>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 16 }}>EduOps360</div>
-                <div style={{ color: 'rgba(148,163,184,0.6)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{uni.name}</div>
-              </div>
-            )}
+            <SidebarBrand collapsed={collapsed} subtitle={uni.name} />
           </div>
         </div>
         <nav style={{ ...styles.sidebarNav, padding: collapsed ? '16px 8px' : '16px 12px' }}>
@@ -289,11 +246,11 @@ export default function UniversityProgramsPage() {
               {!collapsed && <span>{item.name}</span>}
             </NavLink>
           ))}
-          <NavLink to="/programs" className="sidebar-nav-item"
+          <NavLink to="/programs/ggu" end className="sidebar-nav-item"
             style={({ isActive }) => ({ ...(isActive ? styles.navItemActive : styles.navItem), padding: collapsed ? '10px 0' : '10px 12px', justifyContent: collapsed ? 'center' : 'flex-start' })}
-            title={collapsed ? 'Universities' : undefined}>
-            <i className="fas fa-university" style={{ fontSize: 14 }} />
-            {!collapsed && <span>Universities</span>}
+            title={collapsed ? 'Programs' : undefined}>
+            <i className="fas fa-graduation-cap" style={{ fontSize: 14 }} />
+            {!collapsed && <span>Programs</span>}
           </NavLink>
           {permissions?.includes('page_admin') && (
             <NavLink to="/admin" className="sidebar-nav-item"
@@ -320,7 +277,7 @@ export default function UniversityProgramsPage() {
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
                   </div>
-                  <div style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{profile?.role || 'User'}</div>
+                  <div style={{ color: 'rgba(167, 169, 172,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{profile?.role || 'User'}</div>
                 </div>
               </div>
               <button onClick={handleLogout} style={styles.signOutBtn} className="sidebar-signout-btn sidebar-nav-item" title="Log Out"><i className="fas fa-sign-out-alt" /></button>
@@ -344,7 +301,7 @@ export default function UniversityProgramsPage() {
         <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 flex items-center justify-between px-8">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/programs')}
+              onClick={() => navigate('/lex/home')}
               className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
             >
               <i className="fas fa-chevron-left text-xs" />
@@ -607,14 +564,14 @@ export default function UniversityProgramsPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
+  sidebar: { position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 50, width: 240, background: 'linear-gradient(160deg, #0D0D0D 0%, #1A0204 100%)', display: 'flex', flexDirection: 'column', padding: 0, flexShrink: 0, boxShadow: '4px 0 24px rgba(0,0,0,0.15)' },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: 12, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' },
-  sidebarLogoIcon: { width: 40, height: 40, background: 'linear-gradient(135deg, #ED2B3B, #B71826)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)', flexShrink: 0 },
+  sidebarLogoIcon: { width: 40, height: 40, background: 'transparent', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'none', flexShrink: 0 },
   sidebarNav: { flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 4 },
-  navItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'rgba(148,163,184,0.7)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', width: '100%', transition: 'all 0.2s' },
-  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(237, 43, 59,0.2)', border: '1px solid rgba(237, 43, 59,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
+  navItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'rgba(167, 169, 172,0.7)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', width: '100%', transition: 'all 0.2s' },
+  navItemActive: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, background: 'rgba(229, 9, 19,0.2)', border: '1px solid rgba(229, 9, 19,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)', textAlign: 'left', width: '100%', cursor: 'pointer' },
   sidebarFooter: { padding: '16px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10 },
   sidebarUserInfo: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 },
-  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #ED2B3B, #0C2340)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
+  sidebarAvatar: { width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, #E50913, #9B000C)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 900, fontSize: 14, flexShrink: 0 },
   signOutBtn: { width: 32, height: 32, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: 'rgba(252,165,165,0.8)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', fontSize: 13 },
 };

@@ -17,6 +17,10 @@ export interface University {
   programs: Program[];
 }
 
+/**
+ * EduOps360 is dedicated to Golden Gate University (GGU). Other partner universities
+ * (PSB, ESGCI, Edgewood) were removed; add an entry here to bring one back.
+ */
 export const UNIVERSITIES: University[] = [
   {
     id: 'ggu',
@@ -62,90 +66,16 @@ export const UNIVERSITIES: University[] = [
         available: true,
       },
     ]
-  },
-  {
-    id: 'psb',
-    name: 'Paris School of Business',
-    fullName: 'Paris School of Business',
-    location: 'Paris, France',
-    accentColor: '#f59e0b',
-    programs: [
-      {
-        id: 'psb-mba',
-        name: 'Master of Business Administration',
-        fullName: 'Master of Business Administration',
-        description: 'Advanced global management insights from a European perspective.',
-        icon: 'fas fa-graduation-cap',
-        gradient: 'from-slate-700 to-slate-800',
-        available: false,
-      },
-      {
-        id: 'psb-mbmt',
-        name: 'Master of Business Management & Technology',
-        fullName: 'Master of Business Management & Technology',
-        description: 'Bridging technical expertise with strategic business leadership.',
-        icon: 'fas fa-network-wired',
-        gradient: 'from-slate-700 to-slate-800',
-        available: false,
-      },
-    ]
-  },
-  {
-    id: 'esgci',
-    name: 'ESGCI',
-    fullName: 'École Supérieure de Gestion et de Commerce International',
-    location: 'Paris, France',
-    accentColor: '#10b981',
-    programs: [
-      {
-        id: 'esgci-dba',
-        name: 'Doctor of Business Administration',
-        fullName: 'Doctor of Business Administration',
-        description: 'Doctoral excellence in international commerce and management.',
-        icon: 'fas fa-award',
-        gradient: 'from-slate-700 to-slate-800',
-        available: false,
-      },
-    ]
-  },
-  {
-    id: 'edgewood',
-    name: 'Edgewood University',
-    fullName: 'Edgewood University',
-    location: 'Madison, Wisconsin, USA',
-    accentColor: '#ef4444',
-    programs: [
-      {
-        id: 'edgewood-dba',
-        name: 'Doctor of Business Administration',
-        fullName: 'Doctor of Business Administration',
-        description: 'Focused on organizational leadership and professional advancement.',
-        icon: 'fas fa-chart-line',
-        gradient: 'from-slate-700 to-slate-800',
-        available: false,
-      },
-      {
-        id: 'edgewood-edd',
-        name: 'Doctor of Education',
-        fullName: 'Doctor of Education',
-        description: 'Transformative leadership for educational institutions and systems.',
-        icon: 'fas fa-chalkboard-teacher',
-        gradient: 'from-slate-700 to-slate-800',
-        available: false,
-      },
-    ]
   }
 ];
 
 export function getAssignedUniversityId(role: string | undefined): string | null {
   if (!role) return null;
-  const r = role.toLowerCase();
-  if (r.includes('ggu')) return 'ggu';
-  if (r.includes('psb')) return 'psb';
-  if (r.includes('esgci')) return 'esgci';
-  if (r.includes('edgewood')) return 'edgewood';
-  return null;
+  return role.toLowerCase().includes('ggu') ? 'ggu' : null;
 }
+
+export const PRIMARY_UNIVERSITY_ID = 'ggu';
+export const PRIMARY_UNIVERSITY = UNIVERSITIES.find(u => u.id === PRIMARY_UNIVERSITY_ID)!;
 
 export function hasUniversityAccess(permissions: string[] | undefined, uniId: string): boolean {
   if (!permissions) return false;

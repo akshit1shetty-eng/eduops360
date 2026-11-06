@@ -13,7 +13,7 @@ export function getActualsCardConfig(key: string) {
     return { label: lower.includes('session') ? 'Doubt Resolution Session' : 'Doubt Resolution', color: '#06b6d4', icon: 'fa-comments' };
   }
   if (lower.includes('live') || lower.includes('session')) {
-    return { label: 'Live Session', color: '#6366f1', icon: 'fa-video' };
+    return { label: 'Live Session', color: '#E50913', icon: 'fa-video' };
   }
   if (lower.includes('assignment') || lower.includes('grading')) {
     return { label: 'Assignment Grading', color: '#10b981', icon: 'fa-tasks' };
@@ -37,7 +37,7 @@ export function getActualsCardConfig(key: string) {
     return { label: 'Thesis Supervision', color: '#eab308', icon: 'fa-book-open' };
   }
   if (lower.includes('ta ') || lower.includes(' ta') || lower === 'ta actuals') {
-    return { label: 'TA Actuals', color: '#8b5cf6', icon: 'fa-user-tie' };
+    return { label: 'TA Actuals', color: '#404041', icon: 'fa-user-tie' };
   }
   if (lower.includes('df') || lower.includes('discussion')) {
     return { label: 'DF Cost', color: '#3b82f6', icon: 'fa-graduation-cap' };
@@ -56,7 +56,7 @@ export function getActualsCardConfig(key: string) {
     .replace(/\s+/g, ' ')
     .trim();
 
-  return { label: cleanLabel || key, color: '#64748b', icon: 'fa-dollar-sign' };
+  return { label: cleanLabel || key, color: '#7A7C7F', icon: 'fa-dollar-sign' };
 }
 
 function StatSkeleton() {
@@ -1261,26 +1261,26 @@ export default function LexProgramBudgetDetail() {
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorBudgetProg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
-                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#E50913" stopOpacity={0.1} />
+                        <stop offset="95%" stopColor="#E50913" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorActualsProg" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEFF0" />
                     <XAxis
                       dataKey="month"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#7A7C7F' }}
                       dy={10}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#7A7C7F' }}
                       tickFormatter={(value) => `$${value >= 1000 ? (value / 1000) + 'K' : value}`}
                     />
                     <Tooltip
@@ -1290,7 +1290,7 @@ export default function LexProgramBudgetDetail() {
                         boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
                         padding: '12px'
                       }}
-                      labelStyle={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px', color: '#1e293b' }}
+                      labelStyle={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px', color: '#2B2B2C' }}
                       itemStyle={{ fontSize: '11px', fontWeight: 700, padding: '2px 0' }}
                       formatter={(value: any, name: any) => [formatCurrency(value || 0), name]}
                       itemSorter={(item: any) => (item.name === 'Budget' ? 0 : 1)}
@@ -1299,7 +1299,7 @@ export default function LexProgramBudgetDetail() {
                       type="monotone"
                       dataKey="budget"
                       name="Budget"
-                      stroke="#4f46e5"
+                      stroke="#E50913"
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorBudgetProg)"

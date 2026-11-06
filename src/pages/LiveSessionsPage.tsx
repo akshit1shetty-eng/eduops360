@@ -340,10 +340,10 @@ export default function LiveSessionsPage() {
   const chartColors = {
     grid: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f0f0f0',
     tooltip: {
-      content: isDark ? { backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' } : { borderRadius: 8, border: '1px solid #e5e7eb' },
-      label: isDark ? { color: '#f3f4f6' } : { fontSize: 12 }
+      content: isDark ? { backgroundColor: '#2B2B2C', border: '1px solid #404041', borderRadius: '8px' } : { borderRadius: 8, border: '1px solid #E3E4E5' },
+      label: isDark ? { color: '#EFEFF0' } : { fontSize: 12 }
     },
-    tick: isDark ? '#9ca3af' : '#111827'
+    tick: isDark ? '#A7A9AC' : '#1A1A1B'
   };
 
   // Map the raw hook rows into the local session format
@@ -905,7 +905,7 @@ export default function LiveSessionsPage() {
                 }
                 const ratingDistData = [
                   { bucket: '4.8 - 5.0', count: ratingBuckets['4.8 - 5.0'], color: '#10b981' },
-                  { bucket: '4.5 - 4.79', count: ratingBuckets['4.5 - 4.79'], color: '#6366f1' },
+                  { bucket: '4.5 - 4.79', count: ratingBuckets['4.5 - 4.79'], color: '#E50913' },
                   { bucket: '4.0 - 4.49', count: ratingBuckets['4.0 - 4.49'], color: '#f59e0b' },
                   { bucket: 'Below 4.0', count: ratingBuckets['Below 4.0'], color: '#ef4444' },
                 ].filter((d) => d.count > 0);
@@ -952,7 +952,7 @@ export default function LiveSessionsPage() {
                 const hasData = attendanceTrendData.length > 0 || professorData.length > 0 || ratingDistData.length > 0 || courseData.length > 0 || cohortSlotCourseMatrix.length > 0;
                 if (!hasData) {
                   return (
-                    <div style={{ background: '#fff', borderRadius: '1.5rem', border: '1px solid #f3f4f6', padding: '3rem', textAlign: 'center' }}>
+                    <div style={{ background: '#fff', borderRadius: '1.5rem', border: '1px solid #EFEFF0', padding: '3rem', textAlign: 'center' }}>
                       <i className="fas fa-chart-line text-4xl text-gray-300 mb-4" />
                       <p className="text-lg font-medium text-gray-500">No analytics data available</p>
                       <p className="text-sm text-gray-400">Try adjusting your filters</p>
@@ -1016,11 +1016,11 @@ export default function LiveSessionsPage() {
                               }
                               return null;
                             }} />
-                            <Bar dataKey="performanceScore" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={24}>
+                            <Bar dataKey="performanceScore" fill="#E50913" radius={[0, 4, 4, 0]} barSize={24}>
                               {professorData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.performanceScore >= 80 ? '#059669' : entry.performanceScore >= 60 ? '#6366f1' : '#a5b4fc'} />
+                                <Cell key={`cell-${index}`} fill={entry.performanceScore >= 80 ? '#059669' : entry.performanceScore >= 60 ? '#E50913' : '#F48F99'} />
                               ))}
-                              <LabelList dataKey="performanceScore" position="right" formatter={(v) => `${(v as number).toFixed(1)}`} style={{ fill: isDark ? '#818cf8' : '#4f46e5', fontSize: 11, fontWeight: 600 }} />
+                              <LabelList dataKey="performanceScore" position="right" formatter={(v) => `${(v as number).toFixed(1)}`} style={{ fill: isDark ? '#EC4F59' : '#E50913', fontSize: 11, fontWeight: 600 }} />
                             </Bar>
                           </BarChart>
                         </div>
@@ -1050,7 +1050,7 @@ export default function LiveSessionsPage() {
                             }} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {ratingDistData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                              <LabelList dataKey="count" position="top" style={{ fill: isDark ? '#cbd5e1' : '#374151', fontSize: 12, fontWeight: 600 }} />
+                              <LabelList dataKey="count" position="top" style={{ fill: isDark ? '#D0D2D3' : '#404041', fontSize: 12, fontWeight: 600 }} />
                             </Bar>
                           </BarChart>
                         </div>
@@ -1086,8 +1086,8 @@ export default function LiveSessionsPage() {
                               return null;
                             }} />
                             <Legend />
-                            <Bar yAxisId="left" dataKey="avgRating" name="Avg Rating" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={48}>
-                              <LabelList dataKey="avgRating" position="top" formatter={(v) => `${(v as number).toFixed(2)}★`} style={{ fill: isDark ? '#a78bfa' : '#7c3aed', fontSize: 10 }} />
+                            <Bar yAxisId="left" dataKey="avgRating" name="Avg Rating" fill="#404041" radius={[4, 4, 0, 0]} barSize={48}>
+                              <LabelList dataKey="avgRating" position="top" formatter={(v) => `${(v as number).toFixed(2)}★`} style={{ fill: isDark ? '#A7A9AC' : '#404041', fontSize: 10 }} />
                             </Bar>
                             <Bar yAxisId="right" dataKey="attendanceRate" name="Attendance %" fill="#10b981" radius={[4, 4, 0, 0]} barSize={48}>
                               <LabelList dataKey="attendanceRate" position="top" formatter={(v) => `${(v as number).toFixed(0)}%`} style={{ fill: isDark ? '#34d399' : '#059669', fontSize: 10 }} />

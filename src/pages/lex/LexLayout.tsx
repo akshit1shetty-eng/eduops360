@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { SidebarBrand } from '../../components/UpGradLogo';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LexFilterProvider, useLexFilter } from '../../hooks/useLexFilter';
-import { UNIVERSITIES, getAssignedUniversityId, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
+import { PRIMARY_UNIVERSITY, PRIMARY_UNIVERSITY_ID, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
 import { useAuth } from '../../hooks/useAuth';
 import TopbarGreeting from '../../components/TopbarGreeting';
 
@@ -19,23 +20,15 @@ function LexLayoutContent() {
   const { signOut, profile, permissions } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
+  // The app is GGU-only: always scope data to GGU, and only for users who can see GGU
+  const hasGguAccess = !!permissions && (
+    hasUniversityAccess(permissions, PRIMARY_UNIVERSITY_ID) ||
+    PRIMARY_UNIVERSITY.programs.some(p => hasProgramAccess(permissions, p.id, PRIMARY_UNIVERSITY_ID))
+  );
+
   useEffect(() => {
-    if (permissions) {
-      const allowedUnis = UNIVERSITIES.filter(uni => {
-        const hasUni = hasUniversityAccess(permissions, uni.id);
-        const allowedPrograms = uni.programs.filter(p => hasProgramAccess(permissions, p.id, uni.id));
-        return hasUni || allowedPrograms.length > 0;
-      });
-
-      const hasGlobal = permissions.includes('page_admin') || permissions.includes('page_home');
-
-      if (!hasGlobal || allowedUnis.length === 1) {
-        if (allowedUnis.length > 0 && selectedUniversityId !== allowedUnis[0].id) {
-          setSelectedUniversityId(allowedUnis[0].id);
-        }
-      }
-    }
-  }, [permissions, selectedUniversityId, setSelectedUniversityId]);
+    if (selectedUniversityId !== PRIMARY_UNIVERSITY_ID) setSelectedUniversityId(PRIMARY_UNIVERSITY_ID);
+  }, [selectedUniversityId, setSelectedUniversityId]);
 
   const handleLogout = async () => {
     await signOut();
@@ -45,16 +38,8 @@ function LexLayoutContent() {
   const navItems = [
     { name: 'Home', path: '/lex/home', icon: 'fas fa-home', permission: 'page_home' },
     { name: 'Learners', path: '/lex/learners', icon: 'fas fa-users', permission: 'page_learners' },
+    { name: 'Insights', path: '/lex/insights', icon: 'fas fa-chart-line', permission: 'page_home' },
   ].filter(item => permissions?.includes(item.permission));
-
-  // Helper to check if a university is available (has at least one available program)
-  const isUniAvailable = (uniId: string) => {
-    const uni = UNIVERSITIES.find(u => u.id === uniId);
-    return uni?.programs.some(p => p.available) ?? false;
-  };
-
-  const [isUniOpen, setIsUniOpen] = useState(false);
-  const selectedUni = UNIVERSITIES.find(u => u.id === selectedUniversityId);
 
   // Keyed on the path so each page replays its entrance animation
   const location = useLocation();
@@ -102,19 +87,7 @@ function LexLayoutContent() {
               width: '100%',
             }}
           >
-            <div style={{
-              ...styles.sidebarLogoIcon,
-              width: collapsed ? 36 : 40,
-              height: collapsed ? 36 : 40,
-            }}>
-              <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: collapsed ? 18 : 22 }} />
-            </div>
-            {!collapsed && (
-              <div>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 16, letterSpacing: '-0.01em' }}>EduOps360</div>
-                <div style={{ color: 'rgba(148,163,184,0.6)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall Dashboard</div>
-              </div>
-            )}
+            <SidebarBrand collapsed={collapsed} subtitle="Golden Gate University" />
           </div>
         </div>
 
@@ -138,19 +111,6 @@ function LexLayoutContent() {
               {!collapsed && <span>{item.name}</span>}
             </NavLink>
           ))}
-          <NavLink
-            to="/programs"
-            className="sidebar-nav-item"
-            style={({ isActive }) => ({
-              ...(isActive ? styles.navItemActive : styles.navItem),
-              padding: collapsed ? '10px 0' : '10px 12px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-            })}
-            title={collapsed ? "Universities" : undefined}
-          >
-            <i className="fas fa-university" style={{ fontSize: 14 }} />
-            {!collapsed && <span>Universities</span>}
-          </NavLink>
           {permissions?.includes('page_admin') && (
             <NavLink
               to="/admin"
@@ -196,7 +156,7 @@ function LexLayoutContent() {
                   <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
                   </div>
-                  <div style={{ color: 'rgba(148,163,184,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <div style={{ color: 'rgba(167, 169, 172,0.5)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     {profile?.role || 'User'}
                   </div>
                 </div>
@@ -245,100 +205,30 @@ function LexLayoutContent() {
           <TopbarGreeting />
 
           <div className="flex items-center space-x-4">
-            {/* Global University Filter - Modern Custom Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsUniOpen(!isUniOpen)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-300 ${isUniOpen ? 'bg-white border-brand-200 shadow-lg ring-4 ring-brand-500/5' : 'bg-slate-50 border-slate-200 hover:border-brand-200 hover:bg-white'}`}
-              >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${selectedUni ? 'bg-brand-700 text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
-                  <i className={`fas ${selectedUni ? 'fa-university' : 'fa-globe-americas'} text-[10px]`} />
-                </div>
-                <div className="flex flex-col items-start min-w-[120px]">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">University</span>
-                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-wider truncate max-w-[140px]">
-                    {selectedUni ? selectedUni.name : 'All Universities'}
-                  </span>
-                </div>
-                <i className={`fas fa-chevron-down text-[9px] text-slate-300 transition-transform duration-300 ${isUniOpen ? 'rotate-180 text-brand-500' : ''}`} />
-              </button>
-
-              {isUniOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsUniOpen(false)} />
-                  <div className="absolute right-0 mt-3 w-72 bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-200/50 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="p-3 border-b border-slate-50 bg-slate-50/30">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] px-3">Select Context</span>
-                    </div>
-                    <div className="p-2 max-h-[320px] overflow-y-auto custom-scrollbar">
-                      {(() => {
-                        const allowedUnis = UNIVERSITIES.filter(uni => {
-                          const hasUni = hasUniversityAccess(permissions, uni.id);
-                          const allowedPrograms = uni.programs.filter(p => hasProgramAccess(permissions, p.id, uni.id));
-                          return hasUni || allowedPrograms.length > 0;
-                        });
-                        const hasGlobal = permissions?.includes('page_admin') || permissions?.includes('page_home');
-                        
-                        return (
-                          <>
-                            {hasGlobal && allowedUnis.length > 1 && (
-                              <>
-                                <button
-                                  onClick={() => { setSelectedUniversityId(null); setIsUniOpen(false); }}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${!selectedUniversityId ? 'bg-brand-50' : 'hover:bg-slate-50'}`}
-                                >
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${!selectedUniversityId ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                    <i className="fas fa-globe-americas text-[10px]" />
-                                  </div>
-                                  <div className="flex flex-col items-start">
-                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">All Universities</span>
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Enterprise View</span>
-                                  </div>
-                                  {!selectedUniversityId && <i className="fas fa-check-circle text-brand-600 ml-auto text-xs" />}
-                                </button>
-
-                                <div className="my-2 border-t border-slate-50 mx-3" />
-                              </>
-                            )}
-
-                            {allowedUnis.map(uni => {
-                              const available = isUniAvailable(uni.id);
-                              const isSelected = selectedUniversityId === uni.id;
-                              return (
-                                <button
-                                  key={uni.id}
-                                  disabled={!available}
-                                  onClick={() => { setSelectedUniversityId(uni.id); setIsUniOpen(false); }}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left mb-1 ${isSelected ? 'bg-brand-50' : available ? 'hover:bg-slate-50' : 'opacity-40 cursor-not-allowed'}`}
-                                >
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                    <i className="fas fa-university text-[10px]" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate">{uni.name}</span>
-                                      {!available && <span className="text-[7px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Under Const.</span>}
-                                    </div>
-                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{uni.programs.length} Programs Registered</span>
-                                  </div>
-                                  {isSelected && <i className="fas fa-check-circle text-brand-600 ml-auto text-xs" />}
-                                </button>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </>
-              )}
+            {/* Partner context: the whole app is scoped to Golden Gate University */}
+            <div className="flex items-center gap-3 px-4 py-2 rounded-2xl border border-slate-200 bg-white">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white" style={{ background: '#0C2340' }}>
+                <i className="fas fa-university text-[11px]" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none mb-1">University partner</span>
+                <span className="text-[13px] font-bold text-slate-900 leading-none">{PRIMARY_UNIVERSITY.name}</span>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
         <div key={location.pathname} className="flex-1 p-8 page-enter">
-          <Outlet />
+          {hasGguAccess ? <Outlet /> : (
+            <div className="max-w-lg mx-auto mt-16 text-center bg-white rounded-3xl border border-slate-200 p-10">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                <i className="fas fa-user-lock text-xl" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">No access to Golden Gate University</h2>
+              <p className="mt-2 text-sm text-slate-500">Your role doesn't include Golden Gate University data. Ask an administrator to update your access.</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -353,7 +243,7 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     zIndex: 50,
     width: 240,
-    background: 'linear-gradient(160deg, #0f172a 0%, #2B0F13 100%)',
+    background: 'linear-gradient(160deg, #0D0D0D 0%, #1A0204 100%)',
     display: 'flex',
     flexDirection: 'column',
     padding: '0',
@@ -370,12 +260,12 @@ const styles: Record<string, React.CSSProperties> = {
   sidebarLogoIcon: {
     width: 40,
     height: 40,
-    background: 'linear-gradient(135deg, #ED2B3B, #B71826)',
+    background: 'transparent',
     borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 16px rgba(237, 43, 59,0.4)',
+    boxShadow: 'none',
     flexShrink: 0,
   },
   sidebarNav: {
@@ -391,7 +281,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     padding: '10px 12px',
     borderRadius: 10,
-    color: 'rgba(148,163,184,0.7)',
+    color: 'rgba(167, 169, 172,0.7)',
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
@@ -410,8 +300,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'white',
     fontSize: 13,
     fontWeight: 700,
-    background: 'rgba(237, 43, 59,0.2)',
-    border: '1px solid rgba(237, 43, 59,0.25)',
+    background: 'rgba(229, 9, 19,0.2)',
+    border: '1px solid rgba(229, 9, 19,0.25)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
     textAlign: 'left',
     width: '100%',
@@ -435,8 +325,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 34,
     height: 34,
     borderRadius: 10,
-    background: 'linear-gradient(135deg, #ED2B3B, #0C2340)',
-    boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 4px 12px rgba(237,43,59,0.3)',
+    background: 'linear-gradient(135deg, #E50913, #9B000C)',
+    boxShadow: '0 0 0 2px rgba(255,255,255,0.08), 0 4px 12px rgba(229, 9, 19,0.3)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

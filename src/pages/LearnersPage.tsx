@@ -1038,7 +1038,7 @@ export default function LearnersPage() {
 
                     const archetypeItems = [
                       { label: 'International', val: lt.intl, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', icon: 'fa-globe-asia' },
-                      { label: 'Domestic', val: lt.dom, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'fa-home' },
+                      { label: 'India', val: lt.dom, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'fa-home' },
                       { label: 'US Based', val: lt.us, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'fa-flag-usa' }
                     ];
 

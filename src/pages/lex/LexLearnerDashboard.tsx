@@ -223,7 +223,7 @@ export default function LexLearnerDashboard() {
 
       const learnerType = getLearnerResidency(s);
       const isInt = learnerType === 'International';
-      const isDom = learnerType === 'Domestic';
+      const isDom = learnerType === 'India';
 
       total++;
 
@@ -309,7 +309,7 @@ export default function LexLearnerDashboard() {
         countries: Array.from(countriesSet).sort(),
         programs: Array.from(programsSet).sort(),
         statuses: ['Active', 'IPD', 'Exit', 'Graduated'],
-        residencies: ['International', 'Domestic'],
+        residencies: ['India', 'International'],
         launchMonths: sortedLaunchMonths
       }
     };
@@ -431,7 +431,7 @@ export default function LexLearnerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
+                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
@@ -497,7 +497,7 @@ export default function LexLearnerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
+                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
@@ -563,7 +563,7 @@ export default function LexLearnerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
+                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
@@ -629,7 +629,7 @@ export default function LexLearnerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
+                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
@@ -695,7 +695,7 @@ export default function LexLearnerDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Domestic</div>
+                  <div className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest mb-0.5">India</div>
                   <div className="text-[13px] font-black text-emerald-600 leading-none">
                     {loading ? <SubStatSkeleton /> : (
                       <>
@@ -822,7 +822,7 @@ export default function LexLearnerDashboard() {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-white rounded-[2rem] border border-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_-16px_rgba(15,23,42,0.12)] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-[2rem] border border-slate-200/70 shadow-[0_1px_2px_rgba(26, 26, 27,0.04),0_12px_32px_-16px_rgba(26, 26, 27,0.12)] overflow-hidden flex flex-col">
         <div className="px-6 py-5 border-b border-slate-100 flex flex-wrap gap-4 justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">

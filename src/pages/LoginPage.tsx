@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../lib/authService';
 import { useAuth } from '../hooks/useAuth';
+import { UpGradWordmark } from '../components/UpGradLogo';
+import { FONT_HEADING } from '../lib/brand';
 
 type Step = 'email' | 'otp';
 
@@ -143,13 +145,12 @@ export default function LoginPage() {
       <div style={styles.card}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={styles.logoBox}>
-            <i className="fas fa-graduation-cap" style={{ color: 'white', fontSize: 28 }} />
-          </div>
+          {/* upGrad Word Mark — clear space below equals the logo height (brand rule) */}
+          <UpGradWordmark color="red" style={{ height: 30, width: 'auto', display: 'block', margin: '0 auto 30px' }} />
           <h1 style={styles.brandTitle}>
-            EduOps<span style={{ color: '#D91E2F' }}>360</span>
+            EduOps<span style={{ color: '#E50913' }}>360</span>
           </h1>
-          <p style={styles.brandSub}>Operations Intelligence Platform</p>
+          <p style={styles.brandSub}>Golden Gate University · Learner Operations</p>
         </div>
 
         {/* Step: Email */}
@@ -171,12 +172,12 @@ export default function LoginPage() {
                 autoFocus
                 style={styles.input}
                 onFocus={e => {
-                  e.currentTarget.style.borderColor = '#D91E2F';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(217, 30, 47, 0.1)';
+                  e.currentTarget.style.borderColor = '#E50913';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(229, 9, 19, 0.1)';
                   e.currentTarget.style.background = '#ffffff';
                 }}
                 onBlur={e => {
-                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.borderColor = '#D0D2D3';
                   e.currentTarget.style.boxShadow = 'none';
                   e.currentTarget.style.background = '#ffffff';
                 }}
@@ -210,7 +211,7 @@ export default function LoginPage() {
               <h2 style={styles.heading}>Check your inbox</h2>
               <p style={styles.subheading}>
                 We sent a 6-digit code to{' '}
-                <span style={{ color: '#D91E2F', fontWeight: 800 }}>{email}</span>
+                <span style={{ color: '#BF2026', fontWeight: 800 }}>{email}</span>
               </p>
             </div>
 
@@ -234,20 +235,20 @@ export default function LoginPage() {
                     textAlign: 'center',
                     fontSize: 24, fontWeight: 900,
                     background: digit ? '#FEF2F3' : '#ffffff',
-                    border: `${digit ? '2px' : '1px'} solid ${digit ? '#D91E2F' : '#cbd5e1'}`,
+                    border: `${digit ? '2px' : '1px'} solid ${digit ? '#BF2026' : '#D0D2D3'}`,
                     borderRadius: 14,
-                    color: '#0f172a',
+                    color: '#1A1A1B',
                     outline: 'none',
                     transition: 'all 0.15s',
-                    caretColor: '#D91E2F',
+                    caretColor: '#BF2026',
                     opacity: verifying ? 0.5 : 1,
                   }}
                   onFocus={e => {
-                    e.currentTarget.style.borderColor = '#D91E2F';
+                    e.currentTarget.style.borderColor = '#E50913';
                     e.currentTarget.style.background = '#FEF2F3';
                   }}
                   onBlur={e => {
-                    e.currentTarget.style.borderColor = digit ? '#D91E2F' : '#cbd5e1';
+                    e.currentTarget.style.borderColor = digit ? '#BF2026' : '#D0D2D3';
                     e.currentTarget.style.background = digit ? '#FEF2F3' : '#ffffff';
                   }}
                 />
@@ -255,8 +256,8 @@ export default function LoginPage() {
             </div>
 
             {verifying && (
-              <div style={{ textAlign: 'center', color: '#475569', fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
-                <i className="fas fa-spinner fa-spin" style={{ marginRight: 8, color: '#D91E2F' }} />Verifying…
+              <div style={{ textAlign: 'center', color: '#58595B', fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
+                <i className="fas fa-spinner fa-spin" style={{ marginRight: 8, color: '#BF2026' }} />Verifying…
               </div>
             )}
 
@@ -278,7 +279,7 @@ export default function LoginPage() {
                 className="ghost-btn"
                 style={{
                   ...styles.ghostBtn,
-                  color: cooldown > 0 ? '#94a6b8' : '#D91E2F',
+                  color: cooldown > 0 ? '#A7A9AC' : '#BF2026',
                   cursor: cooldown > 0 ? 'not-allowed' : 'pointer'
                 }}
               >
@@ -307,7 +308,7 @@ export default function LoginPage() {
 const styles: Record<string, React.CSSProperties> = {
   fullPage: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #78161F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
     display: 'flex',
@@ -316,7 +317,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1rem',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    fontFamily: "'Roboto', 'Segoe UI', sans-serif",
   },
   orbContainer: {
     position: 'absolute',
@@ -341,36 +342,36 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 430,
     position: 'relative',
     zIndex: 10,
-    boxShadow: '0 24px 70px -12px rgba(15, 23, 42, 0.25), 0 0 1px 0 rgba(217, 30, 47, 0.1)',
+    boxShadow: '0 24px 70px -12px rgba(26, 26, 27, 0.25), 0 0 1px 0 rgba(229, 9, 19, 0.1)',
   },
   logoBox: {
     width: 68, height: 68,
-    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #BF2026 0%, #E50913 100%)',
     borderRadius: 20,
     display: 'flex',
     alignItems: 'center', justifyContent: 'center',
     margin: '0 auto 16px',
-    boxShadow: '0 8px 24px rgba(217, 30, 47, 0.25)',
+    boxShadow: '0 8px 24px rgba(229, 9, 19, 0.25)',
   },
   brandTitle: {
-    color: '#0f172a', fontSize: 28, fontWeight: 900, margin: '0 0 4px',
-    letterSpacing: '-0.025em',
+    color: '#1A1A1B', fontSize: 28, fontWeight: 800, margin: '0 0 4px',
+    letterSpacing: '-0.025em', fontFamily: FONT_HEADING,
   },
   brandSub: {
-    color: '#64748b', fontSize: 11, margin: 0,
+    color: '#7A7C7F', fontSize: 11, margin: 0,
     fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   heading: {
-    color: '#0f172a', fontSize: 21, fontWeight: 800, margin: '0 0 6px',
-    letterSpacing: '-0.01em',
+    color: '#1A1A1B', fontSize: 21, fontWeight: 800, margin: '0 0 6px',
+    letterSpacing: '-0.01em', fontFamily: FONT_HEADING,
   },
   subheading: {
-    color: '#475569', fontSize: 13, margin: 0, lineHeight: 1.5,
+    color: '#58595B', fontSize: 13, margin: 0, lineHeight: 1.5,
   },
   label: {
     display: 'block',
-    color: '#475569',
+    color: '#58595B',
     fontSize: 11, fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '0.1em',
     marginBottom: 8,
@@ -378,28 +379,28 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     width: '100%', boxSizing: 'border-box',
     background: '#ffffff',
-    border: '1px solid #cbd5e1',
+    border: '1px solid #D0D2D3',
     borderRadius: 13,
     padding: '14px 16px',
-    color: '#0f172a', fontSize: 15, fontWeight: 500,
+    color: '#1A1A1B', fontSize: 15, fontWeight: 500,
     outline: 'none',
     transition: 'all 0.2s',
   },
   primaryBtn: {
     width: '100%',
-    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     border: 'none', borderRadius: 13,
     padding: '15px 24px',
     color: 'white', fontSize: 15, fontWeight: 800,
     letterSpacing: '0.02em',
-    boxShadow: '0 4px 16px rgba(217, 30, 47, 0.2)',
+    boxShadow: '0 4px 16px rgba(229, 9, 19, 0.2)',
     transition: 'all 0.2s',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer',
   },
   ghostBtn: {
     background: 'none', border: 'none',
-    color: '#D91E2F',
+    color: '#BF2026',
     fontSize: 12, fontWeight: 700,
     cursor: 'pointer', padding: 0,
     display: 'flex', alignItems: 'center',
@@ -417,17 +418,17 @@ const styles: Record<string, React.CSSProperties> = {
   footer: {
     marginTop: 32,
     paddingTop: 20,
-    borderTop: '1px solid #e2e8f0',
+    borderTop: '1px solid #E3E4E5',
     textAlign: 'center',
-    color: '#94a6b8',
+    color: '#A7A9AC',
     fontSize: 11,
     fontWeight: 600,
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   spinner: {
     width: 44, height: 44,
-    border: '3px solid rgba(217, 30, 47, 0.1)',
-    borderTop: '3px solid #D91E2F',
+    border: '3px solid rgba(229, 9, 19, 0.1)',
+    borderTop: '3px solid #BF2026',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
@@ -435,11 +436,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 7,
-    background: 'rgba(217, 30, 47, 0.06)',
-    border: '1px solid rgba(217, 30, 47, 0.2)',
+    background: 'rgba(229, 9, 19, 0.06)',
+    border: '1px solid rgba(229, 9, 19, 0.2)',
     borderRadius: 20,
     padding: '5px 12px',
-    color: '#D91E2F',
+    color: '#BF2026',
     fontSize: 10,
     fontWeight: 700,
     textTransform: 'uppercase',
@@ -450,13 +451,13 @@ const styles: Record<string, React.CSSProperties> = {
   adminBadgeDot: {
     width: 6, height: 6,
     borderRadius: '50%',
-    background: '#D91E2F',
-    boxShadow: '0 0 6px rgba(217, 30, 47, 0.8)',
+    background: '#BF2026',
+    boxShadow: '0 0 6px rgba(229, 9, 19, 0.8)',
     animation: 'pulse 2s ease-in-out infinite',
   },
   portalCardApp: {
-    background: 'rgba(217, 30, 47, 0.03)',
-    border: '1px solid rgba(217, 30, 47, 0.1)',
+    background: 'rgba(229, 9, 19, 0.03)',
+    border: '1px solid rgba(229, 9, 19, 0.1)',
     borderRadius: 16,
     padding: '16px 20px',
     display: 'flex',
@@ -466,7 +467,7 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
-    color: '#0f172a',
+    color: '#1A1A1B',
   },
   portalCardAdmin: {
     background: 'rgba(29, 78, 216, 0.03)',
@@ -480,37 +481,37 @@ const styles: Record<string, React.CSSProperties> = {
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
-    color: '#0f172a',
+    color: '#1A1A1B',
   },
   portalCardIconApp: {
     width: 42, height: 42,
-    background: 'rgba(217, 30, 47, 0.08)',
+    background: 'rgba(229, 9, 19, 0.08)',
     borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#D91E2F', fontSize: 18,
+    color: '#BF2026', fontSize: 18,
   },
   portalCardIconAdmin: {
     width: 42, height: 42,
     background: 'rgba(29, 78, 216, 0.08)',
     borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#B71826', fontSize: 18,
+    color: '#9B000C', fontSize: 18,
   },
   portalCardTitle: {
-    fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 2,
+    fontSize: 14, fontWeight: 800, color: '#1A1A1B', marginBottom: 2,
   },
   portalCardDesc: {
-    fontSize: 11, color: '#64748b', fontWeight: 500,
+    fontSize: 11, color: '#7A7C7F', fontWeight: 500,
   },
   portalCardArrow: {
-    color: '#cbd5e1', fontSize: 12, marginLeft: 'auto',
+    color: '#D0D2D3', fontSize: 12, marginLeft: 'auto',
   },
   portalSignOutBtn: {
     background: 'none',
-    border: '1px solid #cbd5e1',
+    border: '1px solid #D0D2D3',
     borderRadius: 12,
     padding: '11px 24px',
-    color: '#64748b',
+    color: '#7A7C7F',
     fontSize: 13,
     fontWeight: 700,
     cursor: 'pointer',
@@ -526,12 +527,12 @@ const animations = `
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
   
   input[type="text"]::placeholder, input[type="email"]::placeholder { 
-    color: #94a6b8; 
+    color: #A7A9AC; 
   }
   
   .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(217, 30, 47, 0.3) !important;
+    box-shadow: 0 8px 30px rgba(229, 9, 19, 0.3) !important;
   }
   .primary-btn:active {
     transform: translateY(0);
@@ -541,7 +542,7 @@ const animations = `
     transition: all 0.2s ease;
   }
   .ghost-btn:hover {
-    color: #B71826 !important;
+    color: #9B000C !important;
   }
   
   .portal-card {
@@ -552,8 +553,8 @@ const animations = `
     box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.08) !important;
   }
   .portal-card-app:hover {
-    background: rgba(217, 30, 47, 0.08) !important;
-    border-color: rgba(217, 30, 47, 0.3) !important;
+    background: rgba(229, 9, 19, 0.08) !important;
+    border-color: rgba(229, 9, 19, 0.3) !important;
   }
   .portal-card-admin:hover {
     background: rgba(29, 78, 216, 0.08) !important;
@@ -564,9 +565,9 @@ const animations = `
     transition: all 0.2s ease;
   }
   .signout-btn:hover {
-    background: #f1f5f9 !important;
-    color: #0f172a !important;
-    border-color: #cbd5e1 !important;
+    background: #EFEFF0 !important;
+    color: #1A1A1B !important;
+    border-color: #D0D2D3 !important;
   }
 `;
 

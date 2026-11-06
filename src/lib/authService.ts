@@ -52,24 +52,6 @@ export const HARDCODED_SYSTEM_ROLES: Role[] = [
     permissions: ['page_home', 'page_learners', 'uni_ggu'],
     is_system: true,
   },
-  {
-    name: 'psb viewer',
-    description: 'Paris School of Business Viewer (Restricted to Paris School of Business details only)',
-    permissions: ['page_home', 'page_learners', 'uni_psb'],
-    is_system: true,
-  },
-  {
-    name: 'edgewood viewer',
-    description: 'Edgewood University Viewer (Restricted to Edgewood University details only)',
-    permissions: ['page_home', 'page_learners', 'uni_edgewood'],
-    is_system: true,
-  },
-  {
-    name: 'esgci viewer',
-    description: 'ESGCI Viewer (Restricted to ESGCI details only)',
-    permissions: ['page_home', 'page_learners', 'uni_esgci'],
-    is_system: true,
-  },
 ];
 
 export function getPermissionsForRole(roleName: string): string[] {
@@ -77,9 +59,8 @@ export function getPermissionsForRole(roleName: string): string[] {
   const found = HARDCODED_SYSTEM_ROLES.find(r => r.name.toLowerCase() === norm);
   if (found) return found.permissions;
   if (norm.includes('ggu')) return ['page_home', 'page_learners', 'uni_ggu'];
-  if (norm.includes('psb')) return ['page_home', 'page_learners', 'uni_psb'];
-  if (norm.includes('edgewood')) return ['page_home', 'page_learners', 'uni_edgewood'];
-  if (norm.includes('esgci')) return ['page_home', 'page_learners', 'uni_esgci'];
+  // Retired partner-university roles: no access now that the app is GGU-only
+  if (norm.includes('psb') || norm.includes('edgewood') || norm.includes('esgci')) return [];
   if (norm.includes('super admin')) return HARDCODED_SYSTEM_ROLES[0].permissions;
   if (norm.includes('admin')) return HARDCODED_SYSTEM_ROLES[1].permissions;
   return ['page_home', 'page_learners', 'uni_all'];

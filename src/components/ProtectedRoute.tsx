@@ -28,8 +28,8 @@ function AccessDeniedScreen({ role, requiredPermission }: { role: string; requir
     <div style={styles.container}>
       {/* Glow Orbs */}
       <div style={styles.orbContainer}>
-        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)', top: '15%', left: '20%', width: 500, height: 500 }} />
-        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(236,72,153,0.1) 0%, transparent 70%)', bottom: '15%', right: '20%', width: 450, height: 450 }} />
+        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(229,9,19,0.15) 0%, transparent 70%)', top: '15%', left: '20%', width: 500, height: 500 }} />
+        <div style={{ ...styles.orb, background: 'radial-gradient(circle, rgba(155,0,12,0.14) 0%, transparent 70%)', bottom: '15%', right: '20%', width: 450, height: 450 }} />
       </div>
 
       <div style={styles.card}>
@@ -68,7 +68,7 @@ export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteP
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #2B0F13 50%, #0f172a 100%)',
+        background: 'linear-gradient(135deg, #0D0D0D 0%, #1A0204 50%, #0D0D0D 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -81,12 +81,12 @@ export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteP
         }}>
           <div style={{
             width: 48, height: 48,
-            border: '3px solid rgba(237, 43, 59,0.25)',
-            borderTop: '3px solid #ED2B3B',
+            border: '3px solid rgba(229, 9, 19,0.25)',
+            borderTop: '3px solid #E50913',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
           }} />
-          <p style={{ color: 'rgba(148,163,184,0.6)', fontSize: 13, fontWeight: 600, margin: 0 }}>
+          <p style={{ color: 'rgba(167, 169, 172,0.6)', fontSize: 13, fontWeight: 600, margin: 0 }}>
             Authenticating…
           </p>
         </div>
@@ -161,14 +161,14 @@ export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteP
 const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #090d16 0%, #1a0f1a 50%, #090d16 100%)',
+    background: 'linear-gradient(135deg, #0D0D0D 0%, #1A0204 50%, #0D0D0D 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '1.5rem',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    fontFamily: "'Roboto', 'Segoe UI', sans-serif",
   },
   orbContainer: {
     position: 'absolute',
@@ -197,18 +197,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   iconWrapper: {
     width: 76, height: 76,
-    background: 'linear-gradient(135deg, #ef4444 0%, #ec4899 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     borderRadius: 22,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     margin: '0 auto 28px',
     boxShadow: '0 12px 36px rgba(239,68,68,0.4)',
   },
   title: {
-    color: '#fca5a5', fontSize: 24, fontWeight: 900, margin: '0 0 12px',
+    color: '#F9C0C7', fontSize: 24, fontWeight: 800, fontFamily: "'Montserrat', 'Roboto', sans-serif", margin: '0 0 12px',
     letterSpacing: '-0.02em',
   },
   message: {
-    color: 'rgba(148,163,184,0.75)', fontSize: 14, margin: '0 0 32px',
+    color: 'rgba(167, 169, 172,0.75)', fontSize: 14, margin: '0 0 32px',
     lineHeight: 1.6, fontWeight: 500,
   },
   highlight: {
@@ -221,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   primaryBtn: {
     flex: 1,
-    background: 'linear-gradient(135deg, #D91E2F 0%, #ED2B3B 100%)',
+    background: 'linear-gradient(135deg, #E50913 0%, #BF2026 100%)',
     border: 'none', borderRadius: 12,
     padding: '12px 20px',
     color: 'white', fontSize: 13, fontWeight: 700,

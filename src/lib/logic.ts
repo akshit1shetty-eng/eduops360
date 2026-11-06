@@ -92,17 +92,18 @@ export function getLearnerCategory(rawStatus: string | undefined, row?: any): Le
   return 'Other Inactive';
 }
 
-export function getLearnerResidency(row: any): 'International' | 'Domestic' {
+/** 'India' = India-based learners (previously labelled "Domestic"). */
+export function getLearnerResidency(row: any): 'International' | 'India' {
   const rawType = v(row, 'Learner Type', 'Type').toLowerCase();
   const country = (v(row, 'Country Of Residence', 'Country of Residence', 'Country', 'Country of  Residence') || '').trim().toLowerCase();
 
   if (rawType.includes('international') || rawType.includes('us')) return 'International';
-  if (rawType.includes('domestic')) return 'Domestic';
+  if (rawType.includes('domestic')) return 'India';
 
-  if (country === 'india') return 'Domestic';
+  if (country === 'india') return 'India';
   if (country) return 'International';
 
-  return 'Domestic';
+  return 'India';
 }
 
 export const NEEDS_ATTENTION_STATUSES = ['Active', 'Active (Prospective Deferral)'] as const;

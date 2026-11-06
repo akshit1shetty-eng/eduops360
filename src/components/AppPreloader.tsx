@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UpGradWordmark } from './UpGradLogo';
 
 interface AppPreloaderProps {
   onComplete?: () => void;
 }
 
+const DURATION_MS = 1500;
+
+/**
+ * Launch screen: upGrad Word Mark, product name and a slim progress bar on a clean surface.
+ * The logo itself is never animated or decorated (brand rule); only the surrounding UI moves.
+ */
 const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Set to 1.5s - fast but enough time to see the polish
     const timer = setTimeout(() => {
       setIsVisible(false);
       if (onComplete) onComplete();
-    }, 1500);
-
+    }, DURATION_MS);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -22,82 +27,42 @@ const AppPreloader: React.FC<AppPreloaderProps> = ({ onComplete }) => {
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 overflow-hidden"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white"
           initial={{ opacity: 1 }}
-          exit={{ 
-            opacity: 0,
-            scale: 1.05,
-            transition: { duration: 0.5, ease: "easeInOut" }
-          }}
+          exit={{ opacity: 0, transition: { duration: 0.4, ease: 'easeInOut' } }}
+          role="status"
+          aria-live="polite"
+          aria-label="Loading EduOps360"
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="flex flex-col items-center relative z-10"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="flex flex-col items-center"
           >
-            {/* Unique Animated Logo with Ripple */}
-            <div className="relative w-20 h-20 mb-8 flex items-center justify-center">
-              {/* Ripple 1 */}
-              <motion.div 
-                className="absolute inset-0 border-2 border-brand-400 rounded-full"
-                animate={{ scale: [1, 2.5], opacity: [0.5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-              />
-              {/* Ripple 2 */}
-              <motion.div 
-                className="absolute inset-0 border-2 border-brand-400 rounded-full"
-                animate={{ scale: [1, 2.5], opacity: [0.5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.75 }}
-              />
-              
-              <motion.div 
-                className="absolute inset-0 bg-brand-600 shadow-xl shadow-brand-300 dark:shadow-brand-900/40"
-                animate={{
-                  borderRadius: ["30%", "50%", "30%"],
-                  rotate: [0, 90, 180],
-                }}
-                transition={{
-                  duration: 2,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                }}
-              />
-              <motion.i 
-                className="fas fa-graduation-cap text-3xl text-white relative z-10"
-                animate={{ 
-                  scale: [0.9, 1.15, 0.9],
-                }}
-                transition={{
-                  duration: 2,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                }}
+            {/* upGrad Word Mark — clear space below equals the logo height */}
+            <UpGradWordmark color="red" className="h-10 w-auto block" />
+
+            <div className="mt-10 h-px w-16 bg-slate-200" />
+
+            <h1 className="mt-6 font-display text-2xl font-bold tracking-tight text-slate-900">
+              EduOps<span className="text-brand-500">360</span>
+            </h1>
+            <p className="mt-1.5 text-[13px] text-slate-500">Learner operations &amp; analytics</p>
+
+            {/* Slim determinate progress bar tied to the launch duration */}
+            <div className="mt-8 h-[3px] w-48 overflow-hidden rounded-full bg-slate-100">
+              <motion.div
+                className="h-full rounded-full bg-brand-500"
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: DURATION_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
               />
             </div>
-
-            {/* Text */}
-            <motion.h1 
-              className="text-3xl font-black tracking-tight mb-5 text-slate-900 dark:text-white"
-            >
-              EDUOPS <span className="text-brand-600">360</span>
-            </motion.h1>
-
-            {/* Premium Dots */}
-            <div className="flex items-center justify-center gap-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-brand-500"
-                  animate={{ scale: [1, 1.8, 1], opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                />
-              ))}
-            </div>
+            <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Preparing your workspace</p>
           </motion.div>
-          
-          {/* Subtle Background Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/5 dark:bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <p className="absolute bottom-8 text-[11px] text-slate-400">© {new Date().getFullYear()} upGrad Education Private Limited</p>
         </motion.div>
       )}
     </AnimatePresence>
