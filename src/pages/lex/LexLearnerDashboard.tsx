@@ -7,7 +7,7 @@ import FilterDropdown from '../../components/FilterDropdown';
 import DateBadge from '../../components/DateBadge';
 
 function StatSkeleton() {
-  return <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />;
+  return <div className="h-5 w-16 bg-slate-200 rounded animate-pulse" />;
 }
 
 function TableRowSkeleton() {
@@ -438,7 +438,7 @@ export default function LexLearnerDashboard() {
       </div>
 
       {/* Status cards: click to filter the directory */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {statusCards.map(k => {
           const selected = k.key === 'all'
             ? selectedStatuses.length === 0
@@ -450,27 +450,27 @@ export default function LexLearnerDashboard() {
               type="button"
               aria-pressed={selected}
               onClick={() => setSelectedStatuses(k.key === 'all' || selected ? [] : k.filter)}
-              className={`group text-left bg-white rounded-2xl border p-4 transition-all duration-300 hover:-translate-y-0.5 ${selected
+              className={`group text-left bg-white rounded-2xl border px-3.5 py-3 transition-all duration-300 hover:-translate-y-0.5 ${selected
                 ? 'border-brand-500 shadow-[0_0_0_3px_rgba(229,9,19,0.10),0_10px_30px_-14px_rgba(229,9,19,0.35)]'
                 : 'border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)] hover:border-slate-300'}`}
               style={selected ? { borderColor: '#E50913' } : undefined}
             >
               <div className="flex items-center justify-between">
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${k.chip}`}>
-                  <i className={`fas ${k.icon} text-[11px]`} />
+                <span className={`w-6 h-6 rounded-md flex items-center justify-center ${k.chip}`}>
+                  <i className={`fas ${k.icon} text-[9px]`} />
                 </span>
                 {selected
-                  ? <span className="text-[10px] font-semibold text-brand-600 flex items-center gap-1"><i className="fas fa-check text-[9px]" />Showing</span>
+                  ? <span className="text-[9.5px] font-semibold text-brand-600 flex items-center gap-1"><i className="fas fa-check text-[8px]" />Showing</span>
                   : <i className="fas fa-filter text-[10px] text-slate-300 group-hover:text-brand-500 transition-colors" />}
               </div>
-              <div className="mt-4 text-[12px] font-medium text-slate-500">{k.label}</div>
-              <div className="mt-0.5 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+              <div className="mt-2 text-[11px] font-medium text-slate-500">{k.label}</div>
+              <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
                 {loading ? <StatSkeleton /> : k.value.toLocaleString()}
               </div>
-              <div className="mt-3 h-1 rounded-full bg-slate-100 overflow-hidden">
+              <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: loading ? '0%' : `${k.key === 'all' ? 100 : share}%`, background: k.bar }} />
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-500 tabular-nums">
+              <div className="mt-1.5 flex items-center justify-between gap-2 text-[10.5px] text-slate-500 tabular-nums">
                 {loading ? <SubStatSkeleton /> : (
                   <>
                     <span title="India-based learners"><span className="text-slate-400">India</span> {k.dom.toLocaleString()}</span>

@@ -150,7 +150,7 @@ export default function LexDashboardHome() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {kpis.map(k => {
           const share = (k.value / (stats.total || 1)) * 100;
           return (
@@ -158,22 +158,22 @@ export default function LexDashboardHome() {
               key={k.key}
               type="button"
               onClick={() => navigate(k.to)}
-              className="group text-left bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)] hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300"
+              className="group text-left bg-white rounded-2xl border border-slate-200/70 px-3.5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_30px_-12px_rgba(0,0,0,0.18)] hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300"
             >
               <div className="flex items-center justify-between">
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${k.tone.chip}`}>
-                  <i className={`fas ${k.icon} text-[11px]`} />
+                <span className={`w-6 h-6 rounded-md flex items-center justify-center ${k.tone.chip}`}>
+                  <i className={`fas ${k.icon} text-[9px]`} />
                 </span>
                 <i className="fas fa-arrow-right text-[10px] text-slate-300 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <div className="mt-4 text-[12px] font-medium text-slate-500">{k.label}</div>
-              <div className="mt-0.5 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
-                {loading ? <Skeleton className="h-7 w-20" /> : k.value.toLocaleString()}
+              <div className="mt-2 text-[11px] font-medium text-slate-500">{k.label}</div>
+              <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+                {loading ? <Skeleton className="h-5 w-16" /> : k.value.toLocaleString()}
               </div>
-              <div className="mt-3 h-1 rounded-full bg-slate-100 overflow-hidden">
+              <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
                 <div className={`h-full rounded-full ${k.tone.bar} transition-all duration-700`} style={{ width: loading ? '0%' : `${k.showShare ? share : 100}%` }} />
               </div>
-              <div className="mt-1.5 text-[11px] text-slate-500">
+              <div className="mt-1 text-[10.5px] text-slate-500">
                 {k.showShare
                   ? (loading ? '—' : <><span className="font-semibold text-slate-700">{share.toFixed(1)}%</span> of total</>)
                   : k.caption}

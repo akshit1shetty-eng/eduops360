@@ -54,20 +54,21 @@ function Meter({ value, color, max = 100 }: { value: number; color: string; max?
   );
 }
 
-function Kpi({ label, icon, value, meter, caption, loading }: {
-  label: string; icon: string; value: React.ReactNode; meter: React.ReactNode; caption: React.ReactNode; loading: boolean;
+function Kpi({ label, icon, chip = 'bg-slate-100 text-slate-600', value, meter, caption, loading }: {
+  label: string; icon: string; chip?: string; value: React.ReactNode; meter: React.ReactNode; caption: React.ReactNode; loading: boolean;
 }) {
+  // Same anatomy and size as the Overall Dashboard KPI cards
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
-        <i className={`fas ${icon} text-[11px] text-slate-400`} />
-        {label}
+    <div className="bg-white rounded-2xl border border-slate-200/70 px-3.5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <span className={`w-6 h-6 rounded-md flex items-center justify-center ${chip}`}>
+        <i className={`fas ${icon} text-[9px]`} />
+      </span>
+      <div className="mt-2 text-[11px] font-medium text-slate-500">{label}</div>
+      <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+        {loading ? <span className="inline-block h-5 w-16 rounded bg-slate-200 animate-pulse" /> : value}
       </div>
-      <div className="mt-2 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
-        {loading ? <span className="inline-block h-7 w-20 rounded bg-slate-200 animate-pulse" /> : value}
-      </div>
-      <div className="mt-3">{meter}</div>
-      <div className="mt-1.5 text-[11px] text-slate-500">{caption}</div>
+      <div className="mt-2">{meter}</div>
+      <div className="mt-1 text-[10.5px] text-slate-500">{caption}</div>
     </div>
   );
 }
@@ -244,7 +245,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
       {/* ── KPI row ── */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         <Kpi
-          label="Total enrolled" icon="fa-users" loading={loading}
+          label="Total enrolled" icon="fa-users" chip="bg-slate-900 text-white" loading={loading}
           value={fmt(statusTotals.grandTotal)}
           meter={
             <div className="flex h-1 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
@@ -256,13 +257,13 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
           caption={<>across {statusDetails.length} programs</>}
         />
         <Kpi
-          label="Active learners" icon="fa-user-check" loading={loading}
+          label="Active learners" icon="fa-user-check" chip="bg-brand-50 text-brand-600" loading={loading}
           value={fmt(statusTotals.active)}
           meter={<Meter value={share(statusTotals.active)} color={C.active} />}
           caption={<><span className="font-semibold text-slate-700">{pctStr(share(statusTotals.active))}</span> of enrolled</>}
         />
         <Kpi
-          label="Retention · live cohorts" icon="fa-shield-alt" loading={loading}
+          label="Retention · live cohorts" icon="fa-shield-alt" chip="bg-brand-50 text-brand-600" loading={loading}
           value={pctStr(retentionActiveTotal.retentionPct)}
           meter={<Meter value={retentionActiveTotal.retentionPct} color={C.active} />}
           caption={<>
@@ -273,13 +274,13 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
           </>}
         />
         <Kpi
-          label="Graduation · closed cohorts" icon="fa-award" loading={loading}
+          label="Graduation · closed cohorts" icon="fa-award" chip="bg-emerald-50 text-emerald-600" loading={loading}
           value={pctStr(closedCohortTotal.graduationPct)}
           meter={<Meter value={closedCohortTotal.graduationPct ?? 0} color={C.past} />}
           caption={<><span className="font-semibold text-slate-700">{fmt(closedCohortTotal.graduatedLearners)}</span> learners graduated</>}
         />
         <Kpi
-          label="Live cohorts" icon="fa-layer-group" loading={loading}
+          label="Live cohorts" icon="fa-layer-group" chip="bg-slate-100 text-slate-600" loading={loading}
           value={fmt(cohortTotals.liveCohorts)}
           meter={<Meter value={cohortTotals.liveCohorts} max={cohortTotals.allTimeCohorts} color={C.active} />}
           caption={<>of {fmt(cohortTotals.allTimeCohorts)} cohorts all-time</>}
