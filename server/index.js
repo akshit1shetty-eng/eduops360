@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import nodemailer from 'nodemailer';
 import { randomBytes } from 'node:crypto';
+import { buildOtpEmail } from './otpEmail.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -249,32 +250,9 @@ app.post('/api/auth/send-otp', async (req, res) => {
     }
 
     const mailOptions = {
-      from: `"EduOps360" <${process.env.SMTP_USER}>`,
+      from: `"EduOps360 · upGrad" <${process.env.SMTP_USER}>`,
       to: normalized,
-      subject: 'Your EduOps360 Login OTP Verification Code',
-      html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background-color: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; color: #1e293b; box-shadow: 0 8px 30px rgba(15,23,42,0.04);">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div style="display: inline-block; width: 50px; height: 50px; line-height: 50px; background: linear-gradient(135deg, #ED2B3B 0%, #B71826 100%); border-radius: 14px; color: #ffffff; font-size: 24px; font-weight: bold; text-align: center; box-shadow: 0 6px 20px rgba(237,43,59,0.2);">
-              🎓
-            </div>
-            <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 12px 0 4px; letter-spacing: -0.02em;">EduOps360</h2>
-            <p style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; font-weight: 600;">Operations Platform Auth</p>
-          </div>
-
-          <div style="background-color: #f8fafc; border-radius: 16px; padding: 24px; border: 1px solid #edf2f7; text-align: center; margin-bottom: 24px;">
-            <p style="font-size: 14px; color: #334155; margin: 0 0 16px; font-weight: 500;">Use the following verification code to sign into your account:</p>
-            <div style="font-size: 32px; font-weight: 900; color: #D91E2F; letter-spacing: 6px; padding: 12px 20px; background: #FDE4E6; border-radius: 12px; display: inline-block; border: 1px solid #FBCDD1; font-family: monospace;">
-              ${code}
-            </div>
-            <p style="font-size: 11px; color: #64748b; margin: 16px 0 0; font-weight: 500;">This verification code will expire in 5 minutes.</p>
-          </div>
-
-          <div style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 16px; font-weight: 500;">
-            If you did not request this code, you can safely ignore this email.
-          </div>
-        </div>
-      `
+      ...buildOtpEmail(code, 5),
     };
 
     try {
