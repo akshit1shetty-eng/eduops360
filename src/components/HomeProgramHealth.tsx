@@ -96,13 +96,16 @@ export default function HomeProgramHealth() {
           </div>
           <i className="fas fa-arrow-right text-[10px] text-slate-300 group-hover:text-brand-500 group-hover:translate-x-0.5 transition-all" />
         </div>
-        <div className="mt-2.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
-          {cohortsLoading ? <span className="inline-block h-5 w-12 rounded bg-slate-200 animate-pulse" /> : fmt(cohortTotals.liveCohorts)}
+        {/* Same height as the fresh vs continuing card: value and caption share one line */}
+        <div className="mt-2.5 flex items-baseline gap-1.5">
+          <span className="text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
+            {cohortsLoading ? <span className="inline-block h-5 w-12 rounded bg-slate-200 animate-pulse" /> : fmt(cohortTotals.liveCohorts)}
+          </span>
+          <span className="text-[11px] text-slate-500">of {fmt(cohortTotals.allTimeCohorts)} all-time</span>
         </div>
         <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: TRACK }}>
           <div className="h-full rounded-full" style={{ width: `${(cohortTotals.liveCohorts / (cohortTotals.allTimeCohorts || 1)) * 100}%`, background: FRESH }} />
         </div>
-        <div className="mt-1 text-[10.5px] text-slate-500">of {fmt(cohortTotals.allTimeCohorts)} cohorts all-time</div>
       </button>
     </div>
   );

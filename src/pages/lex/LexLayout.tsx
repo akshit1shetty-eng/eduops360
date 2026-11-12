@@ -6,6 +6,7 @@ import { PRIMARY_UNIVERSITY, PRIMARY_UNIVERSITY_ID, hasUniversityAccess, hasProg
 import { useAuth } from '../../hooks/useAuth';
 import TopbarGreeting from '../../components/TopbarGreeting';
 import DataDisclaimer from '../../components/DataDisclaimer';
+import { prefetchTermWiseSplit } from '../../hooks/useTermWiseSplit';
 
 export default function LexLayout() {
   return (
@@ -30,6 +31,9 @@ function LexLayoutContent() {
   useEffect(() => {
     if (selectedUniversityId !== PRIMARY_UNIVERSITY_ID) setSelectedUniversityId(PRIMARY_UNIVERSITY_ID);
   }, [selectedUniversityId, setSelectedUniversityId]);
+
+  // Start loading the Term Wise Split as soon as the portal opens, so Term trends is ready on arrival.
+  useEffect(() => { if (hasGguAccess) prefetchTermWiseSplit(); }, [hasGguAccess]);
 
   const handleLogout = async () => {
     await signOut();

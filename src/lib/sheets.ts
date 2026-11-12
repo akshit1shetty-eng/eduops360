@@ -130,13 +130,19 @@ async function fetchSheetTabViaSheetsApi(options: {
  * Fetch a tab as a raw grid of strings (no header row assumed) — for summary/report
  * tabs whose layout is several labelled blocks rather than one table.
  *
- * Google's public gviz endpoint types each column by its majority value, so text
- * cells inside mostly-numeric columns (term names, "Fresh Enrolment" …) come back
- * blank when a whole tab is fetched at once. Fetching each row on its own keeps
- * every cell, so we read the grid size first and then request rows in parallel.
+ * Google's public gviz endpoint types each column by its majority value, so a
+ * whole-tab fetch blanks text inside number-heavy columns and silently drops rows
+ * that end up empty — shifting every row below. Only single-row requests are
+ * reliable, so every row is requested on its own, all in parallel, in waves until
+ * a long run of empty rows marks the end (blank gaps between blocks are fine).
  */
-export async function fetchSheetGrid(options: { spreadsheetId: string; sheetName: string }): Promise<string[][]> {
-  const { spreadsheetId, sheetName } = options;
+export async function fetchSheetGrid(options: {
+  spreadsheetId: string;
+  sheetName: string;
+  /** Rows expected (e.g. from a cached copy) — sizes the first wave so one wave usually suffices. */
+  expectedRows?: number;
+}): Promise<string[][]> {
+  const { spreadsheetId, sheetName, expectedRows } = options;
 
   const apiKey = (import.meta as any)?.env?.VITE_GOOGLE_SHEETS_API_KEY as string | undefined;
   if (apiKey && apiKey.trim()) {
@@ -155,34 +161,41 @@ export async function fetchSheetGrid(options: { spreadsheetId: string; sheetName
     }
   }
 
-  const gvizCsv = async (range: string) => {
+  const fetchRow = async (n: number): Promise<string[]> => {
     const url = new URL(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq`);
     url.searchParams.set('tqx', 'out:csv');
     url.searchParams.set('headers', '0');
     url.searchParams.set('sheet', sheetName);
-    url.searchParams.set('range', range);
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`Failed to fetch sheet range: ${sheetName}!${range} (${res.status})`);
-    return parseCsv(await res.text());
+    url.searchParams.set('range', `A${n}:ZZ${n}`);
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error(`Failed to fetch ${sheetName}!${n} (${res.status})`);
+        return (parseCsv(await res.text())[0] ?? []).map(c => (c ?? '').trim());
+      } catch (err) {
+        if (attempt >= 2) throw err; // a missing row would silently corrupt the grid — fail loudly
+      }
+    }
   };
 
-  const whole = await gvizCsv('A1:ZZ500');
-  const rowCount = whole.length;
-  const rows: string[][] = new Array(rowCount);
-  const BATCH = 12;
-  for (let start = 0; start < rowCount; start += BATCH) {
-    await Promise.all(
-      Array.from({ length: Math.min(BATCH, rowCount - start) }, (_, k) => start + k).map(async i => {
-        try {
-          const one = await gvizCsv(`A${i + 1}:ZZ${i + 1}`);
-          rows[i] = one[0] ?? [];
-        } catch {
-          rows[i] = whole[i] ?? []; // keep the numeric view if a single row fails
-        }
-      }),
-    );
+  const END_GAP = 12;   // this many empty rows in a row = end of the tab
+  const MAX_ROWS = 600;
+  const isEmpty = (r: string[] | undefined) => !r || r.every(c => !c);
+  const rows: string[][] = [];
+  let wave = Math.max(40, (expectedRows ?? 0) + END_GAP + 4);
+
+  while (rows.length < MAX_ROWS) {
+    const start = rows.length + 1;
+    const got = await Promise.all(Array.from({ length: wave }, (_, k) => fetchRow(start + k)));
+    rows.push(...got);
+    let trailing = 0;
+    for (let i = rows.length - 1; i >= 0 && isEmpty(rows[i]); i -= 1) trailing += 1;
+    if (trailing >= END_GAP) break;
+    wave = 30;
   }
-  return rows.map(r => (r ?? []).map(c => (c ?? '').trim()));
+
+  while (rows.length && isEmpty(rows[rows.length - 1])) rows.pop();
+  return rows;
 }
 
 /** Minimal RFC-4180 CSV parser (quoted fields, escaped quotes, CRLF). */

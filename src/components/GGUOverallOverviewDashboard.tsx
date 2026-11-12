@@ -3,7 +3,7 @@ import { useGGUOverviewAnalytics } from '../hooks/useGGUOverviewAnalytics';
 import { useTermWiseSplit } from '../hooks/useTermWiseSplit';
 import FilterSelect from './FilterSelect';
 import { GGU_DEFAULT_TERM } from '../lib/config';
-import { parseTermCode, totalsByTerm, freshContinuingByTerm, splitYears, learnerTypeSeries, type TermSeries } from '../lib/termWiseSplit';
+import { parseTermCode, totalsByTerm, freshContinuingByTerm, splitYears, learnerTypeSeries, yearlyOverall, type TermSeries, type TermMix } from '../lib/termWiseSplit';
 
 /** Academic quality is designed but parked until its data sources exist — flip to bring the tab back. */
 const SHOW_ACADEMIC_QUALITY = false;
@@ -30,7 +30,7 @@ const C = {
 const ALL_TABS: Array<{ id: TabId; label: string; icon: string; title: string; hint: string }> = [
   { id: 'status', label: 'Status & cohorts', icon: 'fa-chart-bar', title: 'Status & cohorts', hint: 'Active, leave of absence and exited learners, with live and closed cohorts per program' },
   { id: 'outcomes', label: 'Graduation', icon: 'fa-graduation-cap', title: 'Graduation', hint: 'Number of learners who have graduated, by program' },
-  { id: 'trends', label: 'Term trends', icon: 'fa-chart-line', title: 'Term trends', hint: 'Active learners, new enrolments and fresh vs continuing learners, term by term' },
+  { id: 'trends', label: 'Term trends', icon: 'fa-chart-line', title: 'Term trends', hint: 'New enrolments and fresh vs continuing learners, term by term' },
   { id: 'quality', label: 'Academic quality', icon: 'fa-chalkboard-teacher', title: 'Academic quality', hint: 'Live sessions, assignments and course-level performance' },
 ];
 const TABS = ALL_TABS.filter(t => t.id !== 'quality' || SHOW_ACADEMIC_QUALITY);
@@ -260,8 +260,6 @@ function AwaitingMetric({ label, icon, sample }: { label: string; icon: string; 
 export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const {
     loading,
-    totalRawRows,
-    isCalculatedLive,
     statusDetails,
     closedCohortGraduation,
     activeCohortGraduation,
@@ -306,7 +304,6 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   [closedCohortGraduation, activeCohortGraduation]);
   const totalGraduates = gradRows.reduce((a, r) => a + r.graduates, 0);
   const maxGraduates = Math.max(1, ...gradRows.map(r => r.graduates));
-  const gradShare = (n: number) => (totalGraduates ? (n / totalGraduates) * 100 : 0);
 
   /* ── Term trends: from the Learner Type blocks of the "Term Wise Split" tab
         (the two summary tables at the top of that tab are not used) ── */
@@ -323,23 +320,43 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const inYear = (code: string) => parseTermCode(code).year === year;
   const pickSeries = (s: TermSeries | undefined) =>
     (s ? totalsByTerm(s, selectedPrograms.filter(p => s.programs.includes(p))).filter(d => inYear(d.term)) : []);
-  const activeTrend = pickSeries(ltSeries?.active);
   const freshTrend = pickSeries(ltSeries?.fresh);
   const programInFresh = trendProgram === 'all' || (ltSeries?.fresh.programs.includes(trendProgram) ?? false);
 
-  // Fresh vs continuing: terms of the chosen year that hold data; defaults to the latest.
-  // Ascending (Spring → Summer → Fall), with the term's learner count alongside.
-  const termChoices = useMemo(() => (termSplit ? freshContinuingByTerm(termSplit) : [])
-    .filter(t => t.year === year && t.fresh + t.continuing > 0)
-    .map(t => ({ value: t.term, label: t.term, meta: `${fmt(t.fresh + t.continuing)} learners` })), [termSplit, year]);
+  // Fresh vs continuing: "Overall" (the year, from the sheet's Yearly Grand Total) first,
+  // then the year's terms ascending (Spring → Summer → Fall), each with its learner count.
+  const OVERALL = 'overall';
+  const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year) : null), [termSplit, year]);
+  const termChoices = useMemo(() => [
+    ...(yearMix && yearMix.fresh + yearMix.continuing > 0
+      ? [{ value: OVERALL, label: 'Overall', meta: `${fmt(yearMix.fresh + yearMix.continuing)} learners` }]
+      : []),
+    ...(termSplit ? freshContinuingByTerm(termSplit) : [])
+      .filter(t => t.year === year && t.fresh + t.continuing > 0)
+      .map(t => ({ value: t.term, label: t.term, meta: `${fmt(t.fresh + t.continuing)} learners` })),
+  ], [termSplit, year, yearMix]);
   const termOptions = termChoices.map(t => t.value);
+  const termValues = termOptions.filter(v => v !== OVERALL);
   const fcTerm = termPick && termOptions.includes(termPick) ? termPick
-    : termOptions.includes(GGU_DEFAULT_TERM) ? GGU_DEFAULT_TERM : termOptions[0];
-  // Always all programs — the program chips only drive the two term charts above it.
-  const mix = useMemo(() => (termSplit && fcTerm
-    ? freshContinuingByTerm(termSplit).find(t => t.term === fcTerm) ?? null
-    : null),
-  [termSplit, fcTerm]);
+    : termValues.includes(GGU_DEFAULT_TERM) ? GGU_DEFAULT_TERM : (termValues[0] ?? termOptions[0]);
+  const isOverall = fcTerm === OVERALL && !!yearMix;
+  // Always all programs — the program chips only drive the term chart above it.
+  const mix: TermMix | null = useMemo(() => {
+    if (!termSplit || !fcTerm) return null;
+    if (fcTerm === OVERALL) {
+      if (!yearMix) return null;
+      // The year has no learner-type split in the sheet; seasons stand in for sessions.
+      return {
+        term: `Overall ${yearMix.year}`, year: yearMix.year, season: '',
+        fresh: yearMix.fresh, continuing: yearMix.continuing,
+        segments: [],
+        programs: yearMix.programs.map(p => ({ ...p, bySegment: {} })),
+        sessions: yearMix.seasons.map(x => ({ ...x, session: '' })),
+      };
+    }
+    return freshContinuingByTerm(termSplit).find(t => t.term === fcTerm) ?? null;
+  }, [termSplit, fcTerm, yearMix]);
+  const breakdown: 'segment' | 'program' = isOverall ? 'program' : mixBy;
   const mixTotal = mix ? mix.fresh + mix.continuing : 0;
   const mixSegments = (mix?.segments ?? []).filter(s => s.fresh + s.continuing > 0)
     .sort((a, b) => (b.fresh + b.continuing) - (a.fresh + a.continuing));
@@ -347,7 +364,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
     .sort((a, b) => (b.fresh + b.continuing) - (a.fresh + a.continuing));
   const mixSegmentNames = mixSegments.map(s => s.segment);
   // Rows for the chosen breakdown; program rows also carry their learner-type split.
-  const mixRows = mixBy === 'program'
+  const mixRows = breakdown === 'program'
     ? mixPrograms.map(p => ({
       key: p.program, label: shortName(p.program), fresh: p.fresh, continuing: p.continuing,
       detail: mixSegmentNames
@@ -356,7 +373,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
     }))
     : mixSegments.map(s => ({ key: s.segment, label: s.segment, fresh: s.fresh, continuing: s.continuing, detail: [] as Array<{ seg: string; n: number }> }));
   const mixMax = Math.max(1, ...mixRows.map(s => s.fresh + s.continuing));
-  const mixRowLabel = mixBy === 'program' ? 'Program' : 'Learner type';
+  const mixRowLabel = breakdown === 'program' ? 'Program' : 'Learner type';
   const mixSessions = (mix?.sessions ?? []).filter(s => s.fresh + s.continuing > 0);
 
   const showViewToggle = activeTab === 'status' || activeTab === 'outcomes' || activeTab === 'trends';
@@ -457,11 +474,6 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: termSplit ? '#1f9e89' : '#A7A9AC' }} />
                 {termSplit ? 'From Term Wise Split' : termError ? 'Term Wise Split unavailable' : 'Loading Term Wise Split…'}
               </>
-            ) : activeTab !== 'quality' ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: isCalculatedLive ? '#1f9e89' : '#A7A9AC' }} />
-                {isCalculatedLive ? `Live from learner sheet · ${fmt(totalRawRows)} records` : 'Baseline snapshot'}
-              </>
             ) : null}
           </span>
         </div>
@@ -498,7 +510,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                             trailing={<div className="flex items-center justify-end gap-5">
                               <div className="text-right">
                                 <div className="text-[13px] font-bold text-slate-900">{fmt(r.total)}</div>
-                                <div className="text-[11px] text-slate-500">{r.total ? pctStr((r.active / r.total) * 100, 0) : '—'} active</div>
+                                <div className="text-[11px] text-slate-500">learners</div>
                               </div>
                               <div className="w-[86px] text-right">
                                 <div className="text-[12px] font-semibold text-slate-800">{r.liveCohorts} live</div>
@@ -562,7 +574,6 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                           label={shortName(r.program)}
                           trailing={<div className="w-[110px] text-right whitespace-nowrap">
                             <span className="text-[14px] font-bold text-slate-900 tabular-nums">{fmt(r.graduates)}</span>
-                            <span className="ml-2 text-[11px] text-slate-500 tabular-nums">{pctStr(gradShare(r.graduates), 0)}</span>
                           </div>}
                         >
                           <div
@@ -581,9 +592,8 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                     columns={[
                       { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
                       { label: 'Graduated learners', align: 'right', render: r => <span className="font-semibold text-slate-900">{fmt(r.graduates)}</span> },
-                      { label: 'Share of all graduates', align: 'right', render: r => pctStr(gradShare(r.graduates)) },
                     ]}
-                    footer={['Total', fmt(totalGraduates), '100%']}
+                    footer={['Total', fmt(totalGraduates)]}
                   />
                 )}
               </div>
@@ -627,25 +637,19 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                 ) : (
                   <>
                     {view === 'chart' ? (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div>
-                          <SectionTitle
-                            title="Active learners by term"
-                            sub={`${programLabel} · ${year ?? ''}`}
-                            aside={<span className="text-[11px] text-slate-400">Hover a bar for the exact figure</span>}
-                          />
-                          <TermColumns data={activeTrend} color={C.active} unit="active learners" loading={termLoading} />
-                        </div>
-                        <div>
-                          <SectionTitle title="New enrolments by term" sub={`${programLabel} · ${year ?? ''}`} />
-                          {programInFresh
-                            ? <TermColumns data={freshTrend} color={C.enrol} unit="new enrolments" loading={termLoading} />
-                            : <div className="h-[220px] flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-[12px] text-slate-400">No new-enrolment split for {shortName(trendProgram)} in the sheet</div>}
-                        </div>
+                      <div>
+                        <SectionTitle
+                          title="New enrolments by term"
+                          sub={`${programLabel} · ${year ?? ''}`}
+                          aside={<span className="text-[11px] text-slate-400">Hover a bar for the exact figure</span>}
+                        />
+                        {programInFresh
+                          ? <TermColumns data={freshTrend} color={C.enrol} unit="new enrolments" loading={termLoading} />
+                          : <div className="h-[220px] flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-[12px] text-slate-400">No new-enrolment split for {shortName(trendProgram)} in the sheet</div>}
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {[{ title: 'Active learners by term', s: ltSeries?.active, sum: false }, { title: 'New enrolments by term', s: ltSeries?.fresh, sum: true }].map(({ title, s, sum }) => {
+                        {[{ title: 'New enrolments by term', s: ltSeries?.fresh, sum: true }].map(({ title, s, sum }) => {
                           const progs = (s?.programs ?? []).filter(p => selectedPrograms.includes(p));
                           const terms = (s?.terms ?? []).filter(inYear);
                           return (
@@ -694,18 +698,24 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                         aside={
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="inline-flex p-0.5 rounded-[10px]" style={{ background: 'var(--bg-surface-2, #F3F3F4)' }} role="group" aria-label="Break down by">
-                              {([['segment', 'Learner type'], ['program', 'Program']] as const).map(([k, l]) => (
+                              {([['segment', 'Learner type'], ['program', 'Program']] as const).map(([k, l]) => {
+                                const locked = isOverall && k === 'segment';
+                                const on = breakdown === k;
+                                return (
                                 <button
                                   key={k}
                                   type="button"
-                                  onClick={() => setMixBy(k)}
-                                  aria-pressed={mixBy === k}
-                                  className={`h-7 px-3 rounded-[8px] text-[11.5px] font-semibold transition-all ${mixBy === k ? 'text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]' : 'text-slate-500 hover:text-slate-800'}`}
-                                  style={mixBy === k ? { background: 'var(--bg-surface, #fff)' } : undefined}
+                                  onClick={() => !locked && setMixBy(k)}
+                                  aria-pressed={on}
+                                  disabled={locked}
+                                  title={locked ? 'The sheet has no learner-type split for the whole year — pick a term to see it' : undefined}
+                                  className={`h-7 px-3 rounded-[8px] text-[11.5px] font-semibold transition-all ${on ? 'text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]' : locked ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:text-slate-800'}`}
+                                  style={on ? { background: 'var(--bg-surface, #fff)' } : undefined}
                                 >
                                   By {l.toLowerCase()}
                                 </button>
-                              ))}
+                                );
+                              })}
                             </div>
                             <FilterSelect
                               label="Term"
@@ -721,10 +731,10 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                         <div className="h-48 rounded-xl bg-slate-50 animate-pulse" />
                       ) : !mix || mixTotal === 0 ? (
                         <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-[12px] text-slate-500">
-                          No fresh / continuing split for this term yet.
+                          No fresh / continuing split for this {isOverall ? 'year' : 'term'} yet.
                         </div>
                       ) : view === 'table' ? (
-                        mixBy === 'program' ? (
+                        breakdown === 'program' ? (
                           <DataTable
                             rows={mixPrograms}
                             rowKey={r => r.program}
@@ -766,9 +776,9 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                         <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 lg:gap-8">
                           {/* Headline for the term */}
                           <div className="rounded-2xl border border-slate-200/80 p-4" style={{ background: 'var(--bg-surface-2, #FAFAFB)' }}>
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{mix.term} · All programs</div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{isOverall ? `${mix.year} · whole year` : mix.term} · All programs</div>
                             <div className="mt-2 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">{fmt(mixTotal)}</div>
-                            <div className="mt-1 text-[12px] text-slate-500">learners in the term</div>
+                            <div className="mt-1 text-[12px] text-slate-500">{isOverall ? 'learners in the year' : 'learners in the term'}</div>
                             <div className="mt-4 flex h-2.5 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
                               {mix.fresh > 0 && <div style={{ width: `${(mix.fresh / mixTotal) * 100}%`, background: C.fresh }} />}
                               {mix.continuing > 0 && <div style={{ width: `${(mix.continuing / mixTotal) * 100}%`, background: C.continuing }} />}
@@ -829,7 +839,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
 
                             {mixSessions.length > 1 && (
                               <div className="mt-4 pt-4 border-t border-slate-100">
-                                <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Sessions in {mix.term}</div>
+                                <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{isOverall ? `Terms in ${mix.year}` : `Sessions in ${mix.term}`}</div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3">
                                   {mixSessions.map(s => {
                                     const tot = s.fresh + s.continuing;

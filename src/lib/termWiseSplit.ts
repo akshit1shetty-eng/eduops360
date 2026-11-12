@@ -41,6 +41,8 @@ export interface LearnerTypePeriod {
   /** "Spring 2026" — the term this column belongs to. */
   term: string;
   isTotal: boolean;       // a season roll-up column
+  /** A whole-year roll-up column, e.g. "Yearly Grand Total". */
+  isYear: boolean;
   fresh: Record<string, number>;       // by program
   continuing: Record<string, number>;  // by program
 }
@@ -55,6 +57,8 @@ export interface TermWiseSplit {
   active: TermSeries;
   fresh: TermSeries;
   learnerTypes: LearnerTypeBlock[];
+  /** The "Learner Type | Overall" block (sum of all learner types), when the tab has one. */
+  overall: LearnerTypeBlock | null;
 }
 
 const SEASONS: Record<string, { name: string; order: number }> = {
@@ -143,14 +147,19 @@ function extractBlocks(grid: string[][]): RawBlock[] {
       // header and data row (the separator between side-by-side blocks).
       const columns: RawBlock['columns'] = [];
       let lastHeader = '';
+      let lastAbove = '';
       for (let col = c + 1; col < 1000; col += 1) {
         const header = cell(r, col);
         const metric = metricRows.map(m => cell(m, col)).filter(Boolean).join(' · ');
         const anyData = dataRows.some(d => cell(d, col) !== '');
         if (!header && !metric && !anyData) break;
         if (isProgramNameCell(header)) break;
+        const above = r > 0 ? cell(r - 1, col) : '';
+        if (above) lastAbove = above;
         if (header) lastHeader = header;
-        columns.push({ header: header || lastHeader, metric });
+        // Columns before the first anchor header can be labelled one row up
+        // (e.g. "Yearly Grand Total" sitting above an empty anchor cell).
+        columns.push({ header: header || lastHeader || (/total|year/i.test(lastAbove) ? lastAbove : ''), metric });
       }
 
       blocks.push({
@@ -196,12 +205,13 @@ function learnerTypeFromBlock(block: RawBlock): LearnerTypeBlock {
     if (!kind) return;
     let p = periodsByLabel.get(col.header);
     if (!p) {
-      const isTotal = /total/i.test(col.header);
+      const isYear = /\b(year|yearly|annual|grand total)\b/i.test(col.header);
+      const isTotal = isYear || /total/i.test(col.header);
       const yearMatch = col.header.match(/\b(20\d{2})\b/);
       const season = seasonOf(col.header);
       const sessionMatch = isTotal || !season ? null : col.header.match(new RegExp(String.raw`${season}\s+([A-Za-z])\b`, 'i'));
       p = {
-        label: col.header, season, isTotal, col: i,
+        label: col.header, season, isTotal, isYear, col: i,
         year: yearMatch ? Number(yearMatch[1]) : 0,
         session: sessionMatch ? sessionMatch[1].toUpperCase() : '',
         term: '', fresh: {}, continuing: {},
@@ -226,10 +236,10 @@ function learnerTypeFromBlock(block: RawBlock): LearnerTypeBlock {
         .sort((a, b) => Math.abs(a.col - p.col) - Math.abs(b.col - p.col))[0];
       p.year = near?.year ?? fallbackYear;
     }
-    p.term = `${p.season || p.label} ${p.year}`.trim();
+    p.term = p.isYear ? `Year ${p.year}` : `${p.season || p.label} ${p.year}`.trim();
   }
   const seasonRank = (p: LearnerTypePeriod) => SEASON_ORDER[p.season.toLowerCase()] ?? 9;
-  all.sort((a, b) => a.year - b.year || seasonRank(a) - seasonRank(b)
+  all.sort((a, b) => a.year - b.year || Number(b.isYear) - Number(a.isYear) || seasonRank(a) - seasonRank(b)
     || Number(b.isTotal) - Number(a.isTotal) || a.session.localeCompare(b.session));
   const periods: LearnerTypePeriod[] = all.map(({ col: _col, ...rest }) => rest);
   return { segment: block.segment || block.title, programs, periods };
@@ -241,15 +251,19 @@ export function parseTermWiseSplit(grid: string[][]): TermWiseSplit {
   const activeBlock = blocks.find(b => lower(b.title).includes('active') || b.columns.some(c => lower(c.metric) === 'active'));
   const freshBlock = blocks.find(b => b !== activeBlock && !lower(b.title).includes('learner type')
     && (lower(b.title).includes('fresh') || b.columns.every(c => !c.metric || lower(c.metric).includes('fresh'))));
-  const learnerTypes = blocks
+  const typed = blocks
     .filter(b => lower(b.title).includes('learner type') || b.columns.some(c => lower(c.metric).includes('contin')))
     .map(learnerTypeFromBlock)
     .filter(b => b.periods.length > 0);
+  // An "Overall" / "All" / "Total" block is the sum of the other learner types —
+  // kept separately (it carries the yearly totals) and never added to them.
+  const isOverall = (b: LearnerTypeBlock) => /^(overall|all|all learners|total|grand total)$/i.test(b.segment.trim());
 
   return {
     active: seriesFromBlock(activeBlock),
     fresh: seriesFromBlock(freshBlock),
-    learnerTypes,
+    learnerTypes: typed.filter(b => !isOverall(b)),
+    overall: typed.find(isOverall) ?? null,
   };
 }
 
@@ -290,7 +304,10 @@ export function freshContinuingByTerm(split: TermWiseSplit, programs?: string[])
 
   for (const block of split.learnerTypes) {
     const byTerm = new Map<string, LearnerTypePeriod[]>();
-    for (const p of block.periods) byTerm.set(p.term, [...(byTerm.get(p.term) ?? []), p]);
+    for (const p of block.periods) {
+      if (p.isYear) continue;
+      byTerm.set(p.term, [...(byTerm.get(p.term) ?? []), p]);
+    }
 
     for (const [term, ps] of byTerm) {
       const total = ps.find(p => p.isTotal);
@@ -395,4 +412,30 @@ export function learnerTypeSeries(split: TermWiseSplit): { active: TermSeries; f
   active.terms = sorted;
   fresh.terms = [...sorted];
   return { active, fresh };
+}
+
+export interface YearMix extends FreshContinuing {
+  year: number;
+  programs: Array<FreshContinuing & { program: string }>;
+  /** Season totals within the year (Spring, Summer, Fall …). */
+  seasons: Array<FreshContinuing & { label: string }>;
+}
+
+/**
+ * Whole-year fresh vs continuing from the Overall block's "Yearly Grand Total"
+ * columns. Learners span several terms, so this cannot be built by adding terms
+ * up — it is only available when the sheet provides it (null otherwise).
+ */
+export function yearlyOverall(split: TermWiseSplit, year: number | undefined): YearMix | null {
+  const block = split.overall;
+  if (!block || !year) return null;
+  const yp = block.periods.find(p => p.isYear && p.year === year);
+  if (!yp) return null;
+  const sum = (rec: Record<string, number>) => Object.values(rec).reduce((a, n) => a + n, 0);
+  const programs = block.programs
+    .map(program => ({ program, fresh: yp.fresh[program] ?? 0, continuing: yp.continuing[program] ?? 0 }));
+  const seasons = block.periods
+    .filter(p => p.isTotal && !p.isYear && p.year === year)
+    .map(p => ({ label: p.term, fresh: sum(p.fresh), continuing: sum(p.continuing) }));
+  return { year, fresh: sum(yp.fresh), continuing: sum(yp.continuing), programs, seasons };
 }
