@@ -150,5 +150,11 @@ export const SHEET_TABS = {
 export const GGU_STUDENT_LIST_SHEET_ID = '1I0BEjbPOUN47CCwNZm3lz9oHFsSazS1uiyPcxaObLW4';
 export const GGU_STUDENT_LIST_TAB = 'upGrad Active Learner List';
 
+/** Summary tab with term-on-term actives, fresh enrolments and fresh-vs-continuing by learner type. Read by label, not by column. */
+export const GGU_TERM_WISE_SPLIT_TAB = 'Term Wise Split';
+
+/** Term every term dropdown opens on (falls back to the latest term if it isn't in the sheet). */
+export const GGU_DEFAULT_TERM = 'Spring 2026';
+
 /** Program IDs that belong to Golden Gate University (GGU). */
 export const GGU_PROGRAM_IDS = new Set<ProgramId>(['dba-et', 'dba-et-taught', 'dba-et-dissertation', 'dba', 'dba-taught', 'dba-dissertation', 'dba-dl', 'dba-dl-dissertation', 'mba', 'm-psych']);

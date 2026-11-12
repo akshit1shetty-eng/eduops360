@@ -8,11 +8,15 @@ import {
   type CountryRef, type RegionDef, type RegionId,
 } from '../lib/countries';
 
+/** Same status colours as the dashboard KPI cards (Active red, LOA amber, Exited slate). */
+const STATUS_DOT = { active: '#E50913', loa: '#d9a21b', exit: '#64748B' } as const;
+
 export interface CountryCount {
   ref: CountryRef;
   count: number;
   active: number;
-  graduated: number;
+  loa: number;
+  exit: number;
   /** share of all learners, 0–100 */
   pct: number;
 }
@@ -38,7 +42,8 @@ interface RegionStat {
   def: RegionDef;
   count: number;
   active: number;
-  graduated: number;
+  loa: number;
+  exit: number;
   pct: number;
   countries: CountryCount[];
 }
@@ -91,7 +96,8 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
       def,
       count,
       active: members.reduce((s, c) => s + c.active, 0),
-      graduated: members.reduce((s, c) => s + c.graduated, 0),
+      loa: members.reduce((s, c) => s + c.loa, 0),
+      exit: members.reduce((s, c) => s + c.exit, 0),
       pct: (count / (totalLearners || 1)) * 100,
       countries: members,
     };
@@ -367,7 +373,11 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
                   <span className="text-base font-extrabold text-slate-900 font-display">{fmt(active.count)}</span>
                   <span className="text-[11px] text-slate-500">learners · {active.pct.toFixed(1)}%</span>
                 </div>
-                <div className="text-[11px] text-slate-500">{fmt(active.active)} active · {fmt(active.graduated)} graduated</div>
+                <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
+                  <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_DOT.active }} />{fmt(active.active)} active</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_DOT.loa }} />{fmt(active.loa)} LOA</span>
+                  <span className="inline-flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full" style={{ background: STATUS_DOT.exit }} />{fmt(active.exit)} exited</span>
+                </div>
               </div>
             )}
           </div>
@@ -471,56 +481,68 @@ function RegionDetail({ stat, totalLearners, activeIso, onFocus }: {
 }) {
   const top = stat.countries[0]?.count || 1;
   return (
-    <div key={stat.def.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style={{ animation: 'fpRise .3s ease both' }}>
+    <div key={stat.def.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" style={{ animation: 'fpRise .3s ease both' }}>
       <div className="flex items-center gap-2">
-        <i className="fas fa-location-dot text-[11px] text-brand-500" />
-        <h4 className="text-sm font-bold text-slate-900">{stat.def.name}</h4>
+        <i className="fas fa-location-dot text-[10px] text-brand-500" />
+        <h4 className="text-[13px] font-bold text-slate-900">{stat.def.name}</h4>
       </div>
-      <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{stat.def.description}</p>
+      <p className="mt-0.5 text-[10.5px] text-slate-500 leading-snug">{stat.def.description}</p>
 
-      <div className="mt-3 grid grid-cols-2 gap-1.5">
+      <div className="mt-2 grid grid-cols-2 gap-1">
         {[
           { label: 'Learners', value: fmt(stat.count) },
           { label: 'Share of total', value: `${stat.pct.toFixed(1)}%` },
-          { label: 'Active', value: fmt(stat.active), sub: `${((stat.active / (stat.count || 1)) * 100).toFixed(0)}%` },
-          { label: 'Graduated', value: fmt(stat.graduated), sub: `${((stat.graduated / (stat.count || 1)) * 100).toFixed(0)}%` },
         ].map(m => (
-          <div key={m.label} className="rounded-[10px] bg-[#F7F7F8] px-2.5 py-2">
-            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{m.label}</div>
+          <div key={m.label} className="rounded-lg bg-[#F7F7F8] px-2 py-1.5">
+            <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">{m.label}</div>
+            <div className="mt-0.5 text-[15px] font-extrabold text-slate-900 font-display tabular-nums leading-none">{m.value}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-3 gap-1">
+        {[
+          { label: 'Active', value: stat.active, dot: STATUS_DOT.active },
+          { label: 'LOA', value: stat.loa, dot: STATUS_DOT.loa },
+          { label: 'Exited', value: stat.exit, dot: STATUS_DOT.exit },
+        ].map(m => (
+          <div key={m.label} className="rounded-lg bg-[#F7F7F8] px-2 py-1.5 min-w-0">
+            <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.dot }} />{m.label}
+            </div>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-lg font-extrabold text-slate-900 font-display tabular-nums leading-none">{m.value}</span>
-              {m.sub && <span className="text-[10px] text-slate-500">{m.sub}</span>}
+              <span className="text-[13px] font-extrabold text-slate-900 font-display tabular-nums leading-none">{fmt(m.value)}</span>
+              <span className="text-[9.5px] text-slate-500 tabular-nums">{((m.value / (stat.count || 1)) * 100).toFixed(0)}%</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{stat.countries.length} countries</span>
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Share of region</span>
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">{stat.countries.length} countries</span>
+        <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Share of region</span>
       </div>
-      <ol className="mt-2 max-h-[150px] overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+      <ol className="mt-1 max-h-[150px] overflow-y-auto pr-1 space-y-0.5 custom-scrollbar">
         {stat.countries.length === 0 && <li className="py-6 text-center text-[12px] text-slate-400">No learners in this region yet</li>}
         {stat.countries.map((c, i) => (
           <li
             key={c.ref.iso}
-            className={`rounded-lg px-1.5 py-1 transition-colors ${activeIso === c.ref.iso ? 'bg-brand-50' : ''}`}
+            className={`rounded-md px-1.5 py-0.5 transition-colors ${activeIso === c.ref.iso ? 'bg-brand-50' : ''}`}
             onMouseEnter={() => onFocus(c.ref.iso)}
             onMouseLeave={() => onFocus(null)}
           >
             <div className="flex items-center gap-2">
-              <span className="w-4 text-[10px] text-slate-400 tabular-nums">{i + 1}</span>
-              <span className="flex-1 min-w-0 truncate text-[12.5px] font-medium text-slate-800">{c.ref.name}</span>
-              <span className="text-[12px] font-bold text-slate-900 tabular-nums">{fmt(c.count)}</span>
-              <span className="w-11 text-right text-[11px] text-slate-500 tabular-nums">{((c.count / (stat.count || 1)) * 100).toFixed(1)}%</span>
+              <span className="w-3.5 text-[9.5px] text-slate-400 tabular-nums">{i + 1}</span>
+              <span className="flex-1 min-w-0 truncate text-[11.5px] font-medium text-slate-800">{c.ref.name}</span>
+              <span className="text-[11.5px] font-bold text-slate-900 tabular-nums">{fmt(c.count)}</span>
+              <span className="w-10 text-right text-[10px] text-slate-500 tabular-nums">{((c.count / (stat.count || 1)) * 100).toFixed(1)}%</span>
             </div>
-            <div className="mt-1 ml-6 h-1 rounded-full bg-slate-100 overflow-hidden">
+            <div className="mt-0.5 ml-5 h-[3px] rounded-full bg-slate-100 overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${(c.count / top) * 100}%`, background: binColor(c.count) }} />
             </div>
           </li>
         ))}
       </ol>
-      <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+      <p className="mt-2 pt-2 border-t border-slate-100 text-[10.5px] text-slate-500">
         {stat.pct.toFixed(1)}% of all {fmt(totalLearners)} learners live in {stat.def.name}.
       </p>
     </div>

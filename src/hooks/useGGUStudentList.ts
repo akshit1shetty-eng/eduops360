@@ -14,7 +14,7 @@ import { fetchSheetTab, type SheetRecord } from '../lib/sheets';
 type CacheState =
   | { status: 'idle' }
   | { status: 'loading'; promise: Promise<SheetRecord[]> }
-  | { status: 'done'; rows: SheetRecord[] }
+  | { status: 'done'; rows: SheetRecord[]; fetchedAt: Date }
   | { status: 'error'; message: string };
 
 let cache: CacheState = { status: 'idle' };
@@ -34,7 +34,7 @@ function ensureLoading() {
   promise
     .then(rows => {
       const safeRows = Array.isArray(rows) ? rows : [];
-      cache = { status: 'done', rows: safeRows };
+      cache = { status: 'done', rows: safeRows, fetchedAt: new Date() };
       notify();
     })
     .catch(err => {
@@ -51,6 +51,8 @@ export interface GGUStudentListResult {
   rows: SheetRecord[];
   loading: boolean;
   error: string | null;
+  /** When the learner list was last pulled from the sheet (null until loaded). */
+  fetchedAt: Date | null;
 }
 
 export function useGGUStudentList(): GGUStudentListResult {
@@ -66,12 +68,12 @@ export function useGGUStudentList(): GGUStudentListResult {
   }, []);
 
   if (cache.status === 'done') {
-    return { rows: cache.rows, loading: false, error: null };
+    return { rows: cache.rows, loading: false, error: null, fetchedAt: cache.fetchedAt };
   }
   if (cache.status === 'error') {
-    return { rows: [], loading: false, error: cache.message };
+    return { rows: [], loading: false, error: cache.message, fetchedAt: null };
   }
   // idle or loading
   ensureLoading();
-  return { rows: [], loading: true, error: null };
+  return { rows: [], loading: true, error: null, fetchedAt: null };
 }

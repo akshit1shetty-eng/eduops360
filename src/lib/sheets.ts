@@ -126,6 +126,88 @@ async function fetchSheetTabViaSheetsApi(options: {
   return valuesToRecords(json?.values);
 }
 
+/**
+ * Fetch a tab as a raw grid of strings (no header row assumed) — for summary/report
+ * tabs whose layout is several labelled blocks rather than one table.
+ *
+ * Google's public gviz endpoint types each column by its majority value, so text
+ * cells inside mostly-numeric columns (term names, "Fresh Enrolment" …) come back
+ * blank when a whole tab is fetched at once. Fetching each row on its own keeps
+ * every cell, so we read the grid size first and then request rows in parallel.
+ */
+export async function fetchSheetGrid(options: { spreadsheetId: string; sheetName: string }): Promise<string[][]> {
+  const { spreadsheetId, sheetName } = options;
+
+  const apiKey = (import.meta as any)?.env?.VITE_GOOGLE_SHEETS_API_KEY as string | undefined;
+  if (apiKey && apiKey.trim()) {
+    try {
+      const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}`);
+      url.searchParams.set('key', apiKey.trim());
+      url.searchParams.set('majorDimension', 'ROWS');
+      const res = await fetch(url.toString());
+      if (res.ok) {
+        const json: any = await res.json();
+        const values: unknown[][] = Array.isArray(json?.values) ? json.values : [];
+        return values.map(r => (Array.isArray(r) ? r.map(c => coerceCellValue(c).trim()) : []));
+      }
+    } catch {
+      // fall through to gviz
+    }
+  }
+
+  const gvizCsv = async (range: string) => {
+    const url = new URL(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq`);
+    url.searchParams.set('tqx', 'out:csv');
+    url.searchParams.set('headers', '0');
+    url.searchParams.set('sheet', sheetName);
+    url.searchParams.set('range', range);
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`Failed to fetch sheet range: ${sheetName}!${range} (${res.status})`);
+    return parseCsv(await res.text());
+  };
+
+  const whole = await gvizCsv('A1:ZZ500');
+  const rowCount = whole.length;
+  const rows: string[][] = new Array(rowCount);
+  const BATCH = 12;
+  for (let start = 0; start < rowCount; start += BATCH) {
+    await Promise.all(
+      Array.from({ length: Math.min(BATCH, rowCount - start) }, (_, k) => start + k).map(async i => {
+        try {
+          const one = await gvizCsv(`A${i + 1}:ZZ${i + 1}`);
+          rows[i] = one[0] ?? [];
+        } catch {
+          rows[i] = whole[i] ?? []; // keep the numeric view if a single row fails
+        }
+      }),
+    );
+  }
+  return rows.map(r => (r ?? []).map(c => (c ?? '').trim()));
+}
+
+/** Minimal RFC-4180 CSV parser (quoted fields, escaped quotes, CRLF). */
+function parseCsv(text: string): string[][] {
+  const out: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 1; } else inQuotes = false;
+      } else field += ch;
+    } else if (ch === '"') inQuotes = true;
+    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i += 1;
+      row.push(field); out.push(row); row = []; field = '';
+    } else field += ch;
+  }
+  if (field !== '' || row.length > 0) { row.push(field); out.push(row); }
+  return out;
+}
+
 async function fetchSheetTabViaGviz(options: {
   spreadsheetId: string;
   sheetName: string;

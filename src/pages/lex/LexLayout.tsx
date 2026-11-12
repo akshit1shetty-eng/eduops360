@@ -5,6 +5,7 @@ import { LexFilterProvider, useLexFilter } from '../../hooks/useLexFilter';
 import { PRIMARY_UNIVERSITY, PRIMARY_UNIVERSITY_ID, hasUniversityAccess, hasProgramAccess } from '../../lib/universities';
 import { useAuth } from '../../hooks/useAuth';
 import TopbarGreeting from '../../components/TopbarGreeting';
+import DataDisclaimer from '../../components/DataDisclaimer';
 
 export default function LexLayout() {
   return (
@@ -220,7 +221,7 @@ function LexLayoutContent() {
 
         {/* Page Content */}
         <div key={location.pathname} className="flex-1 p-8 page-enter">
-          {hasGguAccess ? <Outlet /> : (
+          {hasGguAccess ? <><Outlet /><DataDisclaimer /></> : (
             <div className="max-w-lg mx-auto mt-16 text-center bg-white rounded-3xl border border-slate-200 p-10">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center">
                 <i className="fas fa-user-lock text-xl" />

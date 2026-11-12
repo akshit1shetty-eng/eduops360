@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
-import { v, getLearnerCategory, getLearnerResidency } from '../../lib/logic';
+import { v, getLearnerResidency } from '../../lib/logic';
 import FilterDropdown from '../../components/FilterDropdown';
 import DateBadge from '../../components/DateBadge';
 
@@ -17,17 +17,39 @@ function TableRowSkeleton() {
       <td className="px-8 py-4"><div className="h-10 bg-slate-50 rounded-lg w-32 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-full w-24 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-lg w-20 mx-auto" /></td>
+      <td className="px-8 py-4"><div className="h-6 bg-slate-50 rounded w-24 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-6 bg-slate-50 rounded w-16 mx-auto" /></td>
     </tr>
   );
 }
 
-type SortKey = 'name' | 'program' | 'status' | 'launch';
+type SortKey = 'name' | 'program' | 'status' | 'details' | 'launch';
 
-// Status pill colours, consistent with the Home dashboard (Active red, Graduated teal, LOA gold, Exit grey)
+const STATUS_LABEL: Record<string, string> = { Active: 'Active', IPD: 'Leave of absence', Exit: 'Exited', Unknown: 'Not set' };
+const statusLabel = (s: string) => STATUS_LABEL[s] ?? s;
+
+type DataTypeStatus = 'Active' | 'IPD' | 'Exit' | 'Unknown';
+
+/** Learner status taken strictly from Column U (GGU Data Type). */
+function dataTypeStatus(row: Record<string, any>): DataTypeStatus {
+  const u = (v(row, 'GGU Data Type', 'ggu_data_type', 'col_20') || '').trim().toLowerCase();
+  if (u === 'active') return 'Active';
+  if (u === 'loa' || u === 'inactive') return 'IPD';
+  if (u === 'exit') return 'Exit';
+  return 'Unknown';
+}
+
+/** Older links (e.g. ?status=Other%20Inactive) still land on the right status. */
+function normalizeStatusParam(s: string | null): string | null {
+  if (!s) return s;
+  if (s === 'Other Inactive' || s === 'Payment-Dropout') return 'Exit';
+  if (s === 'LOA') return 'IPD';
+  return s;
+}
+
+// Status pill colours, consistent with the Home dashboard (Active red, LOA gold, Exit grey)
 function statusTone(mapped: string): { bg: string; fg: string; dot: string } {
   if (mapped === 'Active') return { bg: '#FDECEE', fg: '#9B000C', dot: '#E50913' };
-  if (mapped === 'Graduated') return { bg: '#E6F4F1', fg: '#13705F', dot: '#1f9e89' };
   if (mapped === 'IPD') return { bg: '#FBF3E0', fg: '#7A5A0E', dot: '#d9a21b' };
   return { bg: '#F1F1F2', fg: '#404041', dot: '#A7A9AC' };
 }
@@ -65,14 +87,15 @@ export default function LexLearnerDashboard() {
   };
 
   const [searchParams] = useSearchParams();
-  const initialStatus = searchParams.get('status');
+  const initialStatus = normalizeStatusParam(searchParams.get('status'));
 
+  const [selectedDetails, setSelectedDetails] = useState<string[]>(() => { const s = searchParams.get('sub'); return s ? [s] : []; });
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(initialStatus ? [initialStatus] : []);
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
   const [selectedResidencies, setSelectedResidencies] = useState<string[]>([]);
   const [selectedLaunchMonths, setSelectedLaunchMonths] = useState<string[]>([]);
-  const [openDropdown, setOpenDropdown] = useState<'country' | 'status' | 'program' | 'residency' | 'launchMonth' | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<'country' | 'status' | 'details' | 'program' | 'residency' | 'launchMonth' | null>(null);
 
   const EXPORT_COLUMNS = [
     'Email ID',
@@ -101,7 +124,7 @@ export default function LexLearnerDashboard() {
   // Auto-reset page on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedCountries, selectedStatuses, selectedPrograms, selectedResidencies, selectedLaunchMonths]);
+  }, [search, selectedDetails, selectedCountries, selectedStatuses, selectedPrograms, selectedResidencies, selectedLaunchMonths]);
 
   const toggleFilter = (list: string[], set: (v: string[]) => void, value: string) => {
     if (list.includes(value)) {
@@ -185,9 +208,6 @@ export default function LexLearnerDashboard() {
     let domestic = 0;
     let activeInternational = 0;
     let activeDomestic = 0;
-    let graduated = 0;
-    let graduatedInternational = 0;
-    let graduatedDomestic = 0;
     let loa = 0;
     let loaInternational = 0;
     let loaDomestic = 0;
@@ -203,7 +223,7 @@ export default function LexLearnerDashboard() {
     const filteredStudents = students;
     const mappedRows = filteredStudents.map((s, idx) => {
       const rawStatus = v(s, 'Actual Status', 'Secondary Status', 'Learner Status', 'Status Details', 'Status');
-      const mappedStatus = getLearnerCategory(rawStatus, s);
+      const mappedStatus = dataTypeStatus(s);
 
       const email = v(s, 'Email ID', 'GGU Email', 'Email', 'GGU Student Email ID') || v(s, 'GGU User ID', 'User ID', 'Prism User ID') || `learner-${idx + 1}`;
       const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || `ID-${idx + 1}`;
@@ -224,11 +244,7 @@ export default function LexLearnerDashboard() {
         domestic++;
       }
 
-      if (mappedStatus === 'Graduated') {
-        graduated++;
-        if (isInt) graduatedInternational++;
-        if (isDom) graduatedDomestic++;
-      } else if (mappedStatus === 'Active') {
+      if (mappedStatus === 'Active') {
         active++;
         if (isInt) activeInternational++;
         if (isDom) activeDomestic++;
@@ -236,7 +252,7 @@ export default function LexLearnerDashboard() {
         loa++;
         if (isInt) loaInternational++;
         if (isDom) loaDomestic++;
-      } else if (mappedStatus === 'Other Inactive' || mappedStatus === 'Payment-Dropout') {
+      } else if (mappedStatus === 'Exit') {
         exit++;
         if (isInt) exitInternational++;
         if (isDom) exitDomestic++;
@@ -262,6 +278,7 @@ export default function LexLearnerDashboard() {
         learnerType,
         status: rawStatus,
         mappedStatus,
+        subStatus: (v(s, 'Actual Status', 'actual_status') || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() || 'Not specified',
         launchMonth: rawLaunch,
         formattedLaunch: formatLaunchMonth(rawLaunch)
       };
@@ -286,9 +303,6 @@ export default function LexLearnerDashboard() {
         domestic,
         activeInternational,
         activeDomestic,
-        graduated,
-        graduatedInternational,
-        graduatedDomestic,
         loa,
         loaInternational,
         loaDomestic,
@@ -299,12 +313,22 @@ export default function LexLearnerDashboard() {
       filterOptions: {
         countries: Array.from(countriesSet).sort(),
         programs: Array.from(programsSet).sort(),
-        statuses: ['Active', 'IPD', 'Exit', 'Graduated'],
+        statuses: ['Active', 'IPD', 'Exit'],
         residencies: ['India', 'International'],
         launchMonths: sortedLaunchMonths
       }
     };
   }, [students]);
+
+  const statusDetailOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (selectedStatuses.length > 0 && !selectedStatuses.some(s => r.mappedStatus === normalizeStatusParam(s))) continue;
+      set.add(r.subStatus);
+    }
+    selectedDetails.forEach(d => set.add(d)); // keep chosen values visible
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [rows, selectedStatuses, selectedDetails]);
 
   const filteredRows = useMemo(() => {
     return rows.filter(r => {
@@ -318,14 +342,10 @@ export default function LexLearnerDashboard() {
       if (!matchesSearch) return false;
 
       // Filters
+      if (selectedDetails.length > 0 && !selectedDetails.includes(r.subStatus)) return false;
       if (selectedCountries.length > 0 && !selectedCountries.includes(r.country || '')) return false;
       if (selectedStatuses.length > 0) {
-        const matchesStatus = selectedStatuses.some(s => {
-          if (s === 'Exit' || s === 'Other Inactive' || s === 'Payment-Dropout') {
-            return r.mappedStatus !== 'Active' && r.mappedStatus !== 'Graduated' && r.mappedStatus !== 'IPD';
-          }
-          return r.mappedStatus === s;
-        });
+        const matchesStatus = selectedStatuses.some(s => r.mappedStatus === normalizeStatusParam(s));
         if (!matchesStatus) return false;
       }
       if (selectedPrograms.length > 0 && !selectedPrograms.includes(r.program)) return false;
@@ -334,7 +354,7 @@ export default function LexLearnerDashboard() {
 
       return true;
     });
-  }, [rows, search, selectedCountries, selectedStatuses, selectedPrograms, selectedResidencies, selectedLaunchMonths]);
+  }, [rows, search, selectedDetails, selectedCountries, selectedStatuses, selectedPrograms, selectedResidencies, selectedLaunchMonths]);
 
   const sortedRows = useMemo(() => {
     if (!sortKey) return filteredRows;
@@ -343,6 +363,7 @@ export default function LexLearnerDashboard() {
       sortKey === 'name' ? r.name.toLowerCase()
         : sortKey === 'program' ? `${r.program} ${r.cohort}`.toLowerCase()
           : sortKey === 'status' ? r.mappedStatus
+            : sortKey === 'details' ? r.subStatus.toLowerCase()
             : launchTs(r.launchMonth);
     return [...filteredRows].sort((a, b) => {
       const x = val(a), y = val(b);
@@ -375,8 +396,9 @@ export default function LexLearnerDashboard() {
     return pages;
   }, [safePage, totalPages]);
 
-  const anyFilter = selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || !!search;
+  const anyFilter = selectedDetails.length > 0 || selectedCountries.length > 0 || selectedStatuses.length > 0 || selectedPrograms.length > 0 || selectedResidencies.length > 0 || selectedLaunchMonths.length > 0 || !!search;
   const resetAll = () => {
+    setSelectedDetails([]);
     setSelectedCountries([]);
     setSelectedStatuses([]);
     setSelectedPrograms([]);
@@ -392,7 +414,8 @@ export default function LexLearnerDashboard() {
     ...selectedCountries.map(v => ({ key: `c-${v}`, group: 'Country', label: v, remove: () => toggleFilter(selectedCountries, setSelectedCountries, v) })),
     ...selectedLaunchMonths.map(v => ({ key: `m-${v}`, group: 'Launch', label: v, remove: () => toggleFilter(selectedLaunchMonths, setSelectedLaunchMonths, v) })),
     ...selectedResidencies.map(v => ({ key: `r-${v}`, group: 'Residency', label: v, remove: () => toggleFilter(selectedResidencies, setSelectedResidencies, v) })),
-    ...selectedStatuses.map(v => ({ key: `s-${v}`, group: 'Status', label: v === 'IPD' ? 'Leave of absence' : v, remove: () => toggleFilter(selectedStatuses, setSelectedStatuses, v) })),
+    ...selectedStatuses.map(v => ({ key: `s-${v}`, group: 'Status', label: statusLabel(v), remove: () => toggleFilter(selectedStatuses, setSelectedStatuses, v) })),
+    ...selectedDetails.map(v => ({ key: `d-${v}`, group: 'Status details', label: v, remove: () => toggleFilter(selectedDetails, setSelectedDetails, v) })),
   ];
 
   const statusCards: Array<{
@@ -401,7 +424,6 @@ export default function LexLearnerDashboard() {
   }> = [
     { key: 'all', label: 'Total learners', icon: 'fa-users', chip: 'bg-slate-900 text-white', bar: '#1A1A1B', value: stats.total, intl: stats.international, dom: stats.domestic, filter: [] },
     { key: 'Active', label: 'Active', icon: 'fa-user-check', chip: 'bg-brand-50 text-brand-600', bar: '#E50913', value: stats.active, intl: stats.activeInternational, dom: stats.activeDomestic, filter: ['Active'] },
-    { key: 'Graduated', label: 'Graduated', icon: 'fa-award', chip: 'bg-emerald-50 text-emerald-600', bar: '#1f9e89', value: stats.graduated, intl: stats.graduatedInternational, dom: stats.graduatedDomestic, filter: ['Graduated'] },
     { key: 'IPD', label: 'Leave of absence', icon: 'fa-clock', chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b', value: stats.loa, intl: stats.loaInternational, dom: stats.loaDomestic, filter: ['IPD'] },
     { key: 'Exit', label: 'Exited', icon: 'fa-user-minus', chip: 'bg-slate-100 text-slate-600', bar: '#7A7C7F', value: stats.exit, intl: stats.exitInternational, dom: stats.exitDomestic, filter: ['Exit'] },
   ];
@@ -438,7 +460,7 @@ export default function LexLearnerDashboard() {
       </div>
 
       {/* Status cards: click to filter the directory */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {statusCards.map(k => {
           const selected = k.key === 'all'
             ? selectedStatuses.length === 0
@@ -502,9 +524,9 @@ export default function LexLearnerDashboard() {
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-[62px] rounded-[14px] bg-slate-100 animate-pulse" />)
+            Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[62px] rounded-[14px] bg-slate-100 animate-pulse" />)
           ) : (
             <>
               <FilterDropdown label="Program" iconClass="fas fa-graduation-cap" placeholder="All programs" values={filterOptions.programs} selected={selectedPrograms}
@@ -515,8 +537,10 @@ export default function LexLearnerDashboard() {
                 onToggle={(v) => toggleFilter(selectedLaunchMonths, setSelectedLaunchMonths, v)} isOpen={openDropdown === 'launchMonth'} setIsOpen={(open) => setOpenDropdown(open ? 'launchMonth' : null)} />
               <FilterDropdown label="Residency" iconClass="fas fa-globe-americas" placeholder="India & International" values={filterOptions.residencies} selected={selectedResidencies}
                 onToggle={(v) => toggleFilter(selectedResidencies, setSelectedResidencies, v)} isOpen={openDropdown === 'residency'} setIsOpen={(open) => setOpenDropdown(open ? 'residency' : null)} />
-              <FilterDropdown label="Status" iconClass="fas fa-user-tag" placeholder="All statuses" values={filterOptions.statuses} selected={selectedStatuses}
+              <FilterDropdown label="Status" iconClass="fas fa-user-tag" placeholder="All statuses" values={filterOptions.statuses} selected={selectedStatuses} formatValue={statusLabel}
                 onToggle={(v) => toggleFilter(selectedStatuses, setSelectedStatuses, v)} isOpen={openDropdown === 'status'} setIsOpen={(open) => setOpenDropdown(open ? 'status' : null)} />
+              <FilterDropdown label="Status details" iconClass="fas fa-list-ul" placeholder="All status details" values={statusDetailOptions} selected={selectedDetails}
+                onToggle={(v) => toggleFilter(selectedDetails, setSelectedDetails, v)} isOpen={openDropdown === 'details'} setIsOpen={(open) => setOpenDropdown(open ? 'details' : null)} />
             </>
           )}
         </div>
@@ -587,6 +611,7 @@ export default function LexLearnerDashboard() {
                 {sortHeader('program', 'Program & cohort', 'px-4')}
                 <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.06em]">Residency</th>
                 {sortHeader('status', 'Status', 'px-4')}
+                {sortHeader('details', 'Status details', 'px-4')}
                 {sortHeader('launch', 'Launch', 'pl-4 pr-6', 'right')}
               </tr>
             </thead>
@@ -626,10 +651,13 @@ export default function LexLearnerDashboard() {
                         )}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-full" style={{ background: tone.bg, color: tone.fg }} title={row.mappedStatus}>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-full" style={{ background: tone.bg, color: tone.fg }}>
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.dot }} />
-                          {row.status || '—'}
+                          {statusLabel(row.mappedStatus)}
                         </span>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-[13px] text-slate-700">
+                        {row.subStatus === 'Not specified' ? <span className="text-slate-400">—</span> : row.subStatus}
                       </td>
                       <td className="pl-4 pr-6 py-3.5 whitespace-nowrap text-right text-[12px] font-medium text-slate-600 tabular-nums">
                         {row.formattedLaunch}
@@ -639,7 +667,7 @@ export default function LexLearnerDashboard() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={6} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-slate-300 text-xl mb-4" style={{ background: '#F7F7F8' }}>
                         <i className="fas fa-user-slash" />

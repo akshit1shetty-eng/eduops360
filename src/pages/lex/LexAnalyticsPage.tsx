@@ -1,7 +1,7 @@
 import DateBadge from '../../components/DateBadge';
 import GGUOverallOverviewDashboard from '../../components/GGUOverallOverviewDashboard';
 
-/** Program Insights: status, retention, graduation, cohort and intake-term views for GGU. */
+/** Program Insights: status & cohorts, graduation & completion, term trends and academic quality for GGU. */
 export default function LexAnalyticsPage() {
   return (
     <div className="max-w-7xl mx-auto py-2 space-y-6">
@@ -11,7 +11,7 @@ export default function LexAnalyticsPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Program <span className="text-brand-500">Insights</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Retention, graduation and cohort health across every Golden Gate University program.</p>
+          <p className="text-slate-500 text-sm mt-1">Status, outcomes and term-on-term trends across Golden Gate University programs.</p>
         </div>
         <DateBadge />
       </div>
