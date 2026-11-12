@@ -206,6 +206,7 @@ function LexLayoutContent() {
           <TopbarGreeting />
 
           <div className="flex items-center space-x-4">
+            <DataDisclaimer />
             {/* Partner context: the whole app is scoped to Golden Gate University */}
             <div className="flex items-center gap-3 px-4 py-2 rounded-2xl border border-slate-200 bg-white">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white" style={{ background: '#0C2340' }}>
@@ -221,7 +222,7 @@ function LexLayoutContent() {
 
         {/* Page Content */}
         <div key={location.pathname} className="flex-1 p-8 page-enter">
-          {hasGguAccess ? <><Outlet /><DataDisclaimer /></> : (
+          {hasGguAccess ? <Outlet /> : (
             <div className="max-w-lg mx-auto mt-16 text-center bg-white rounded-3xl border border-slate-200 p-10">
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center">
                 <i className="fas fa-user-lock text-xl" />

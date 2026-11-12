@@ -146,16 +146,33 @@ async function initDb() {
   ], 'write');
 }
 
-// Serverless functions may handle a request as soon as they boot, so every request waits for init
-const dbReady = initDb();
-dbReady.catch((err) => console.error('[DB Error] Failed to initialize database:', err));
+// Serverless functions may handle a request as soon as they boot, so every request waits for init.
+// A failed init is not cached: the next request retries, so a brief Turso hiccup at cold start
+// doesn't leave a warm instance answering "Database is unavailable" until it is recycled.
+let dbReady = null;
+function ensureDb() {
+  if (!dbReady) {
+    dbReady = initDb().catch((err) => {
+      dbReady = null;
+      console.error('[DB Error] Failed to initialize database:', {
+        message: err?.message,
+        code: err?.code,
+        hasUrl: Boolean(process.env.TURSO_DATABASE_URL),
+        hasToken: Boolean(process.env.TURSO_AUTH_TOKEN),
+      });
+      throw err;
+    });
+  }
+  return dbReady;
+}
+ensureDb().catch(() => {});
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(async (req, res, next) => {
   try {
-    await dbReady;
+    await ensureDb();
     next();
   } catch {
     res.status(503).json({ error: { message: 'Database is unavailable. Please try again shortly.' } });
