@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useGGUOverviewAnalytics } from '../hooks/useGGUOverviewAnalytics';
 import { useTermWiseSplit } from '../hooks/useTermWiseSplit';
 import FilterSelect from './FilterSelect';
+import StatusKpis from './StatusKpis';
 import { GGU_DEFAULT_TERM } from '../lib/config';
 import { parseTermCode, totalsByTerm, freshContinuingByTerm, splitYears, learnerTypeSeries, yearlyOverall, type TermSeries, type TermMix } from '../lib/termWiseSplit';
 
@@ -41,33 +42,6 @@ const pctStr = (n: number | null | undefined, digits = 1) => (n === null || n ==
 const shortName = (p: string) => p.replace(/^GGU\s+/i, '');
 
 /* ── Small building blocks ─────────────────────────────────────────────── */
-
-function Meter({ value, color, max = 100 }: { value: number; color: string; max?: number }) {
-  return (
-    <div className="h-1 rounded-full overflow-hidden" style={{ background: C.track }}>
-      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(0, Math.min(100, (value / (max || 1)) * 100))}%`, background: color }} />
-    </div>
-  );
-}
-
-function Kpi({ label, icon, chip = 'bg-slate-100 text-slate-600', value, meter, caption, loading }: {
-  label: string; icon: string; chip?: string; value: React.ReactNode; meter: React.ReactNode; caption: React.ReactNode; loading: boolean;
-}) {
-  // Same anatomy and size as the Overall Dashboard KPI cards
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200/70 px-3.5 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      <span className={`w-6 h-6 rounded-md flex items-center justify-center ${chip}`}>
-        <i className={`fas ${icon} text-[9px]`} />
-      </span>
-      <div className="mt-2 text-[11px] font-medium text-slate-500">{label}</div>
-      <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
-        {loading ? <span className="inline-block h-5 w-16 rounded bg-slate-200 animate-pulse" /> : value}
-      </div>
-      <div className="mt-2">{meter}</div>
-      <div className="mt-1 text-[10.5px] text-slate-500">{caption}</div>
-    </div>
-  );
-}
 
 function Legend({ items }: { items: Array<{ label: string; color: string; value?: string }> }) {
   return (
@@ -329,11 +303,11 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year) : null), [termSplit, year]);
   const termChoices = useMemo(() => [
     ...(yearMix && yearMix.fresh + yearMix.continuing > 0
-      ? [{ value: OVERALL, label: 'Overall', meta: `${fmt(yearMix.fresh + yearMix.continuing)} learners` }]
+      ? [{ value: OVERALL, label: 'Overall' }]
       : []),
     ...(termSplit ? freshContinuingByTerm(termSplit) : [])
       .filter(t => t.year === year && t.fresh + t.continuing > 0)
-      .map(t => ({ value: t.term, label: t.term, meta: `${fmt(t.fresh + t.continuing)} learners` })),
+      .map(t => ({ value: t.term, label: t.term })),
   ], [termSplit, year, yearMix]);
   const termOptions = termChoices.map(t => t.value);
   const termValues = termOptions.filter(v => v !== OVERALL);
@@ -357,62 +331,35 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
     return freshContinuingByTerm(termSplit).find(t => t.term === fcTerm) ?? null;
   }, [termSplit, fcTerm, yearMix]);
   const breakdown: 'segment' | 'program' = isOverall ? 'program' : mixBy;
-  const mixTotal = mix ? mix.fresh + mix.continuing : 0;
-  const mixSegments = (mix?.segments ?? []).filter(s => s.fresh + s.continuing > 0)
-    .sort((a, b) => (b.fresh + b.continuing) - (a.fresh + a.continuing));
-  const mixPrograms = (mix?.programs ?? []).filter(p => p.fresh + p.continuing > 0)
-    .sort((a, b) => (b.fresh + b.continuing) - (a.fresh + a.continuing));
+  // Fresh enrolments and continuing learners are different measures: they are shown
+  // side by side, each on its own scale, and never added together.
+  const hasMix = !!mix && (mix.fresh > 0 || mix.continuing > 0);
+  const nonEmpty = (x: { fresh: number; continuing: number }) => x.fresh > 0 || x.continuing > 0;
+  const byFresh = (a: { fresh: number; continuing: number }, b: { fresh: number; continuing: number }) =>
+    b.fresh - a.fresh || b.continuing - a.continuing;
+  const mixSegments = (mix?.segments ?? []).filter(nonEmpty).sort(byFresh);
+  const mixPrograms = (mix?.programs ?? []).filter(nonEmpty).sort(byFresh);
   const mixSegmentNames = mixSegments.map(s => s.segment);
   // Rows for the chosen breakdown; program rows also carry their learner-type split.
   const mixRows = breakdown === 'program'
     ? mixPrograms.map(p => ({
       key: p.program, label: shortName(p.program), fresh: p.fresh, continuing: p.continuing,
       detail: mixSegmentNames
-        .map(seg => ({ seg, n: (p.bySegment[seg]?.fresh ?? 0) + (p.bySegment[seg]?.continuing ?? 0) }))
-        .filter(d => d.n > 0),
+        .map(seg => ({ seg, fresh: p.bySegment[seg]?.fresh ?? 0, continuing: p.bySegment[seg]?.continuing ?? 0 }))
+        .filter(nonEmpty),
     }))
-    : mixSegments.map(s => ({ key: s.segment, label: s.segment, fresh: s.fresh, continuing: s.continuing, detail: [] as Array<{ seg: string; n: number }> }));
-  const mixMax = Math.max(1, ...mixRows.map(s => s.fresh + s.continuing));
+    : mixSegments.map(s => ({ key: s.segment, label: s.segment, fresh: s.fresh, continuing: s.continuing, detail: [] as Array<{ seg: string; fresh: number; continuing: number }> }));
+  const maxFresh = Math.max(1, ...mixRows.map(r => r.fresh));
+  const maxContinuing = Math.max(1, ...mixRows.map(r => r.continuing));
   const mixRowLabel = breakdown === 'program' ? 'Program' : 'Learner type';
-  const mixSessions = (mix?.sessions ?? []).filter(s => s.fresh + s.continuing > 0);
+  const mixSessions = (mix?.sessions ?? []).filter(nonEmpty);
 
   const showViewToggle = activeTab === 'status' || activeTab === 'outcomes' || activeTab === 'trends';
 
   return (
     <div className="space-y-6">
-      {/* ── KPI row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Kpi
-          label="Total enrolled" icon="fa-users" chip="bg-slate-900 text-white" loading={loading}
-          value={fmt(st.total)}
-          meter={
-            <div className="flex h-1 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
-              <div style={{ width: `${share(st.active)}%`, background: C.active }} />
-              <div style={{ width: `${share(st.inactive)}%`, background: C.loa }} />
-              <div style={{ width: `${share(st.exit)}%`, background: C.exit }} />
-            </div>
-          }
-          caption={<>across {statusRows.length} programs</>}
-        />
-        <Kpi
-          label="Active learners" icon="fa-user-check" chip="bg-brand-50 text-brand-600" loading={loading}
-          value={fmt(st.active)}
-          meter={<Meter value={share(st.active)} color={C.active} />}
-          caption={<><span className="font-semibold text-slate-700">{pctStr(share(st.active))}</span> of enrolled</>}
-        />
-        <Kpi
-          label="Graduated learners" icon="fa-graduation-cap" chip="bg-slate-100 text-slate-600" loading={loading}
-          value={fmt(totalGraduates)}
-          meter={<Meter value={totalGraduates} max={st.total} color={C.past} />}
-          caption={<><span className="font-semibold text-slate-700">{pctStr(share(totalGraduates))}</span> of all enrolled</>}
-        />
-        <Kpi
-          label="Live cohorts" icon="fa-layer-group" chip="bg-slate-100 text-slate-600" loading={loading}
-          value={fmt(st.live)}
-          meter={<Meter value={st.live} max={st.all} color={C.active} />}
-          caption={<>of {fmt(st.all)} cohorts all-time</>}
-        />
-      </div>
+      {/* ── Status cards: the same four as the Overall Dashboard ── */}
+      <StatusKpis />
 
       {/* ── Analysis panel ── */}
       <section className="bg-white rounded-3xl border border-slate-200/70 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
@@ -729,7 +676,7 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                       />
                       {termLoading ? (
                         <div className="h-48 rounded-xl bg-slate-50 animate-pulse" />
-                      ) : !mix || mixTotal === 0 ? (
+                      ) : !mix || !hasMix ? (
                         <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-[12px] text-slate-500">
                           No fresh / continuing split for this {isOverall ? 'year' : 'term'} yet.
                         </div>
@@ -740,22 +687,20 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                             rowKey={r => r.program}
                             columns={[
                               { label: 'Program', render: r => <span className="font-semibold text-slate-900">{shortName(r.program)}</span> },
-                              { label: 'Fresh', align: 'right', render: r => fmt(r.fresh) },
-                              { label: 'Continuing', align: 'right', render: r => fmt(r.continuing) },
-                              { label: 'Total', align: 'right', render: r => <span className="font-semibold text-slate-900">{fmt(r.fresh + r.continuing)}</span> },
-                              { label: 'Fresh share', align: 'right', render: r => pctStr((r.fresh / ((r.fresh + r.continuing) || 1)) * 100) },
+                              { label: 'Fresh enrolments', align: 'right', render: r => fmt(r.fresh) },
+                              { label: 'Continuing learners', align: 'right', render: r => fmt(r.continuing) },
                               ...mixSegmentNames.map(seg => ({
                                 label: `${seg} (fresh / cont.)`,
                                 align: 'right' as const,
                                 render: (r: typeof mixPrograms[number]) => {
                                   const v = r.bySegment[seg];
-                                  return v && v.fresh + v.continuing > 0
+                                  return v && (v.fresh > 0 || v.continuing > 0)
                                     ? <span><span className="font-semibold text-slate-900">{fmt(v.fresh)}</span><span className="text-slate-400"> / </span>{fmt(v.continuing)}</span>
                                     : <span className="text-slate-300">—</span>;
                                 },
                               })),
                             ]}
-                            footer={['All programs', fmt(mix.fresh), fmt(mix.continuing), fmt(mixTotal), pctStr((mix.fresh / mixTotal) * 100),
+                            footer={['All programs', fmt(mix.fresh), fmt(mix.continuing),
                               ...mixSegments.map(sg => `${fmt(sg.fresh)} / ${fmt(sg.continuing)}`)]}
                           />
                         ) : (
@@ -764,99 +709,81 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                             rowKey={r => r.segment}
                             columns={[
                               { label: 'Learner type', render: r => <span className="font-semibold text-slate-900">{r.segment}</span> },
-                              { label: 'Fresh', align: 'right', render: r => fmt(r.fresh) },
-                              { label: 'Continuing', align: 'right', render: r => fmt(r.continuing) },
-                              { label: 'Total', align: 'right', render: r => <span className="font-semibold text-slate-900">{fmt(r.fresh + r.continuing)}</span> },
-                              { label: 'Fresh share', align: 'right', render: r => pctStr((r.fresh / ((r.fresh + r.continuing) || 1)) * 100) },
+                              { label: 'Fresh enrolments', align: 'right', render: r => fmt(r.fresh) },
+                              { label: 'Continuing learners', align: 'right', render: r => fmt(r.continuing) },
                             ]}
-                            footer={['All learners', fmt(mix.fresh), fmt(mix.continuing), fmt(mixTotal), pctStr((mix.fresh / mixTotal) * 100)]}
+                            footer={['All learner types', fmt(mix.fresh), fmt(mix.continuing)]}
                           />
                         )
                       ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 lg:gap-8">
-                          {/* Headline for the term */}
-                          <div className="rounded-2xl border border-slate-200/80 p-4" style={{ background: 'var(--bg-surface-2, #FAFAFB)' }}>
+                          {/* Headline: the two measures, side by side — never summed */}
+                          <div className="rounded-2xl border border-slate-200/80 p-4 self-start" style={{ background: 'var(--bg-surface-2, #FAFAFB)' }}>
                             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{isOverall ? `${mix.year} · whole year` : mix.term} · All programs</div>
-                            <div className="mt-2 text-[28px] leading-none font-extrabold text-slate-900 font-display tabular-nums">{fmt(mixTotal)}</div>
-                            <div className="mt-1 text-[12px] text-slate-500">{isOverall ? 'learners in the year' : 'learners in the term'}</div>
-                            <div className="mt-4 flex h-2.5 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
-                              {mix.fresh > 0 && <div style={{ width: `${(mix.fresh / mixTotal) * 100}%`, background: C.fresh }} />}
-                              {mix.continuing > 0 && <div style={{ width: `${(mix.continuing / mixTotal) * 100}%`, background: C.continuing }} />}
-                            </div>
-                            <div className="mt-3 space-y-1.5">
-                              {[{ label: 'Fresh', hint: 'new this term', v: mix.fresh, color: C.fresh }, { label: 'Continuing', hint: 'from earlier terms', v: mix.continuing, color: C.continuing }].map(x => (
-                                <div key={x.label} className="flex items-center justify-between gap-2 text-[12.5px]">
-                                  <span className="inline-flex items-center gap-2 text-slate-600 min-w-0">
-                                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: x.color }} />
-                                    <span className="font-semibold text-slate-800">{x.label}</span>
-                                    <span className="text-[11px] text-slate-400 truncate">{x.hint}</span>
-                                  </span>
-                                  <span className="tabular-nums whitespace-nowrap">
-                                    <span className="font-bold text-slate-900">{fmt(x.v)}</span>
-                                    <span className="ml-1.5 text-[11px] text-slate-500">{pctStr((x.v / mixTotal) * 100, 0)}</span>
-                                  </span>
+                            {[
+                              { label: 'Fresh enrolments', hint: isOverall ? 'new learners in the year' : 'new learners this term', v: mix.fresh, color: C.fresh },
+                              { label: 'Continuing learners', hint: isOverall ? 'carried on during the year' : 'carried on from earlier terms', v: mix.continuing, color: C.continuing },
+                            ].map((x, i) => (
+                              <div key={x.label} className={i === 0 ? 'mt-3' : 'mt-3 pt-3 border-t border-slate-200/80'}>
+                                <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-700">
+                                  <span className="w-2 h-2 rounded-sm" style={{ background: x.color }} />
+                                  {x.label}
                                 </div>
-                              ))}
-                            </div>
+                                <div className="mt-1 text-[26px] leading-none font-extrabold text-slate-900 font-display tabular-nums">{fmt(x.v)}</div>
+                                <div className="mt-1 text-[11px] text-slate-500">{x.hint}</div>
+                              </div>
+                            ))}
                           </div>
 
-                          {/* By learner type or program, then by session */}
+                          {/* By learner type or program, then by session — one column per measure */}
                           <div className="min-w-0">
-                            <Legend items={[{ label: 'Fresh', color: C.fresh }, { label: 'Continuing', color: C.continuing }]} />
-                            <div className="mt-2 grid grid-cols-[96px_1fr_52px_72px_52px] sm:grid-cols-[120px_1fr_64px_84px_64px] gap-3 px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-slate-400">
-                              <span>{mixRowLabel}</span><span /><span className="text-right">Fresh</span><span className="text-right">Continuing</span><span className="text-right">Total</span>
+                            <div className="grid grid-cols-[96px_1fr_1fr] sm:grid-cols-[130px_1fr_1fr] gap-x-5 px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                              <span>{mixRowLabel}</span>
+                              <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-sm" style={{ background: C.fresh }} />Fresh enrolments</span>
+                              <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-sm" style={{ background: C.continuing }} />Continuing learners</span>
                             </div>
-                            {mixRows.map(s => {
-                              const tot = s.fresh + s.continuing;
-                              return (
-                                <div key={s.key} className={`grid grid-cols-[96px_1fr_52px_72px_52px] sm:grid-cols-[120px_1fr_64px_84px_64px] items-center gap-3 px-3 rounded-[12px] hover:bg-[#F7F7F8] transition-colors text-[13px] ${s.detail.length ? 'py-2' : 'py-2.5'}`}>
-                                  <span className="font-semibold text-slate-800 truncate" title={s.key}>{s.label}</span>
-                                  <div className="min-w-0">
-                                    <div className="flex h-2.5 gap-[2px]" style={{ width: `${Math.max(2, (tot / mixMax) * 100)}%` }}>
-                                      {[{ v: s.fresh, color: C.fresh, label: 'Fresh' }, { v: s.continuing, color: C.continuing, label: 'Continuing' }].filter(x => x.v > 0).map(x => (
-                                        <div
-                                          key={x.label}
-                                          className="h-full first:rounded-l-[4px] last:rounded-r-[4px] transition-all duration-700"
-                                          style={{ width: `${(x.v / tot) * 100}%`, background: x.color, minWidth: 2 }}
-                                          title={`${s.label} · ${x.label}: ${fmt(x.v)} (${pctStr((x.v / tot) * 100)})`}
-                                        />
+                            {mixRows.map(r => (
+                              <div key={r.key} className="grid grid-cols-[96px_1fr_1fr] sm:grid-cols-[130px_1fr_1fr] items-center gap-x-5 px-3 py-2.5 rounded-[12px] hover:bg-[#F7F7F8] transition-colors text-[13px]">
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-slate-800 truncate" title={r.key}>{r.label}</div>
+                                  {r.detail.length > 0 && (
+                                    <div className="mt-0.5 text-[10.5px] text-slate-400 truncate tabular-nums" title="Fresh / continuing by learner type">
+                                      {r.detail.map((d, i) => (
+                                        <span key={d.seg}>{i > 0 && <span className="mx-1 text-slate-300">·</span>}{d.seg} <span className="text-slate-600 font-medium">{fmt(d.fresh)}/{fmt(d.continuing)}</span></span>
                                       ))}
                                     </div>
-                                    {s.detail.length > 0 && (
-                                      <div className="mt-1 text-[10.5px] text-slate-400 truncate tabular-nums">
-                                        {s.detail.map((d, i) => (
-                                          <span key={d.seg}>{i > 0 && <span className="mx-1.5 text-slate-300">·</span>}{d.seg} <span className="text-slate-600 font-medium">{fmt(d.n)}</span></span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="text-right tabular-nums text-slate-700">{fmt(s.fresh)}</span>
-                                  <span className="text-right tabular-nums text-slate-700">{fmt(s.continuing)}</span>
-                                  <span className="text-right tabular-nums font-bold text-slate-900">{fmt(tot)}</span>
+                                  )}
                                 </div>
-                              );
-                            })}
+                                {[{ v: r.fresh, max: maxFresh, color: C.fresh, label: 'Fresh enrolments' }, { v: r.continuing, max: maxContinuing, color: C.continuing, label: 'Continuing learners' }].map(m => (
+                                  <div key={m.label} className="flex items-center gap-2.5 min-w-0" title={`${r.label} · ${m.label}: ${fmt(m.v)}`}>
+                                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.track }}>
+                                      {m.v > 0 && <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, (m.v / m.max) * 100)}%`, background: m.color }} />}
+                                    </div>
+                                    <span className="w-12 text-right tabular-nums font-semibold text-slate-900">{fmt(m.v)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
 
                             {mixSessions.length > 1 && (
                               <div className="mt-4 pt-4 border-t border-slate-100">
                                 <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{isOverall ? `Terms in ${mix.year}` : `Sessions in ${mix.term}`}</div>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-3">
-                                  {mixSessions.map(s => {
-                                    const tot = s.fresh + s.continuing;
-                                    return (
-                                      <div key={s.label} className="rounded-xl border border-slate-200/80 px-3 py-2">
-                                        <div className="flex items-baseline justify-between">
-                                          <span className="text-[12px] font-semibold text-slate-800">{s.label}</span>
-                                          <span className="text-[12px] font-bold text-slate-900 tabular-nums">{fmt(tot)}</span>
-                                        </div>
-                                        <div className="mt-1.5 flex h-1.5 gap-[2px] rounded-full overflow-hidden" style={{ background: C.track }}>
-                                          {s.fresh > 0 && <div style={{ width: `${(s.fresh / tot) * 100}%`, background: C.fresh }} />}
-                                          {s.continuing > 0 && <div style={{ width: `${(s.continuing / tot) * 100}%`, background: C.continuing }} />}
-                                        </div>
-                                        <div className="mt-1 text-[11px] text-slate-500 tabular-nums">{fmt(s.fresh)} fresh · {fmt(s.continuing)} continuing</div>
+                                  {mixSessions.map(x => (
+                                    <div key={x.label} className="rounded-xl border border-slate-200/80 px-3 py-2">
+                                      <div className="text-[12px] font-semibold text-slate-800">{x.label}</div>
+                                      <div className="mt-1.5 grid grid-cols-2 gap-2">
+                                        {[{ label: 'Fresh', v: x.fresh, color: C.fresh }, { label: 'Continuing', v: x.continuing, color: C.continuing }].map(m => (
+                                          <div key={m.label}>
+                                            <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
+                                              <span className="w-1.5 h-1.5 rounded-sm" style={{ background: m.color }} />{m.label}
+                                            </div>
+                                            <div className="text-[14px] font-bold text-slate-900 tabular-nums">{fmt(m.v)}</div>
+                                          </div>
+                                        ))}
                                       </div>
-                                    );
-                                  })}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}

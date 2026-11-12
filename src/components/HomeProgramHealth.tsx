@@ -11,7 +11,6 @@ const CONTINUING = '#7A7C7F';
 const TRACK = '#EEEEF0';
 
 const fmt = (n: number) => n.toLocaleString();
-const pct = (n: number) => `${n.toFixed(1)}%`;
 
 /**
  * Homepage strip: fresh vs continuing learners for a term, from the
@@ -31,8 +30,6 @@ export default function HomeProgramHealth() {
   const term = terms.find(t => t.label === picked)
     ?? terms.find(t => t.label === GGU_DEFAULT_TERM)
     ?? terms[terms.length - 1];
-  const total = term ? term.fresh + term.continuing : 0;
-  const share = (n: number) => (total ? (n / total) * 100 : 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
@@ -59,24 +56,18 @@ export default function HomeProgramHealth() {
       ) : !term ? (
         <div className="mt-2 text-[12px] text-slate-400">No term split available</div>
       ) : (
-        <div className="mt-2.5 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-          <div className="flex items-baseline gap-5 shrink-0">
-            {[{ label: 'fresh', v: term.fresh, color: FRESH }, { label: 'continuing', v: term.continuing, color: CONTINUING }].map(x => (
-              <span key={x.label} className="inline-flex items-baseline gap-1.5">
-                <span className="w-2 h-2 rounded-sm self-center" style={{ background: x.color }} />
-                <span className="text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">{fmt(x.v)}</span>
-                <span className="text-[12px] text-slate-500">{x.label}</span>
-                <span className="text-[11px] text-slate-400 tabular-nums">{pct(share(x.v))}</span>
-              </span>
-            ))}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex h-2 gap-[2px] rounded-full overflow-hidden" style={{ background: TRACK }}>
-              <div style={{ width: `${share(term.fresh)}%`, background: FRESH }} title={`Fresh: ${fmt(term.fresh)}`} />
-              <div style={{ width: `${share(term.continuing)}%`, background: CONTINUING }} title={`Continuing: ${fmt(term.continuing)}`} />
-            </div>
-            <div className="mt-1 text-[10.5px] text-slate-500 tabular-nums">{fmt(total)} learners in {term.label}</div>
-          </div>
+        <div className="mt-2.5 flex flex-wrap items-baseline gap-x-8 gap-y-2">
+          {[
+            { label: 'fresh enrolments', v: term.fresh, color: FRESH },
+            { label: 'continuing learners', v: term.continuing, color: CONTINUING },
+          ].map(x => (
+            <span key={x.label} className="inline-flex items-baseline gap-1.5">
+              <span className="w-2 h-2 rounded-sm self-center" style={{ background: x.color }} />
+              <span className="text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">{fmt(x.v)}</span>
+              <span className="text-[12px] text-slate-500">{x.label}</span>
+            </span>
+          ))}
+          <span className="text-[11px] text-slate-400">{term.label}</span>
         </div>
       )}
     </div>
