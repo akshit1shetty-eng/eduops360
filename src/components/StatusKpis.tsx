@@ -14,7 +14,6 @@ interface KpiDef {
   /** tint for the icon chip (class) + meter colour (hex, inline so global CSS overrides can't wash it out) */
   tone: { chip: string; bar: string };
   to: string;
-  showShare: boolean;
 }
 
 function Skeleton({ className }: { className: string }) {
@@ -60,10 +59,10 @@ export default function StatusKpis() {
   }, [students]);
 
   const kpis: KpiDef[] = [
-    { key: 'total', label: 'Total learners', caption: 'All enrolments', icon: 'fa-users', value: stats.total, tone: { chip: 'bg-slate-900 text-white', bar: '#1A1A1B' }, to: '/lex/learners', showShare: false },
-    { key: 'active', label: 'Active', caption: 'Currently studying', icon: 'fa-user-check', value: stats.active, tone: { chip: 'bg-brand-50 text-brand-600', bar: '#E50913' }, to: '/lex/learners?status=Active', showShare: true },
-    { key: 'loa', label: 'Leave of absence', caption: 'In process of deferral', icon: 'fa-clock', value: stats.loa, tone: { chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b' }, to: '/lex/learners?status=IPD', showShare: true },
-    { key: 'exit', label: 'Exited', caption: 'Inactive or dropped', icon: 'fa-user-minus', value: stats.exit, tone: { chip: 'bg-slate-100 text-slate-600', bar: '#64748B' }, to: '/lex/learners?status=Exit', showShare: true },
+    { key: 'total', label: 'Total learners', caption: 'All enrolments', icon: 'fa-users', value: stats.total, tone: { chip: 'bg-slate-900 text-white', bar: '#1A1A1B' }, to: '/lex/learners' },
+    { key: 'active', label: 'Active', caption: 'Currently studying', icon: 'fa-user-check', value: stats.active, tone: { chip: 'bg-brand-50 text-brand-600', bar: '#E50913' }, to: '/lex/learners?status=Active' },
+    { key: 'loa', label: 'Leave of absence', caption: 'In process of deferral', icon: 'fa-clock', value: stats.loa, tone: { chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b' }, to: '/lex/learners?status=IPD' },
+    { key: 'exit', label: 'Exited', caption: 'Inactive or dropped', icon: 'fa-user-minus', value: stats.exit, tone: { chip: 'bg-slate-100 text-slate-600', bar: '#64748B' }, to: '/lex/learners?status=Exit' },
   ];
 
   const breakdowns = {
@@ -86,7 +85,6 @@ export default function StatusKpis() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         {kpis.map(k => {
-          const share = (k.value / (stats.total || 1)) * 100;
           const bKey = k.key === 'loa' || k.key === 'exit' ? k.key : null;
           const b = bKey ? breakdowns[bKey] : null;
           const isOpen = bKey !== null && openKey === bKey;
@@ -112,14 +110,7 @@ export default function StatusKpis() {
               <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
                 {loading ? <Skeleton className="h-5 w-16" /> : k.value.toLocaleString()}
               </div>
-              <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ background: k.tone.bar, width: loading ? '0%' : `${k.showShare ? share : 100}%` }} />
-              </div>
-              <div className="mt-1 text-[10.5px] text-slate-500">
-                {k.showShare
-                  ? (loading ? '—' : <><span className="font-semibold text-slate-700">{share.toFixed(1)}%</span> of total</>)
-                  : k.caption}
-              </div>
+              <div className="mt-1.5 text-[10.5px] text-slate-500">{k.caption}</div>
             </button>
           );
         })}
