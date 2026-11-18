@@ -59,12 +59,52 @@ function AccessDeniedScreen({ role, requiredPermission }: { role: string; requir
 /**
  * Wraps routes that require authentication and granular role permission checks.
  */
+/** Signed in, but the server couldn't be reached to load the profile — never treated as a logout. */
+function ServerUnavailableScreen() {
+  const { refreshProfile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [retrying, setRetrying] = React.useState(false);
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <div style={{ ...styles.iconWrapper, background: 'linear-gradient(135deg, #404041 0%, #1A1A1B 100%)', boxShadow: '0 12px 36px rgba(0,0,0,0.35)' }}>
+          <i className="fas fa-plug-circle-exclamation" style={{ color: 'white', fontSize: 30 }} />
+        </div>
+        <h1 style={styles.title}>Can't reach the server</h1>
+        <p style={styles.message}>
+          You're still signed in. The portal couldn't load your account just now — this usually clears within a few seconds after an update.
+        </p>
+        <div style={styles.btnGroup}>
+          <button
+            onClick={async () => { setRetrying(true); await refreshProfile(); setRetrying(false); }}
+            disabled={retrying}
+            style={{ ...styles.primaryBtn, opacity: retrying ? 0.7 : 1 }}
+          >
+            <i className={`fas ${retrying ? 'fa-spinner fa-spin' : 'fa-rotate-right'}`} style={{ marginRight: 8 }} />
+            {retrying ? 'Retrying…' : 'Retry'}
+          </button>
+          <button onClick={async () => { await signOut(); navigate('/login'); }} style={styles.secondaryBtn}>
+            <i className="fas fa-sign-out-alt" style={{ marginRight: 8 }} />Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProtectedRoute({ requireAdmin = false }: ProtectedRouteProps) {
-  const { session, profile, permissions, loading } = useAuth();
+  const { session, profile, permissions, loading, profileUnavailable } = useAuth();
   const location = useLocation();
   const path = location.pathname;
 
-  if (loading) {
+  // Signed in but the profile isn't here: show retry if the server is unreachable,
+  // otherwise keep "Authenticating…" — never a false "Access Denied".
+  if (!loading && session && !profile && profileUnavailable) {
+    return <ServerUnavailableScreen />;
+  }
+
+  if (loading || (session && !profile)) {
     return (
       <div style={{
         minHeight: '100vh',

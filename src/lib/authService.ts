@@ -185,11 +185,13 @@ export const authService = {
 
   /**
    * Retrieves the current session (cached in browser localStorage).
-   * Sessions without a server-issued token are discarded.
+   * Sessions without a server-issued token are discarded. Expiry is decided by the
+   * server (sessions slide forward while used), so a stale local expiry date is ignored;
+   * a session the server no longer accepts is cleared on its first 401.
    */
   getCurrentSession(): Session | null {
     const session = readStoredSession();
-    if (session && (!session.access_token || (session.expires_at && session.expires_at < Date.now()))) {
+    if (session && !session.access_token) {
       localStorage.removeItem(SESSION_KEY);
       return null;
     }

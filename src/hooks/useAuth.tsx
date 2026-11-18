@@ -9,6 +9,8 @@ interface AuthContextType {
   profile: Profile | null;
   permissions: string[];
   loading: boolean;
+  /** Signed in, but the profile couldn't be loaded after retries (server unreachable) */
+  profileUnavailable: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -22,11 +24,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // True when the user is signed in but their profile could not be loaded (server unreachable)
+  const [profileUnavailable, setProfileUnavailable] = useState(false);
+
+  /**
+   * Load the profile, retrying transient failures (a cold start right after a deploy,
+   * a brief network or database hiccup) so a signed-in user is never shown as logged
+   * out or denied. Stops early if the server rejected the session (a 401 signs out).
+   */
   async function fetchProfile(userId: string): Promise<void> {
-    const { data, error } = await authService.getProfile(userId);
-    if (!error && data) {
-      setProfile(data);
+    const delays = [0, 1000, 2500, 5000];
+    for (const wait of delays) {
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      if (!authService.getCurrentSession()) return; // session was revoked / expired
+      const { data, error } = await authService.getProfile(userId);
+      if (!error && data) {
+        setProfile(data);
+        setProfileUnavailable(false);
+        return;
+      }
     }
+    if (authService.getCurrentSession()) setProfileUnavailable(true);
   }
 
   async function refreshProfile(): Promise<void> {
@@ -62,12 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authService.signOut();
     setProfile(null);
     setSession(null);
+    setProfileUnavailable(false);
   };
 
   const permissions = profile?.permissions || [];
 
   return (
-    <AuthContext.Provider value={{ session, profile, permissions, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, profile, permissions, loading, profileUnavailable, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

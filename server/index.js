@@ -195,7 +195,11 @@ async function augmentProfileWithPermissions(profile) {
 
 // ─── Sessions ────────────────────────────────────────────────────────────────
 
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// Sliding sessions: a sign-in stays valid while it is used. Each authenticated request
+// pushes the expiry out again (at most once a day), so active users are never logged
+// out; a session left unused for SESSION_TTL_MS expires.
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days of inactivity
+const SESSION_RENEW_AFTER_MS = 24 * 60 * 60 * 1000; // renew once a day at most
 
 async function createSession(userId) {
   const token = randomBytes(32).toString('hex');
@@ -218,14 +222,30 @@ async function requireAuth(req, res, next) {
   if (!token) {
     return res.status(401).json({ error: { message: 'Not signed in' } });
   }
-  const rows = await query(
-    'SELECT p.* FROM sessions s JOIN profiles p ON p.id = s.user_id WHERE s.token = ? AND s.expires_at > ?',
-    [token, Date.now()]
-  );
+  let rows;
+  try {
+    rows = await query(
+      'SELECT p.*, s.expires_at AS session_expires_at FROM sessions s JOIN profiles p ON p.id = s.user_id WHERE s.token = ? AND s.expires_at > ?',
+      [token, Date.now()]
+    );
+  } catch (err) {
+    // A database hiccup is not a sign-out: answer "try again" so the client keeps its session
+    console.error('[Auth] Session lookup failed:', err?.message);
+    return res.status(503).json({ error: { message: 'Service is busy. Please try again shortly.' } });
+  }
   if (rows.length === 0) {
     return res.status(401).json({ error: { message: 'Session expired. Please sign in again.' } });
   }
-  req.profile = await augmentProfileWithPermissions(rows[0]);
+  const { session_expires_at: sessionExpiresAt, ...profile } = rows[0];
+
+  // Slide the expiry forward for active users (best effort — never blocks the request)
+  const now = Date.now();
+  if (Number(sessionExpiresAt) - now < SESSION_TTL_MS - SESSION_RENEW_AFTER_MS) {
+    run('UPDATE sessions SET expires_at = ? WHERE token = ?', [now + SESSION_TTL_MS, token])
+      .catch((err) => console.error('[Auth] Session renewal failed:', err?.message));
+  }
+
+  req.profile = await augmentProfileWithPermissions(profile);
   next();
 }
 
