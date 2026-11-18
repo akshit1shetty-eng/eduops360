@@ -13,11 +13,10 @@ function StatSkeleton() {
 function TableRowSkeleton() {
   return (
     <tr className="animate-pulse">
-      <td className="pl-6 pr-4 py-3.5"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-slate-100" /><div className="h-8 bg-slate-100 rounded-lg w-40" /></div></td>
+      <td className="pl-6 pr-4 py-3.5"><div className="h-5 bg-slate-100 rounded w-20" /></td>
       <td className="px-8 py-4"><div className="h-10 bg-slate-50 rounded-lg w-32 mx-auto" /></td>
-      <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-full w-24 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-lg w-20 mx-auto" /></td>
-      <td className="px-8 py-4"><div className="h-6 bg-slate-50 rounded w-24 mx-auto" /></td>
+      <td className="px-8 py-4"><div className="h-8 bg-slate-50 rounded-full w-24 mx-auto" /></td>
       <td className="px-8 py-4"><div className="h-6 bg-slate-50 rounded w-16 mx-auto" /></td>
     </tr>
   );
@@ -63,11 +62,6 @@ function launchTs(val: string): number {
   return 0;
 }
 
-function initials(name: string): string {
-  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  return ((parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
-}
 function SubStatSkeleton() {
   return <div className="h-5 w-16 bg-slate-100 rounded animate-pulse" />;
 }
@@ -96,30 +90,6 @@ export default function LexLearnerDashboard() {
   const [selectedResidencies, setSelectedResidencies] = useState<string[]>([]);
   const [selectedLaunchMonths, setSelectedLaunchMonths] = useState<string[]>([]);
   const [openDropdown, setOpenDropdown] = useState<'country' | 'status' | 'details' | 'program' | 'residency' | 'launchMonth' | null>(null);
-
-  const EXPORT_COLUMNS = [
-    'Email ID',
-    'First Name',
-    'Last Name',
-    'User ID',
-    'Prism User ID',
-    'GGU User ID',
-    'GGU Email',
-    'Cohort #',
-    'Cohort ID',
-    'Launch Month',
-    'Term',
-    'Learner Type',
-    'Status',
-    'Country Of Residence',
-    'Region',
-    'Contact',
-    'Package Key',
-    'Status Details',
-    'Cohort Status'
-  ];
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>(EXPORT_COLUMNS);
 
   // Auto-reset page on filter change
   useEffect(() => {
@@ -155,52 +125,6 @@ export default function LexLearnerDashboard() {
     return val;
   };
 
-  const handleExportCSV = () => {
-    if (selectedExportColumns.length === 0) return;
-    const headers = selectedExportColumns;
-
-    const csvRows = filteredRows.map(r => {
-      const raw = r.raw || {};
-      const rowMap: Record<string, unknown> = {
-        'Email ID': raw['Email ID'] ?? '',
-        'First Name': raw['First Name'] ?? '',
-        'Last Name': raw['Last Name'] ?? '',
-        'User ID': raw['User ID'] ?? '',
-        'Prism User ID': raw['Prism User ID'] ?? '',
-        'GGU User ID': raw['GGU User ID'] ?? '',
-        'GGU Email': raw['GGU Email'] ?? '',
-        'Cohort #': raw['Cohort #'] ?? '',
-        'Cohort ID': raw['Cohort ID'] ?? '',
-        'Launch Month': formatLaunchMonth(raw['Batch Launch Month'] || raw['Launch Month'] || ''),
-        'Term': raw['GGU Term Id'] || raw['Term'] || '',
-        'Learner Type': raw['Learner Type'] ?? '',
-        'Status': (raw['Actual Status'] || raw['Status']) ?? '',
-        'Country Of Residence': raw['Country Of Residence'] ?? '',
-        'Region': raw['Region'] ?? '',
-        'Contact': raw['Contact'] ?? '',
-        'Package Key': raw['Package Key'] ?? '',
-        'Status Details': raw['Status Details'] ?? '',
-        'Cohort Status': raw['Cohort Status'] ?? '',
-        'Program': raw['Program'] ?? ''
-      };
-
-      const cols = selectedExportColumns.map(col => rowMap[col]);
-      return cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',');
-    });
-
-    const csvContent = [headers.join(','), ...csvRows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `overall_learners_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setShowExportModal(false);
-  };
-
   const { rows, stats, filterOptions } = useMemo(() => {
     let total = 0;
     let active = 0;
@@ -225,10 +149,9 @@ export default function LexLearnerDashboard() {
       const rawStatus = v(s, 'Actual Status', 'Secondary Status', 'Learner Status', 'Status Details', 'Status');
       const mappedStatus = dataTypeStatus(s);
 
-      const email = v(s, 'Email ID', 'GGU Email', 'Email', 'GGU Student Email ID') || v(s, 'GGU User ID', 'User ID', 'Prism User ID') || `learner-${idx + 1}`;
-      const userId = v(s, 'User ID', 'Prism User ID', 'GGU User ID', 'Student ID', 'id') || `ID-${idx + 1}`;
+      // Privacy: only the upGrad User ID identifies a learner here — no names, emails or other IDs.
+      const userId = v(s, 'User ID') || '—';
       const term = v(s, 'Term', 'GGU Term Id', 'Current Term', 'Cohort Term') || '';
-      const region = v(s, 'Region', 'Current Region', 'Geographic Region') || '';
       const country = (v(s, 'Country Of Residence', 'Country of Residence', 'Country', 'Country of  Residence') || '').trim();
       const rawLaunch = (v(s, 'Batch Launch Month', 'Launch Month') || '').trim();
 
@@ -267,11 +190,8 @@ export default function LexLearnerDashboard() {
 
       return {
         raw: s,
-        name: `${s['First Name'] || ''} ${s['Last Name'] || ''}`.trim(),
-        email,
         userId,
         term,
-        region,
         program: s._programName,
         country,
         cohort,
@@ -335,9 +255,9 @@ export default function LexLearnerDashboard() {
       // Search
       const term = search.toLowerCase();
       const matchesSearch = !search.trim() ||
-        r.name.toLowerCase().includes(term) ||
-        r.email.toLowerCase().includes(term) ||
-        r.program.toLowerCase().includes(term);
+        r.userId.toLowerCase().includes(term) ||
+        r.program.toLowerCase().includes(term) ||
+        r.cohort.toLowerCase().includes(term);
 
       if (!matchesSearch) return false;
 
@@ -360,7 +280,7 @@ export default function LexLearnerDashboard() {
     if (!sortKey) return filteredRows;
     const dir = sortDir === 'asc' ? 1 : -1;
     const val = (r: typeof filteredRows[number]): string | number =>
-      sortKey === 'name' ? r.name.toLowerCase()
+      sortKey === 'name' ? r.userId.padStart(12, '0')
         : sortKey === 'program' ? `${r.program} ${r.cohort}`.toLowerCase()
           : sortKey === 'status' ? r.mappedStatus
             : sortKey === 'details' ? r.subStatus.toLowerCase()
@@ -511,7 +431,7 @@ export default function LexLearnerDashboard() {
           <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
           <input
             type="text"
-            placeholder="Search by name, email or program..."
+            placeholder="Search by user ID, program or cohort..."
             className="w-full pl-11 pr-10 py-3 rounded-[14px] border border-slate-200 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-400 transition-all text-sm text-slate-800 placeholder:text-slate-400"
             style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}
             value={search}
@@ -585,33 +505,16 @@ export default function LexLearnerDashboard() {
               </p>
             </div>
           </div>
-          {!loading && filteredRows.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                if (selectedExportColumns.length === 0) {
-                  setSelectedExportColumns(['Email ID', 'First Name', 'Last Name', 'Cohort #', 'Launch Month', 'Status', 'Country Of Residence']);
-                }
-                setShowExportModal(true);
-              }}
-              className="px-4 py-2 rounded-[12px] text-white text-[12px] font-semibold flex items-center gap-2 shadow-[0_6px_16px_-8px_rgba(229,9,19,0.6)] hover:brightness-110 transition-all"
-              style={{ background: 'linear-gradient(135deg, #E50913, #BF2026)' }}
-            >
-              <i className="fas fa-file-export text-[11px]" />
-              Export CSV
-            </button>
-          )}
         </header>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="border-y border-slate-100" style={{ background: 'var(--bg-surface-2, #F7F7F8)' }}>
               <tr>
-                {sortHeader('name', 'Learner', 'pl-6 pr-4')}
+                {sortHeader('name', 'User ID', 'pl-6 pr-4')}
                 {sortHeader('program', 'Program & cohort', 'px-4')}
                 <th className="px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.06em]">Residency</th>
                 {sortHeader('status', 'Status', 'px-4')}
-                {sortHeader('details', 'Status details', 'px-4')}
                 {sortHeader('launch', 'Launch', 'pl-4 pr-6', 'right')}
               </tr>
             </thead>
@@ -625,15 +528,7 @@ export default function LexLearnerDashboard() {
                     <tr key={`${row.userId}-${idx}`} className="group hover:bg-[#FAFAFB] transition-colors">
                       <td className="pl-6 pr-4 py-3.5 whitespace-nowrap relative">
                         <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: '#F1F1F2', color: '#404041' }}>
-                            {initials(row.name)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 leading-tight">{row.name || 'N/A'}</p>
-                            <p className="text-xs text-slate-500 leading-tight mt-0.5">{row.email}</p>
-                          </div>
-                        </div>
+                        <span className="text-sm font-semibold text-slate-900 tabular-nums">{row.userId}</span>
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <p className="text-sm font-medium text-slate-800 leading-tight">{row.program}</p>
@@ -646,18 +541,16 @@ export default function LexLearnerDashboard() {
                           <i className={`fas ${row.learnerType === 'International' ? 'fa-globe-americas' : 'fa-house'} text-[10px] text-slate-400`} />
                           {row.learnerType}
                         </p>
-                        {(row.country || row.region) && (
-                          <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{[row.country, row.region].filter(Boolean).join(' · ')}</p>
-                        )}
+                        {row.country && <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{row.country}</p>}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-full" style={{ background: tone.bg, color: tone.fg }}>
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: tone.dot }} />
                           {statusLabel(row.mappedStatus)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap text-[13px] text-slate-700">
-                        {row.subStatus === 'Not specified' ? <span className="text-slate-400">—</span> : row.subStatus}
+                        {row.subStatus !== 'Not specified' && row.subStatus !== statusLabel(row.mappedStatus) && (
+                          <p className="text-[11px] text-slate-500 mt-1">{row.subStatus}</p>
+                        )}
                       </td>
                       <td className="pl-4 pr-6 py-3.5 whitespace-nowrap text-right text-[12px] font-medium text-slate-600 tabular-nums">
                         {row.formattedLaunch}
@@ -667,7 +560,7 @@ export default function LexLearnerDashboard() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center">
                       <div className="w-14 h-14 rounded-[16px] flex items-center justify-center text-slate-300 text-xl mb-4" style={{ background: '#F7F7F8' }}>
                         <i className="fas fa-user-slash" />
@@ -734,103 +627,6 @@ export default function LexLearnerDashboard() {
         </div>
       </section>
 
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setShowExportModal(false)} />
-          <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-[32px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh] border border-white/10 text-left">
-            {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white dark:from-gray-900/50 dark:to-gray-800">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Export Student List</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Select columns to include in your CSV export</p>
-              </div>
-              <button onClick={() => setShowExportModal(false)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                <i className="fas fa-times" />
-              </button>
-            </div>
-
-            {/* Modal Quick Selection */}
-            <div className="px-8 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-white/5 flex items-center justify-end gap-3">
-              <span className="text-xs text-gray-400 mr-auto italic">Pick columns to export</span>
-              <button
-                type="button"
-                onClick={() => setSelectedExportColumns(EXPORT_COLUMNS)}
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/50 rounded-lg transition-colors border border-brand-100 dark:border-brand-900/50"
-              >
-                Select All
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedExportColumns([])}
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Modal Content - Scrollable grid */}
-            <div className="p-8 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {EXPORT_COLUMNS.map(header => (
-                  <label
-                    key={header}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer group ${selectedExportColumns.includes(header)
-                      ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/20'
-                      : 'border-gray-100 dark:border-white/5 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-brand-500/50'
-                      }`}
-                  >
-                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${selectedExportColumns.includes(header)
-                      ? 'bg-brand-600 border-brand-600'
-                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-white/10 group-hover:border-brand-400'
-                      }`}>
-                      {selectedExportColumns.includes(header) && <i className="fas fa-check text-[10px] text-white" />}
-                    </div>
-                    <input
-                      type="checkbox"
-                      className="hidden"
-                      checked={selectedExportColumns.includes(header)}
-                      onChange={() => {
-                        setSelectedExportColumns(prev =>
-                          prev.includes(header) ? prev.filter(x => x !== header) : [...prev, header]
-                        );
-                      }}
-                    />
-                    <span className={`text-xs font-medium truncate ${selectedExportColumns.includes(header) ? 'text-brand-700 dark:text-brand-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {header}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-8 py-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                <span className="font-bold text-brand-600 dark:text-brand-400">{filteredRows.length}</span> learners will be exported with <span className="font-bold text-brand-600 dark:text-brand-400">{selectedExportColumns.length}</span> columns.
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowExportModal(false)}
-                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportCSV}
-                  disabled={selectedExportColumns.length === 0}
-                  className="px-8 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-200 dark:shadow-none hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  <i className="fas fa-download mr-2" />
-                  Download CSV
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

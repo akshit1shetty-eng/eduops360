@@ -394,24 +394,44 @@ export function learnerTypePrograms(split: TermWiseSplit): string[] {
  * Active (fresh + continuing) and new-enrolment (fresh) series per program and
  * session, built only from the Learner Type blocks.
  */
-export function learnerTypeSeries(split: TermWiseSplit): { active: TermSeries; fresh: TermSeries } {
+export function learnerTypeSeries(split: TermWiseSplit): { active: TermSeries; fresh: TermSeries; continuing: TermSeries } {
   const programs = learnerTypePrograms(split);
   const active: TermSeries = { terms: [], programs, values: {} };
   const fresh: TermSeries = { terms: [], programs, values: {} };
+  const continuing: TermSeries = { terms: [], programs, values: {} };
   const terms = new Set<string>();
   for (const p of programs) {
     active.values[p] = {};
     fresh.values[p] = {};
+    continuing.values[p] = {};
     for (const s of sessionSeries(split, [p])) {
       terms.add(s.term);
       active.values[p][s.term] = s.active;
       fresh.values[p][s.term] = s.fresh;
+      continuing.values[p][s.term] = s.continuing;
     }
   }
   const sorted = Array.from(terms).sort((a, b) => parseTermCode(a).sortKey - parseTermCode(b).sortKey);
   active.terms = sorted;
   fresh.terms = [...sorted];
-  return { active, fresh };
+  continuing.terms = [...sorted];
+  return { active, fresh, continuing };
+}
+
+/**
+ * Programs with a live baseline: at least one fresh enrolment in any term of the tab.
+ * Programs with none (e.g. SJD, which only carries continuing learners) are left out
+ * of Term trends.
+ */
+export function programsWithNewEnrolments(split: TermWiseSplit): string[] {
+  const set = new Set<string>();
+  for (const b of split.learnerTypes) {
+    for (const p of b.periods) {
+      if (p.isYear) continue;
+      for (const [program, n] of Object.entries(p.fresh)) if (n > 0) set.add(program);
+    }
+  }
+  return learnerTypePrograms(split).filter(p => set.has(p));
 }
 
 export interface YearMix extends FreshContinuing {
@@ -426,13 +446,15 @@ export interface YearMix extends FreshContinuing {
  * columns. Learners span several terms, so this cannot be built by adding terms
  * up — it is only available when the sheet provides it (null otherwise).
  */
-export function yearlyOverall(split: TermWiseSplit, year: number | undefined): YearMix | null {
+export function yearlyOverall(split: TermWiseSplit, year: number | undefined, only?: string[]): YearMix | null {
   const block = split.overall;
   if (!block || !year) return null;
   const yp = block.periods.find(p => p.isYear && p.year === year);
   if (!yp) return null;
-  const sum = (rec: Record<string, number>) => Object.values(rec).reduce((a, n) => a + n, 0);
+  const keep = (p: string) => !only || only.includes(p);
+  const sum = (rec: Record<string, number>) => Object.entries(rec).reduce((a, [p, n]) => a + (keep(p) ? n : 0), 0);
   const programs = block.programs
+    .filter(keep)
     .map(program => ({ program, fresh: yp.fresh[program] ?? 0, continuing: yp.continuing[program] ?? 0 }));
   const seasons = block.periods
     .filter(p => p.isTotal && !p.isYear && p.year === year)

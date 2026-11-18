@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAllLearnerData } from '../../hooks/useAllLearnerData';
 import { useLexFilter } from '../../hooks/useLexFilter';
 import { v } from '../../lib/logic';
@@ -7,6 +8,7 @@ import DateBadge from '../../components/DateBadge';
 import WorldFootprintMap, { type CountryCount } from '../../components/WorldFootprintMap';
 import ProgramDistribution from '../../components/ProgramDistribution';
 import StatusKpis from '../../components/StatusKpis';
+import { useGGUOverviewAnalytics } from '../../hooks/useGGUOverviewAnalytics';
 
 function Skeleton({ className }: { className: string }) {
   return <span className={`inline-block rounded bg-slate-200 animate-pulse ${className}`} />;
@@ -43,6 +45,19 @@ function Panel({ title, subtitle, icon, aside, children, className = '' }: {
 export default function LexDashboardHome() {
   const { selectedUniversityId } = useLexFilter();
   const { students, loading } = useAllLearnerData(selectedUniversityId);
+  const navigate = useNavigate();
+
+  // Graduated learners per program — same calculation as Program Insights → Graduation
+  // (Actual Status = Graduated, finished and live cohorts), so both pages agree.
+  const { loading: gradLoading, closedCohortGraduation, activeCohortGraduation } = useGGUOverviewAnalytics();
+  const graduates = useMemo(() => closedCohortGraduation
+    .map(r => ({
+      program: r.program.replace(/^GGU\s+/i, ''),
+      count: r.graduatedLearners + (activeCohortGraduation.find(x => x.program === r.program)?.graduatedLearners ?? 0),
+    }))
+    .filter(r => r.count > 0)
+    .sort((a, b) => b.count - a.count), [closedCohortGraduation, activeCohortGraduation]);
+  const totalGraduates = graduates.reduce((a, r) => a + r.count, 0);
 
   const stats = useMemo(() => {
     let total = 0, active = 0, loa = 0, exit = 0;
@@ -50,6 +65,7 @@ export default function LexDashboardHome() {
     const countryMap = new Map<string, { ref: CountryRef; count: number; active: number; loa: number; exit: number }>();
     const unplaced: Record<string, number> = {};
     let unplacedCount = 0;
+    let missingCountry = 0;
 
     for (const s of students) {
       total++;
@@ -66,7 +82,9 @@ export default function LexDashboardHome() {
           countryEntry = { ref: loc.country, count: 1, active: 0, loa: 0, exit: 0 };
           countryMap.set(loc.country.iso, countryEntry);
         }
-      } else if (loc) {
+      } else if (!loc) {
+        missingCountry++;
+      } else {
         unplacedCount++;
         const label = loc.label.toUpperCase();
         unplaced[label] = (unplaced[label] || 0) + 1;
@@ -97,6 +115,7 @@ export default function LexDashboardHome() {
       distribution: Object.entries(programsMap).map(([name, count]) => ({ name, count, pct: pctOf(count) })),
       countries,
       unplacedCount,
+      missingCountry,
       unplacedLabels: Object.entries(unplaced).sort((a, b) => b[1] - a[1]).map(([l]) => l),
     };
   }, [students]);
@@ -147,26 +166,75 @@ export default function LexDashboardHome() {
           loading={loading}
           totalLearners={stats.total}
           unplacedCount={stats.unplacedCount}
+          missingCount={stats.missingCountry}
           unplacedLabels={stats.unplacedLabels}
         />
       </Panel>
 
-      {/* Program distribution */}
-      <Panel
-        title="Program Distribution"
-        subtitle="Learner volume by program, largest first."
-        icon="fa-layer-group"
-        aside={
-          <div className="text-right shrink-0">
-            <div className="text-2xl font-extrabold text-slate-900 font-display leading-none tabular-nums">
-              {loading ? <Skeleton className="h-6 w-8" /> : stats.distribution.length}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Program distribution */}
+        <Panel
+          className="xl:col-span-7"
+          title="Program Distribution"
+          subtitle="Learner volume by program, largest first."
+          icon="fa-layer-group"
+          aside={
+            <div className="text-right shrink-0">
+              <div className="text-2xl font-extrabold text-slate-900 font-display leading-none tabular-nums">
+                {loading ? <Skeleton className="h-6 w-8" /> : stats.distribution.length}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">programs</div>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">programs</div>
-          </div>
-        }
-      >
-        <ProgramDistribution items={stats.distribution} total={stats.total} loading={loading} />
-      </Panel>
+          }
+        >
+          <ProgramDistribution items={stats.distribution} total={stats.total} loading={loading} />
+        </Panel>
+
+        {/* Graduates */}
+        <Panel
+          className="xl:col-span-5"
+          title="Graduates"
+          subtitle="Learners who have graduated, by program."
+          icon="fa-graduation-cap"
+          aside={
+            <div className="text-right shrink-0">
+              <div className="text-2xl font-extrabold text-slate-900 font-display leading-none tabular-nums">
+                {gradLoading ? <Skeleton className="h-6 w-14" /> : totalGraduates.toLocaleString()}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-1">graduated</div>
+            </div>
+          }
+        >
+          {gradLoading ? (
+            <div className="space-y-4">{[0, 1, 2, 3].map(i => <div key={i} className="h-8 rounded-lg bg-slate-100 animate-pulse" />)}</div>
+          ) : graduates.length === 0 ? (
+            <p className="text-[13px] text-slate-500">No graduates recorded yet.</p>
+          ) : (
+            <>
+              <ul className="space-y-3.5">
+                {graduates.map(g => (
+                  <li key={g.program} title={`${g.program}: ${g.count.toLocaleString()} graduated`}>
+                    <div className="flex items-baseline justify-between text-[13px]">
+                      <span className="font-semibold text-slate-800">{g.program}</span>
+                      <span className="font-bold text-slate-900 tabular-nums">{g.count.toLocaleString()}</span>
+                    </div>
+                    <div className="mt-1.5 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(2, (g.count / (graduates[0]?.count || 1)) * 100)}%`, background: '#404041' }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => navigate('/lex/insights')}
+                className="mt-5 text-[12px] font-semibold text-brand-600 hover:text-brand-700"
+              >
+                Graduation details in Program Insights →
+              </button>
+            </>
+          )}
+        </Panel>
+      </div>
     </div>
   );
 }

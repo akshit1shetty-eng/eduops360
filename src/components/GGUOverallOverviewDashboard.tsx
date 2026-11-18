@@ -4,7 +4,7 @@ import { useTermWiseSplit } from '../hooks/useTermWiseSplit';
 import FilterSelect from './FilterSelect';
 import StatusKpis from './StatusKpis';
 import { GGU_DEFAULT_TERM } from '../lib/config';
-import { parseTermCode, totalsByTerm, freshContinuingByTerm, splitYears, learnerTypeSeries, yearlyOverall, type TermSeries, type TermMix } from '../lib/termWiseSplit';
+import { parseTermCode, totalsByTerm, freshContinuingByTerm, splitYears, learnerTypeSeries, yearlyOverall, programsWithNewEnrolments, type TermSeries, type TermMix } from '../lib/termWiseSplit';
 
 /** Academic quality is designed but parked until its data sources exist — flip to bring the tab back. */
 const SHOW_ACADEMIC_QUALITY = false;
@@ -31,7 +31,7 @@ const C = {
 const ALL_TABS: Array<{ id: TabId; label: string; icon: string; title: string; hint: string }> = [
   { id: 'status', label: 'Status & cohorts', icon: 'fa-chart-bar', title: 'Status & cohorts', hint: 'Active, leave of absence and exited learners, with live and closed cohorts per program' },
   { id: 'outcomes', label: 'Graduation', icon: 'fa-graduation-cap', title: 'Graduation', hint: 'Number of learners who have graduated, by program' },
-  { id: 'trends', label: 'Term trends', icon: 'fa-chart-line', title: 'Term trends', hint: 'New enrolments and fresh vs continuing learners, term by term' },
+  { id: 'trends', label: 'Term trends', icon: 'fa-chart-line', title: 'Term trends', hint: 'New enrolments against continuing learners, term by term' },
   { id: 'quality', label: 'Academic quality', icon: 'fa-chalkboard-teacher', title: 'Academic quality', hint: 'Live sessions, assignments and course-level performance' },
 ];
 const TABS = ALL_TABS.filter(t => t.id !== 'quality' || SHOW_ACADEMIC_QUALITY);
@@ -133,80 +133,83 @@ function SectionTitle({ title, sub, aside }: { title: string; sub?: string; asid
 }
 
 /**
- * Column chart for one measure over terms. Single series → no legend; the
- * section title names it. Hover shows the exact value; the latest and the
- * peak term are labelled directly.
+ * New enrolments and continuing learners per term, as side-by-side columns on one
+ * learner-count axis (never stacked or added). Legend names the two series; hover
+ * shows both exact figures; every bar carries its value.
  */
-function TermColumns({ data, color, unit, loading }: {
-  data: Array<{ term: string; value: number }>; color: string; unit: string; loading: boolean;
+function TermPairColumns({ data, loading }: {
+  data: Array<{ term: string; fresh: number; continuing: number }>; loading: boolean;
 }) {
   const [hover, setHover] = useState<string | null>(null);
-  const max = Math.max(1, ...data.map(d => d.value));
-  // Leave ~15% headroom so the value labels above the tallest bars stay inside the chart.
+  const max = Math.max(1, ...data.flatMap(d => [d.fresh, d.continuing]));
+  // ~15% headroom so value labels above the tallest bars stay inside the chart
   const target = max * 1.15;
-  // Round up to a multiple of 2×step so the middle tick is a whole number too.
+  // a multiple of 2×step keeps the middle tick a whole number
   const step = Math.max(1, Math.pow(10, Math.floor(Math.log10(target))) / 2);
   const niceMax = Math.ceil(target / (2 * step)) * 2 * step;
   const ticks = [0, niceMax / 2, niceMax];
-  const peak = data.reduce((best, d) => (d.value > (best?.value ?? -1) ? d : best), data[0]);
-  const latest = [...data].reverse().find(d => d.value > 0);
+  const series = [
+    { key: 'fresh' as const, label: 'New enrolments', color: C.fresh },
+    { key: 'continuing' as const, label: 'Continuing learners', color: C.continuing },
+  ];
 
-  if (loading) return <div className="h-[220px] rounded-xl bg-slate-50 animate-pulse" />;
-  if (data.length === 0) return <div className="h-[220px] flex items-center justify-center text-[12px] text-slate-400">No terms in the sheet yet</div>;
+  if (loading) return <div className="h-[240px] rounded-xl bg-slate-50 animate-pulse" />;
+  if (data.length === 0) return <div className="h-[240px] flex items-center justify-center text-[12px] text-slate-400">No terms in the sheet yet</div>;
 
   return (
-    <div className="relative pt-5">
-      <div className="relative h-[180px] ml-9">
-        {ticks.map(t => (
-          <div key={t} className="absolute left-0 right-0 border-t" style={{ bottom: `${(t / niceMax) * 100}%`, borderColor: t === 0 ? '#D0D2D3' : '#F0F0F1' }}>
-            <span className="absolute -left-9 -translate-y-1/2 w-8 text-right text-[10px] text-slate-400 tabular-nums">{fmt(t)}</span>
+    <div className="relative">
+      <div className="mb-2"><Legend items={series.map(s => ({ label: s.label, color: s.color }))} /></div>
+      <div className="relative pt-5">
+        <div className="relative h-[190px] ml-10">
+          {ticks.map(t => (
+            <div key={t} className="absolute left-0 right-0 border-t" style={{ bottom: `${(t / niceMax) * 100}%`, borderColor: t === 0 ? '#D0D2D3' : '#F0F0F1' }}>
+              <span className="absolute -left-10 -translate-y-1/2 w-9 text-right text-[10px] text-slate-400 tabular-nums">{fmt(t)}</span>
+            </div>
+          ))}
+          <div className="absolute inset-0 flex items-end gap-4 px-2" onMouseLeave={() => setHover(null)}>
+            {data.map(d => {
+              const on = hover === d.term;
+              return (
+                <div key={d.term} className="relative flex-1 h-full flex items-end justify-center gap-[3px] cursor-default" onMouseEnter={() => setHover(d.term)}>
+                  {series.map(s => {
+                    const v = d[s.key];
+                    const h = (v / niceMax) * 100;
+                    return (
+                      <div key={s.key} className="relative flex-1 max-w-[30px] h-full flex items-end justify-center">
+                        {v > 0 ? (
+                          <div className="w-full rounded-t-[4px] transition-all duration-500" style={{ height: `${Math.max(h, 1.5)}%`, background: s.color, opacity: hover && !on ? 0.35 : 1 }} />
+                        ) : (
+                          <div className="w-full h-[2px] rounded-full" style={{ background: '#D0D2D3' }} />
+                        )}
+                        {v > 0 && (
+                          <span className="absolute text-[10.5px] font-bold text-slate-900 tabular-nums whitespace-nowrap" style={{ bottom: `calc(${Math.max(h, 1.5)}% + 3px)` }}>{fmt(v)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {on && (
+                    <div className="absolute z-20 bottom-full mb-7 left-1/2 -translate-x-1/2 rounded-lg bg-slate-900 text-white px-2.5 py-1.5 text-[11px] whitespace-nowrap shadow-lg pointer-events-none">
+                      <div className="font-semibold">{parseTermCode(d.term).label} {parseTermCode(d.term).year || ''}</div>
+                      {series.map(s => (
+                        <div key={s.key} className="flex items-center gap-1.5 text-white/85 tabular-nums">
+                          <span className="w-1.5 h-1.5 rounded-sm" style={{ background: s.color }} />{s.label}: {fmt(d[s.key])}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
-        <div className="absolute inset-0 flex items-end gap-2 px-1" onMouseLeave={() => setHover(null)}>
-          {data.map(d => {
-            const h = (d.value / niceMax) * 100;
-            const on = hover === d.term;
-            const label = (d === peak || d === latest) && d.value > 0;
-            return (
-              <div
-                key={d.term}
-                className="relative flex-1 h-full flex items-end justify-center cursor-default"
-                onMouseEnter={() => setHover(d.term)}
-              >
-                {d.value > 0 ? (
-                  <div
-                    className="w-full max-w-[44px] rounded-t-[4px] transition-all duration-500"
-                    style={{ height: `${Math.max(h, 1.5)}%`, background: color, opacity: hover && !on ? 0.35 : 1 }}
-                  />
-                ) : (
-                  <div className="w-full max-w-[44px] h-[2px] rounded-full" style={{ background: '#D0D2D3' }} />
-                )}
-                {(label || on) && (
-                  <span
-                    className="absolute text-[11px] font-bold text-slate-900 tabular-nums whitespace-nowrap"
-                    style={{ bottom: `calc(${Math.max(h, 1.5)}% + 4px)` }}
-                  >
-                    {fmt(d.value)}
-                  </span>
-                )}
-                {on && (
-                  <div className="absolute z-20 bottom-full mb-6 left-1/2 -translate-x-1/2 rounded-lg bg-slate-900 text-white px-2.5 py-1.5 text-[11px] whitespace-nowrap shadow-lg pointer-events-none">
-                    <div className="font-semibold">{parseTermCode(d.term).label} {parseTermCode(d.term).year || ''}</div>
-                    <div className="text-white/80 tabular-nums">{fmt(d.value)} {unit}</div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
-      </div>
-      <div className="ml-9 mt-1.5 flex gap-2 px-1">
-        {data.map(d => (
-          <div key={d.term} className="flex-1 text-center min-w-0">
-            <div className="text-[10.5px] font-semibold text-slate-700 truncate">{parseTermCode(d.term).label}</div>
-            <div className="text-[9.5px] text-slate-400">{d.term}</div>
-          </div>
-        ))}
+        <div className="ml-10 mt-1.5 flex gap-4 px-2">
+          {data.map(d => (
+            <div key={d.term} className="flex-1 text-center min-w-0">
+              <div className="text-[10.5px] font-semibold text-slate-700 truncate">{parseTermCode(d.term).label}</div>
+              <div className="text-[9.5px] text-slate-400">{d.term}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -233,7 +236,6 @@ function AwaitingMetric({ label, icon, sample }: { label: string; icon: string; 
 
 export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const {
-    loading,
     statusDetails,
     closedCohortGraduation,
     activeCohortGraduation,
@@ -282,7 +284,8 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   /* ── Term trends: from the Learner Type blocks of the "Term Wise Split" tab
         (the two summary tables at the top of that tab are not used) ── */
   const ltSeries = useMemo(() => (termSplit ? learnerTypeSeries(termSplit) : null), [termSplit]);
-  const trendPrograms = ltSeries?.active.programs ?? [];
+  // Zero-baseline programs (no fresh enrolment in any term, e.g. SJD) are left out of this tab.
+  const trendPrograms = useMemo(() => (termSplit ? programsWithNewEnrolments(termSplit) : []), [termSplit]);
   const selectedPrograms = trendProgram === 'all' || !trendPrograms.includes(trendProgram) ? trendPrograms : [trendProgram];
   const programLabel = trendProgram === 'all' || !trendPrograms.includes(trendProgram) ? 'All programs' : shortName(trendProgram);
 
@@ -295,20 +298,22 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   const pickSeries = (s: TermSeries | undefined) =>
     (s ? totalsByTerm(s, selectedPrograms.filter(p => s.programs.includes(p))).filter(d => inYear(d.term)) : []);
   const freshTrend = pickSeries(ltSeries?.fresh);
+  const continuingTrend = pickSeries(ltSeries?.continuing);
+  const pairTrend = freshTrend.map(d => ({ term: d.term, fresh: d.value, continuing: continuingTrend.find(c => c.term === d.term)?.value ?? 0 }));
   const programInFresh = trendProgram === 'all' || (ltSeries?.fresh.programs.includes(trendProgram) ?? false);
 
   // Fresh vs continuing: "Overall" (the year, from the sheet's Yearly Grand Total) first,
   // then the year's terms ascending (Spring → Summer → Fall), each with its learner count.
   const OVERALL = 'overall';
-  const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year) : null), [termSplit, year]);
+  const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year, trendPrograms) : null), [termSplit, year, trendPrograms]);
   const termChoices = useMemo(() => [
     ...(yearMix && yearMix.fresh + yearMix.continuing > 0
       ? [{ value: OVERALL, label: 'Overall' }]
       : []),
-    ...(termSplit ? freshContinuingByTerm(termSplit) : [])
+    ...(termSplit ? freshContinuingByTerm(termSplit, trendPrograms) : [])
       .filter(t => t.year === year && t.fresh + t.continuing > 0)
       .map(t => ({ value: t.term, label: t.term })),
-  ], [termSplit, year, yearMix]);
+  ], [termSplit, year, yearMix, trendPrograms]);
   const termOptions = termChoices.map(t => t.value);
   const termValues = termOptions.filter(v => v !== OVERALL);
   const fcTerm = termPick && termOptions.includes(termPick) ? termPick
@@ -328,8 +333,8 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
         sessions: yearMix.seasons.map(x => ({ ...x, session: '' })),
       };
     }
-    return freshContinuingByTerm(termSplit).find(t => t.term === fcTerm) ?? null;
-  }, [termSplit, fcTerm, yearMix]);
+    return freshContinuingByTerm(termSplit, trendPrograms).find(t => t.term === fcTerm) ?? null;
+  }, [termSplit, fcTerm, yearMix, trendPrograms]);
   const breakdown: 'segment' | 'program' = isOverall ? 'program' : mixBy;
   // Fresh enrolments and continuing learners are different measures: they are shown
   // side by side, each on its own scale, and never added together.
@@ -586,17 +591,17 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
                     {view === 'chart' ? (
                       <div>
                         <SectionTitle
-                          title="New enrolments by term"
+                          title="New enrolments and continuing learners by term"
                           sub={`${programLabel} · ${year ?? ''}`}
                           aside={<span className="text-[11px] text-slate-400">Hover a bar for the exact figure</span>}
                         />
                         {programInFresh
-                          ? <TermColumns data={freshTrend} color={C.enrol} unit="new enrolments" loading={termLoading} />
+                          ? <TermPairColumns data={pairTrend} loading={termLoading} />
                           : <div className="h-[220px] flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-[12px] text-slate-400">No new-enrolment split for {shortName(trendProgram)} in the sheet</div>}
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {[{ title: 'New enrolments by term', s: ltSeries?.fresh, sum: true }].map(({ title, s, sum }) => {
+                        {[{ title: 'New enrolments by term', s: ltSeries?.fresh, sum: true }, { title: 'Continuing learners by term', s: ltSeries?.continuing, sum: false }].map(({ title, s, sum }) => {
                           const progs = (s?.programs ?? []).filter(p => selectedPrograms.includes(p));
                           const terms = (s?.terms ?? []).filter(inYear);
                           return (

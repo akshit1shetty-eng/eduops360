@@ -28,6 +28,8 @@ interface Props {
   /** learners whose location is a region ("APAC", "Africa") or unrecognised text */
   unplacedCount: number;
   unplacedLabels: string[];
+  /** Learners with no country in the sheet */
+  missingCount?: number;
 }
 
 const W = 820;
@@ -52,7 +54,7 @@ interface Hover { iso: string; x: number; y: number }
 
 const fmt = (n: number) => n.toLocaleString();
 
-export default function WorldFootprintMap({ countries, loading, totalLearners, unplacedCount, unplacedLabels }: Props) {
+export default function WorldFootprintMap({ countries, loading, totalLearners, unplacedCount, unplacedLabels, missingCount = 0 }: Props) {
   const [world, setWorld] = useState<CountryFeature[] | null>(null);
   const [regionId, setRegionId] = useState<RegionId | 'all'>('all');
   const [hover, setHover] = useState<Hover | null>(null);
@@ -438,8 +440,9 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
                 {!loading && (
                   <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] leading-relaxed text-slate-500">
                     {fmt(countries.reduce((s, c) => s + c.count, 0))} of {fmt(totalLearners)} learners placed on the map.
+                    {missingCount > 0 && <> {fmt(missingCount)} have no country in the sheet.</>}
                     {unplacedCount > 0 && (
-                      <> {fmt(unplacedCount)} list a region or unrecognised value
+                      <> {fmt(unplacedCount)} list a value that isn't a country
                         {unplacedLabels.length > 0 && <> ({unplacedLabels.slice(0, 3).join(', ')}{unplacedLabels.length > 3 ? ', …' : ''})</>}.</>
                     )}
                   </p>

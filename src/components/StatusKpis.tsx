@@ -62,7 +62,7 @@ export default function StatusKpis() {
     { key: 'total', label: 'Total learners', caption: 'All enrolments', icon: 'fa-users', value: stats.total, tone: { chip: 'bg-slate-900 text-white', bar: '#1A1A1B' }, to: '/lex/learners' },
     { key: 'active', label: 'Active', caption: 'Currently studying', icon: 'fa-user-check', value: stats.active, tone: { chip: 'bg-brand-50 text-brand-600', bar: '#E50913' }, to: '/lex/learners?status=Active' },
     { key: 'loa', label: 'Leave of absence', caption: 'In process of deferral', icon: 'fa-clock', value: stats.loa, tone: { chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b' }, to: '/lex/learners?status=IPD' },
-    { key: 'exit', label: 'Exited', caption: 'Inactive or dropped', icon: 'fa-user-minus', value: stats.exit, tone: { chip: 'bg-slate-100 text-slate-600', bar: '#64748B' }, to: '/lex/learners?status=Exit' },
+    { key: 'exit', label: 'Exited', caption: 'Graduated, withdrawn or dropped', icon: 'fa-user-minus', value: stats.exit, tone: { chip: 'bg-slate-100 text-slate-600', bar: '#64748B' }, to: '/lex/learners?status=Exit' },
   ];
 
   const breakdowns = {
