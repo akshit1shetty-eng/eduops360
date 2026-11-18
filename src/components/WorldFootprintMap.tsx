@@ -35,6 +35,7 @@ interface Props {
 const W = 820;
 const H = 420;
 const ANTARCTICA = '010';
+const INDIA = '356';
 const OUTSIDE_FILL = '#F1F1F2';
 const IN_REGION_EMPTY = '#E3E4E5';
 
@@ -70,6 +71,9 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
     return () => ro.disconnect();
   }, []);
 
+  // India's official outline (incl. all of Jammu & Kashmir and Ladakh), drawn over the Kashmir window
+  const [indiaOfficial, setIndiaOfficial] = useState<Feature<Geometry, { name: string }> | null>(null);
+
   // Country shapes are loaded on demand so they don't weigh down the main bundle
   useEffect(() => {
     let alive = true;
@@ -78,6 +82,9 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
       const topo = mod.default as unknown as Topology<{ countries: GeometryCollection<{ name: string }> }>;
       const fc = feature(topo, topo.objects.countries) as FeatureCollection<Geometry, { name: string }>;
       setWorld(fc.features.filter(f => String(f.id) !== ANTARCTICA));
+    });
+    import('../lib/indiaOfficialOutline.json').then(mod => {
+      if (alive) setIndiaOfficial(mod.default as unknown as Feature<Geometry, { name: string }>);
     });
     return () => { alive = false; };
   }, []);
@@ -115,6 +122,24 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
     return geoEqualEarth().fitExtent([[6, 6], [W - 6, H - 6]], { type: 'FeatureCollection', features: world });
   }, [world]);
   const path = useMemo(() => (projection ? geoPath(projection) : null), [projection]);
+
+  // The Kashmir window, in projected coordinates. Inside it India is drawn from its official
+  // outline (Natural Earth's India point of view): world-atlas 110m uses de-facto lines that
+  // put Gilgit-Baltistan / PoK in Pakistan and Aksai Chin in China. Outside it nothing changes,
+  // so every other border stays exactly as before.
+  const kashmirClip = useMemo(() => {
+    if (!path || !indiaOfficial) return null;
+    const box = (indiaOfficial.properties as unknown as { window: { w: number; e: number; s: number; n: number } }).window;
+    const ring: [number, number][] = [];
+    const N = 24;
+    // clockwise for d3-geo: north edge W→E, east edge N→S, south edge E→W, west edge S→N
+    for (let i = 0; i <= N; i++) ring.push([box.w + ((box.e - box.w) * i) / N, box.n]);
+    for (let i = 1; i <= N; i++) ring.push([box.e, box.n - ((box.n - box.s) * i) / N]);
+    for (let i = 1; i <= N; i++) ring.push([box.e - ((box.e - box.w) * i) / N, box.s]);
+    for (let i = 1; i <= N; i++) ring.push([box.w, box.s + ((box.n - box.s) * i) / N]);
+    const d = path({ type: 'Polygon', coordinates: [ring] });
+    return d ? { inside: d, outside: `M-5000,-5000H5000V5000H-5000Z ${d}` } : null;
+  }, [path, indiaOfficial]);
   const project = useCallback((p: [number, number]) => projection?.(p) ?? null, [projection]);
 
   // Zoom: fit the selected region's window into the frame (CSS-animated transform)
@@ -204,6 +229,38 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
   }, [selected, projection, frameW, zoom, shapeIsos]);
   const ready = !!(world && path && projection) && !loading;
 
+  /** One country shape with its fill, hover and click behaviour (shared by the India overlay). */
+  const countryShape = (f: Feature<Geometry, { name: string }>, iso: string, clip?: string) => {
+    const c = byIso.get(iso);
+    const { fill, opacity } = fillFor(iso);
+    const interactive = inSelected(iso);
+    const region = regionOfIso(iso);
+    return (
+      <path
+        key={clip ? `${iso}-official` : iso}
+        d={path!(f) ?? undefined}
+        clipPath={clip}
+        fill={fill}
+        fillOpacity={opacity}
+        stroke="#FFFFFF"
+        strokeWidth={0.6}
+        vectorEffect="non-scaling-stroke"
+        className={`transition-[fill,fill-opacity] duration-500 ${interactive || !selected ? 'cursor-pointer' : 'cursor-zoom-out'}`}
+        onMouseMove={interactive && c ? onMove(iso) : undefined}
+        onMouseLeave={() => setHover(null)}
+        onClick={() => {
+          if (!selected) {
+            if (region.id !== 'row' || c) selectRegion(region.id);
+          } else if (!interactive) {
+            selectRegion('all');
+          }
+        }}
+      >
+        <title>{f.properties.name} · {region.name}{c ? ` — ${fmt(c.count)} learners` : ''}</title>
+      </path>
+    );
+  };
+
   return (
     <div>
       <style>{`
@@ -253,47 +310,32 @@ export default function WorldFootprintMap({ countries, loading, totalLearners, u
                   onClick={selected ? () => selectRegion('all') : undefined}
                 />
                 <g className="fp-zoom" style={{ transform: `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.k})` }}>
+                  {kashmirClip && (
+                    <defs>
+                      <clipPath id="fp-kashmir-in"><path d={kashmirClip.inside} /></clipPath>
+                      <clipPath id="fp-kashmir-out"><path d={kashmirClip.outside} clipRule="evenodd" /></clipPath>
+                    </defs>
+                  )}
                   <path
                     d={path!({ type: 'Sphere' }) ?? undefined}
                     fill={selected ? '#FBFBFB' : '#FFFFFF'}
                     className={selected ? 'cursor-zoom-out' : undefined}
                     onClick={selected ? () => selectRegion('all') : undefined}
                   />
-                  {world!.map(f => {
-                    const iso = String(f.id);
-                    const c = byIso.get(iso);
-                    const { fill, opacity } = fillFor(iso);
-                    const interactive = inSelected(iso);
-                    const region = regionOfIso(iso);
-                    return (
-                      <path
-                        key={iso}
-                        d={path!(f) ?? undefined}
-                        fill={fill}
-                        fillOpacity={opacity}
-                        stroke="#FFFFFF"
-                        strokeWidth={0.6}
-                        vectorEffect="non-scaling-stroke"
-                        className={`transition-[fill,fill-opacity] duration-500 ${interactive || !selected ? 'cursor-pointer' : 'cursor-zoom-out'}`}
-                        onMouseMove={interactive && c ? onMove(iso) : undefined}
-                        onMouseLeave={() => setHover(null)}
-                        onClick={() => {
-                          if (!selected) {
-                            if (region.id !== 'row' || c) selectRegion(region.id);
-                          } else if (!interactive) {
-                            selectRegion('all');
-                          }
-                        }}
-                      >
-                        <title>{f.properties.name} · {region.name}{c ? ` — ${fmt(c.count)} learners` : ''}</title>
-                      </path>
-                    );
-                  })}
+                  {world!.map(f => countryShape(f, String(f.id)))}
+
+                  {/* India per its official boundary inside the Kashmir window (see kashmirClip) */}
+                  {indiaOfficial && kashmirClip && countryShape(indiaOfficial, INDIA, 'url(#fp-kashmir-in)')}
 
                   {/* region outline in drill-down, hovered country outline on top */}
-                  {activeFeature && (
+                  {activeFeature && (activeIso === INDIA && indiaOfficial && kashmirClip ? (
+                    <g pointerEvents="none">
+                      <path d={path!(activeFeature) ?? undefined} clipPath="url(#fp-kashmir-out)" fill="none" stroke="#1A1A1B" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+                      <path d={path!(indiaOfficial) ?? undefined} clipPath="url(#fp-kashmir-in)" fill="none" stroke="#1A1A1B" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+                    </g>
+                  ) : (
                     <path d={path!(activeFeature) ?? undefined} fill="none" stroke="#1A1A1B" strokeWidth={1.5} vectorEffect="non-scaling-stroke" pointerEvents="none" />
-                  )}
+                  ))}
 
                   {/* small countries (no shape at this scale) as dots */}
                   {dots.filter(c => inSelected(c.ref.iso)).map(c => {
