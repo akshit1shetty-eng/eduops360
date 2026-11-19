@@ -339,13 +339,13 @@ export default function LexLearnerDashboard() {
   ];
 
   const statusCards: Array<{
-    key: string; label: string; icon: string; chip: string; bar: string;
+    key: string; label: string; icon: string; chip: string;
     value: number; intl: number; dom: number; filter: string[];
   }> = [
-    { key: 'all', label: 'Total learners', icon: 'fa-users', chip: 'bg-slate-900 text-white', bar: '#1A1A1B', value: stats.total, intl: stats.international, dom: stats.domestic, filter: [] },
-    { key: 'Active', label: 'Active', icon: 'fa-user-check', chip: 'bg-brand-50 text-brand-600', bar: '#E50913', value: stats.active, intl: stats.activeInternational, dom: stats.activeDomestic, filter: ['Active'] },
-    { key: 'IPD', label: 'Leave of absence', icon: 'fa-clock', chip: 'bg-amber-50 text-amber-600', bar: '#d9a21b', value: stats.loa, intl: stats.loaInternational, dom: stats.loaDomestic, filter: ['IPD'] },
-    { key: 'Exit', label: 'Exited', icon: 'fa-user-minus', chip: 'bg-slate-100 text-slate-600', bar: '#7A7C7F', value: stats.exit, intl: stats.exitInternational, dom: stats.exitDomestic, filter: ['Exit'] },
+    { key: 'all', label: 'Total learners', icon: 'fa-users', chip: 'bg-slate-900 text-white', value: stats.total, intl: stats.international, dom: stats.domestic, filter: [] },
+    { key: 'Active', label: 'Active', icon: 'fa-user-check', chip: 'bg-brand-50 text-brand-600', value: stats.active, intl: stats.activeInternational, dom: stats.activeDomestic, filter: ['Active'] },
+    { key: 'IPD', label: 'Leave of absence', icon: 'fa-clock', chip: 'bg-amber-50 text-amber-600', value: stats.loa, intl: stats.loaInternational, dom: stats.loaDomestic, filter: ['IPD'] },
+    { key: 'Exit', label: 'Exited', icon: 'fa-user-minus', chip: 'bg-slate-100 text-slate-600', value: stats.exit, intl: stats.exitInternational, dom: stats.exitDomestic, filter: ['Exit'] },
   ];
 
   const sortHeader = (k: SortKey, label: string, className: string, align: 'left' | 'right' = 'left') => {
@@ -374,7 +374,7 @@ export default function LexLearnerDashboard() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Learner <span className="text-brand-500">Directory</span>
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Search, filter and export every learner across Golden Gate University programs.</p>
+          <p className="text-slate-500 text-sm mt-1">Search and filter every learner across Golden Gate University programs.</p>
         </div>
         <DateBadge />
       </div>
@@ -385,7 +385,6 @@ export default function LexLearnerDashboard() {
           const selected = k.key === 'all'
             ? selectedStatuses.length === 0
             : selectedStatuses.length === 1 && selectedStatuses[0] === k.key;
-          const share = (k.value / (stats.total || 1)) * 100;
           return (
             <button
               key={k.key}
@@ -408,9 +407,6 @@ export default function LexLearnerDashboard() {
               <div className="mt-2 text-[11px] font-medium text-slate-500">{k.label}</div>
               <div className="mt-0.5 text-[21px] leading-none font-extrabold text-slate-900 font-display tabular-nums">
                 {loading ? <StatSkeleton /> : k.value.toLocaleString()}
-              </div>
-              <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: loading ? '0%' : `${k.key === 'all' ? 100 : share}%`, background: k.bar }} />
               </div>
               <div className="mt-1.5 flex items-center justify-between gap-2 text-[10.5px] text-slate-500 tabular-nums">
                 {loading ? <SubStatSkeleton /> : (

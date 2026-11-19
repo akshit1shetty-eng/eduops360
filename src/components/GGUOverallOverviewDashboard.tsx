@@ -284,7 +284,8 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   /* ── Term trends: from the Learner Type blocks of the "Term Wise Split" tab
         (the two summary tables at the top of that tab are not used) ── */
   const ltSeries = useMemo(() => (termSplit ? learnerTypeSeries(termSplit) : null), [termSplit]);
-  // Zero-baseline programs (no fresh enrolment in any term, e.g. SJD) are left out of this tab.
+  // Programs with no new enrolment in any term (e.g. SJD, DBA DL) are left out of the New
+  // enrolments chart and its program buttons only — Fresh vs continuing always counts every program.
   const trendPrograms = useMemo(() => (termSplit ? programsWithNewEnrolments(termSplit) : []), [termSplit]);
   const selectedPrograms = trendProgram === 'all' || !trendPrograms.includes(trendProgram) ? trendPrograms : [trendProgram];
   const programLabel = trendProgram === 'all' || !trendPrograms.includes(trendProgram) ? 'All programs' : shortName(trendProgram);
@@ -305,19 +306,21 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
   // Fresh vs continuing: "Overall" (the year, from the sheet's Yearly Grand Total) first,
   // then the year's terms ascending (Spring → Summer → Fall), each with its learner count.
   const OVERALL = 'overall';
-  const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year, trendPrograms) : null), [termSplit, year, trendPrograms]);
+  const yearMix = useMemo(() => (termSplit ? yearlyOverall(termSplit, year) : null), [termSplit, year]);
   const termChoices = useMemo(() => [
     ...(yearMix && yearMix.fresh + yearMix.continuing > 0
       ? [{ value: OVERALL, label: 'Overall' }]
       : []),
-    ...(termSplit ? freshContinuingByTerm(termSplit, trendPrograms) : [])
+    ...(termSplit ? freshContinuingByTerm(termSplit) : [])
       .filter(t => t.year === year && t.fresh + t.continuing > 0)
       .map(t => ({ value: t.term, label: t.term })),
-  ], [termSplit, year, yearMix, trendPrograms]);
+  ], [termSplit, year, yearMix]);
   const termOptions = termChoices.map(t => t.value);
   const termValues = termOptions.filter(v => v !== OVERALL);
+  // Opens on "Overall" (the whole year); falls back to the default term if the sheet has no yearly figures.
   const fcTerm = termPick && termOptions.includes(termPick) ? termPick
-    : termValues.includes(GGU_DEFAULT_TERM) ? GGU_DEFAULT_TERM : (termValues[0] ?? termOptions[0]);
+    : termOptions.includes(OVERALL) ? OVERALL
+      : termValues.includes(GGU_DEFAULT_TERM) ? GGU_DEFAULT_TERM : (termValues[0] ?? termOptions[0]);
   const isOverall = fcTerm === OVERALL && !!yearMix;
   // Always all programs — the program chips only drive the term chart above it.
   const mix: TermMix | null = useMemo(() => {
@@ -333,8 +336,8 @@ export default function GGUOverallOverviewDashboard({ onClose }: Props) {
         sessions: yearMix.seasons.map(x => ({ ...x, session: '' })),
       };
     }
-    return freshContinuingByTerm(termSplit, trendPrograms).find(t => t.term === fcTerm) ?? null;
-  }, [termSplit, fcTerm, yearMix, trendPrograms]);
+    return freshContinuingByTerm(termSplit).find(t => t.term === fcTerm) ?? null;
+  }, [termSplit, fcTerm, yearMix]);
   const breakdown: 'segment' | 'program' = isOverall ? 'program' : mixBy;
   // Fresh enrolments and continuing learners are different measures: they are shown
   // side by side, each on its own scale, and never added together.
