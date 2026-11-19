@@ -188,6 +188,20 @@ export function resolveCountry(raw: string): ResolvedLocation | null {
   return { kind: 'unknown', label: trimmed };
 }
 
+/**
+ * One standard name for whatever the sheet holds: "IN", "INDIA", "india" → "India";
+ * "Ho Chi Minh City", "Viet Nam", "Viá»‡t Nam" → "Vietnam". Values naming a region rather
+ * than a country keep that region in title case ("AFRICA" → "Africa"); anything
+ * unrecognised is returned as entered (trimmed, encoding repaired); blank stays blank.
+ */
+export function standardCountryName(raw: string): string {
+  const loc = resolveCountry(raw);
+  if (!loc) return '';
+  if (loc.kind === 'country') return loc.country.name;
+  if (loc.kind === 'region') return loc.label.toLowerCase().replace(/\b\p{L}/gu, ch => ch.toUpperCase());
+  return loc.label;
+}
+
 /** Sequential learner-count bins for the map (validated single-hue upGrad red ramp). */
 export const MAP_BINS: Array<{ min: number; label: string; color: string }> = [
   { min: 1, label: '1–9', color: '#F4949C' },

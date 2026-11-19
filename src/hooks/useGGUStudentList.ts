@@ -9,6 +9,31 @@
 import { useEffect, useState } from 'react';
 import { GGU_STUDENT_LIST_SHEET_ID, GGU_STUDENT_LIST_TAB } from '../lib/config';
 import { fetchSheetTab, type SheetRecord } from '../lib/sheets';
+import { standardCountryName } from '../lib/countries';
+
+const COUNTRY_KEYS = ['Country Of Residence', 'Country of Residence', 'Country of  Residence', 'Country'];
+
+/**
+ * The sheet holds free-text countries ("IN", "INDIA", "India", "Ho Chi Minh City" …).
+ * Standardise them once, as the data arrives, so every page — filters, tables, map,
+ * residency — sees one name per country. The value as entered is kept alongside.
+ */
+function standardiseCountries(rows: SheetRecord[]): SheetRecord[] {
+  return rows.map(row => {
+    let out: SheetRecord | null = null;
+    for (const key of COUNTRY_KEYS) {
+      const raw = row[key];
+      if (raw === undefined) continue;
+      const std = standardCountryName(raw);
+      if (std !== raw) {
+        out = out ?? { ...row };
+        out[key] = std;
+        out[`${key} (as entered)`] = raw;
+      }
+    }
+    return out ?? row;
+  });
+}
 
 // ─── Module-level singleton ───────────────────────────────────────────────────
 type CacheState =
@@ -24,16 +49,23 @@ function notify() {
   subscribers.forEach(fn => fn());
 }
 
+/** A request that hasn't answered by then is treated as failed, so users see a message, not an endless spinner. */
+const LOAD_TIMEOUT_MS = 60_000;
+
+/** When the current load started (for "taking longer than usual" messaging). */
+export let loadStartedAt: number | null = null;
+
 function ensureLoading() {
   if (cache.status !== 'idle') return;
-  const promise = fetchSheetTab({
-    spreadsheetId: GGU_STUDENT_LIST_SHEET_ID,
-    sheetName: GGU_STUDENT_LIST_TAB,
-  });
+  loadStartedAt = Date.now();
+  const promise = Promise.race([
+    fetchSheetTab({ spreadsheetId: GGU_STUDENT_LIST_SHEET_ID, sheetName: GGU_STUDENT_LIST_TAB }),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('The data source took too long to respond')), LOAD_TIMEOUT_MS)),
+  ]);
   cache = { status: 'loading', promise };
   promise
     .then(rows => {
-      const safeRows = Array.isArray(rows) ? rows : [];
+      const safeRows = standardiseCountries(Array.isArray(rows) ? rows : []);
       cache = { status: 'done', rows: safeRows, fetchedAt: new Date() };
       notify();
     })
@@ -44,6 +76,14 @@ function ensureLoading() {
       };
       notify();
     });
+}
+
+/** Try again after a failed load (used by the data-status banner's Retry button). */
+export function retryGGUStudentList() {
+  if (cache.status !== 'error') return;
+  cache = { status: 'idle' };
+  ensureLoading();
+  notify();
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
